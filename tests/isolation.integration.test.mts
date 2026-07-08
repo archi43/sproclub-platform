@@ -102,10 +102,14 @@ before(async () => {
 
 after(async () => {
   if (!configured || !admin) return;
-  // Order matters for FKs; org cascade removes learners/enrollments/memberships.
+  // FK-safe teardown: the org_id foreign keys have no ON DELETE CASCADE, so
+  // child rows must go before the organization. profiles cascade to memberships.
   for (const key of ["a", "b"] as const) {
     const f = orgs[key];
     if (!f) continue;
+    await admin.from("enrollments_ro").delete().eq("org_id", f.orgId);
+    await admin.from("learners_ro").delete().eq("org_id", f.orgId);
+    await admin.from("memberships").delete().eq("org_id", f.orgId);
     await admin.from("organizations").delete().eq("id", f.orgId);
     await admin.from("profiles").delete().eq("id", f.userId);
     await admin.auth.admin.deleteUser(f.userId);
