@@ -1,0 +1,28 @@
+{
+  "name": "sproclub-platform",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Plateforme pédagogique multi-locataire (SaaS). Next.js + Supabase. Tenant-aware par conception.",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "next": "^14.2.5",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "@supabase/supabase-js": "^2.45.0",
+    "@supabase/ssr": "^0.5.1"
+  },
+  "devDependencies": {
+    "typescript": "^5.5.4",
+    "@types/node": "^20.14.12",
+    "@types/react": "^18.3.3",
+    "@types/react-dom": "^18.3.0",
+    "eslint": "^8.57.0",
+    "eslint-config-next": "^14.2.5"
+  }
+}
