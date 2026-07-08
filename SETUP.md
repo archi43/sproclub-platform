@@ -90,6 +90,14 @@ npm run dev
 La plupart des navigateurs résolvent `*.localhost` vers 127.0.0.1 sans configuration.
 La page `/login` envoie un lien magique ; le lien renvoie sur `/auth/callback` du même hôte.
 
+**Plus simple en dev** : sur la racine `http://localhost:3000` (sans sous-domaine),
+aucun organisme n'est résolu par défaut. Pour un pilote mono-organisme, poser
+`DEV_DEFAULT_ORG_SLUG=sproclub` dans `.env.local` fait de SproCLUB l'organisme par
+défaut → tout est accessible sur `http://localhost:3000` (ce repli est ignoré en prod).
+Dans Supabase → Authentication → URL Configuration, ajouter alors :
+- Site URL : `http://localhost:3000`
+- Redirect URLs : `http://localhost:3000/**`
+
 ## 8. Prouver l'isolation (test d'intégration)
 
 Une fois les migrations appliquées et `.env.local` renseigné avec les vraies clés :

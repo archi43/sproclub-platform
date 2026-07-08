@@ -29,5 +29,15 @@ export async function getOrgContext(): Promise<Organization | null> {
   const h = headers();
   const slug = h.get("x-org-slug") || undefined;
   const customDomain = h.get("x-org-domain") || undefined;
-  return resolveOrganization({ slug, customDomain });
+  const org = await resolveOrganization({ slug, customDomain });
+  if (org) return org;
+
+  // Dev convenience ONLY: on the platform root (e.g. http://localhost:3000,
+  // no sub-domain), fall back to a default org so a single-tenant pilot can be
+  // browsed without a sub-domain. Never active in production.
+  const devSlug = process.env.DEV_DEFAULT_ORG_SLUG;
+  if (!slug && !customDomain && devSlug && process.env.NODE_ENV !== "production") {
+    return resolveOrganization({ slug: devSlug });
+  }
+  return null;
 }
