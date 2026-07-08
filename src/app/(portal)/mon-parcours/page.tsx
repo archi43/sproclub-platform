@@ -25,6 +25,7 @@ export default async function MonParcours() {
       <nav style={{ display: "flex", gap: 16, margin: "8px 0 24px" }}>
         <Link href="/mon-parcours/livrables">Mes livrables</Link>
         <Link href="/mon-parcours/reservation">Réserver un coaching</Link>
+        <Link href="/mon-parcours/soutenance">Réserver une soutenance</Link>
       </nav>
       {enrollments.length === 0 ? (
         <p>Aucun dossier de formation pour le moment.</p>
