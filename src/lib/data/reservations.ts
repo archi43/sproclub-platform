@@ -28,6 +28,22 @@ export async function getAvailabilities(
   return (data ?? []) as Availability[];
 }
 
+/** A single availability by id, scoped to the org (null if not visible). */
+export async function getAvailabilityById(
+  supabase: SupabaseClient,
+  orgId: string,
+  id: string
+): Promise<Availability | null> {
+  const { data, error } = await supabase
+    .from("availabilities")
+    .select("id, org_id, host_id, kind, starts_at, ends_at, calcom_ref")
+    .eq("org_id", orgId)
+    .eq("id", id)
+    .limit(1);
+  if (error) throw new Error(`Failed to load availability: ${error.message}`);
+  return (data?.[0] as Availability) ?? null;
+}
+
 /** Reservations visible to the current user within an organization. */
 export async function getReservations(
   supabase: SupabaseClient,

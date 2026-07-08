@@ -24,3 +24,23 @@ export async function getEnrollmentsForOrg(orgId: string): Promise<Enrollment[]>
   if (error) throw new Error(`Failed to load enrollments: ${error.message}`);
   return (data ?? []) as Enrollment[];
 }
+
+/**
+ * The current student's enrollment reference (ids needed to create bookings).
+ * Returns null when the user has no visible enrollment in the org. RLS ensures
+ * only the student's own row is returned.
+ */
+export async function getMyEnrollmentRef(
+  orgId: string
+): Promise<{ enrollmentId: string; learnerId: string } | null> {
+  const supabase = createClient();
+  await setCurrentOrg(supabase, orgId);
+  const { data, error } = await supabase
+    .from("enrollments_ro")
+    .select("id, learner_id")
+    .eq("org_id", orgId)
+    .limit(1);
+  if (error) throw new Error(`Failed to load enrollment: ${error.message}`);
+  const row = data?.[0];
+  return row ? { enrollmentId: row.id as string, learnerId: row.learner_id as string } : null;
+}

@@ -24,6 +24,16 @@ export interface Enrollment {
   end_date: string | null;
 }
 
+export interface ProjectDeliverable {
+  id: string;
+  org_id: string;
+  enrollment_id: string;
+  project_number: number;
+  deliverable_submitted: boolean;
+  deliverable_url: string | null;
+  submitted_at: string | null;
+}
+
 export type BookingKind = "coaching" | "defense";
 export type BookingStatus = "pending" | "confirmed" | "declined" | "cancelled";
 
