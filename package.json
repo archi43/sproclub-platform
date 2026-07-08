@@ -8,7 +8,9 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test": "node --env-file-if-exists=.env.local --test tests/isolation.integration.test.mts",
+    "test:isolation": "node --env-file-if-exists=.env.local --test tests/isolation.integration.test.mts"
   },
   "dependencies": {
     "next": "^14.2.5",
