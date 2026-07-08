@@ -53,12 +53,20 @@ contexte d'organisme (`set_current_org` + claim JWT). Test d'isolation inter-org
 créer le projet Supabase (UE), appliquer 0001→0003, seed SproCLUB, provisionner un
 utilisateur** — voir `SETUP.md`.
 
+## Réservation (Étape 2)
+Invariants métier **au niveau base** (migration `0004`, triggers), prouvés par
+`npm run test:booking` : gating du dépôt de livrable pour les soutenances, jury de deux
+jamais le coach référent, évaluateurs issus du vivier du programme, cohérence d'organisme.
+Domaine TS : `src/lib/data/reservations.ts` (client injecté), port `src/lib/booking/provider.ts`,
+adaptateur `src/lib/booking/calcom.ts` (config par env/secret, deux types d'événement).
+Reste : clés Cal.com + job de synchro des créneaux (voir `SETUP.md`).
+
 ## Backlog immédiat
-1. Créer le projet Supabase (UE), appliquer les migrations, seed SproCLUB (`SETUP.md`).
-2. Provisionner les premiers utilisateurs (claim `app_metadata.org_id` + `memberships`).
-3. Lancer `npm run test:isolation` contre la vraie base pour prouver l'isolation.
-4. Réservation Cal.com (deux calendriers, jury de deux hors coach, ouverture au dépôt du livrable).
-5. Brancher la synchronisation `../sync_cible` vers Postgres pour l'organisme SproCLUB.
+1. Brancher l'API Cal.com (clés + eventTypeIds) et valider l'adaptateur de bout en bout.
+2. Job de miroir des créneaux Cal.com → `availabilities` ; push des réservations vers Airtable.
+3. Écrans de réservation (portail apprenant) + écran d'affectation jury (coordination).
+4. Brancher la synchronisation `../sync_cible` vers Postgres pour l'organisme SproCLUB.
+5. Remote Git privé (GitHub).
 
 ## Documents de référence (dossier parent SPROPULSE)
 Cahier de conception, cahier des charges écran par écran, dictionnaire de données,

@@ -103,6 +103,32 @@ apprenant de l'organisme A ne peut **jamais** lire les données de l'organisme B
 `org_id`, par clé primaire, ni via `set_current_org`). Sans clés réelles, le test se
 saute automatiquement.
 
+## Réservation (Cal.com) — Étape 2
+
+Les règles métier de réservation sont déjà **verrouillées en base** (migration `0004`,
+triggers) et prouvées par `npm run test:booking` :
+- une **soutenance** ne peut être réservée qu'une fois le **livrable déposé** ;
+- le **coach référent** ne peut jamais faire partie du jury ;
+- une soutenance se confirme avec **exactement deux évaluateurs**, tous issus du vivier du
+  programme ; jamais plus de deux.
+
+Reste à brancher l'API Cal.com (adaptateur `src/lib/booking/calcom.ts`) :
+1. Créer, dans Cal.com, **deux types d'événement** : coaching (individuel) et soutenance
+   (jury de deux). Noter leurs `eventTypeId`.
+2. Générer une **clé API** Cal.com.
+3. Renseigner dans `.env.local` :
+   ```dotenv
+   CALCOM_API_KEY=<clé>
+   CALCOM_EVENT_TYPE_COACHING=<id>
+   CALCOM_EVENT_TYPE_DEFENSE=<id>
+   ```
+4. Un job serveur de confiance miroite les créneaux Cal.com vers la table `availabilities`
+   et pousse les réservations confirmées vers Airtable (Planning / Soutenances).
+
+Tant que ces clés sont absentes, `getBookingProvider()` lève `ProviderNotConfiguredError`
+(le reste de l'app fonctionne). Les appels HTTP de l'adaptateur restent à valider de bout
+en bout contre de vraies clés.
+
 ## Sécurité — rappels non négociables
 
 - Aucun secret dans le dépôt (`.env.local` local, gestionnaire de secrets en prod).
