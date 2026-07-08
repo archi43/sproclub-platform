@@ -41,6 +41,14 @@ export async function requestMagicLink(
   });
 
   if (error) {
+    // Supabase's built-in email service is rate-limited; surface it plainly so
+    // it isn't mistaken for a broken form. Configure a custom SMTP to remove it.
+    if (error.code === "over_email_send_rate_limit" || error.status === 429) {
+      return {
+        ok: false,
+        message: "Trop d'envois récents (limite du service e-mail). Patientez quelques minutes avant de réessayer.",
+      };
+    }
     return { ok: false, message: "Impossible d'envoyer le lien. Réessayez plus tard." };
   }
   return {
