@@ -62,7 +62,10 @@ Domaine TS : `src/lib/data/reservations.ts` (client injecté), port `src/lib/boo
 adaptateur `src/lib/booking/calcom.ts` (instance **Cal.eu**, validé en réel). Miroir des créneaux
 `src/lib/booking/mirror.ts` + route `POST /api/admin/mirror-availabilities` (secret `CRON_SECRET`)
 → remplit `availabilities` (préfixe ref `cal:`). Types d'événement Coaching/Soutenance créés.
-Reste : test live de `createBooking`, planification cron du miroir, écran d'affectation du jury.
+Les actions de réservation (coaching/soutenance) passent par `src/lib/booking/service.ts`
+(`bookSlot`) : crée l'événement Cal.eu puis enregistre la réservation avec `calcom_booking_id`,
+avec compensation (annulation) si l'insert échoue ; dégradation propre si Cal.com non configuré.
+Reste : planification cron du miroir, écran d'affectation du jury, mise à jour du jury sur Cal.eu.
 
 ## Backlog immédiat
 1. Brancher l'API Cal.com (clés + eventTypeIds) et valider l'adaptateur de bout en bout.

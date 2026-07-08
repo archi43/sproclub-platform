@@ -4,11 +4,12 @@ import { revalidatePath } from "next/cache";
 import { getOrgContext } from "@/lib/tenant";
 import { createClient } from "@/lib/supabase/server";
 import { getMyEnrollmentRef } from "@/lib/data/enrollments";
-import { createReservation, getAvailabilityById, BookingError } from "@/lib/data/reservations";
+import { getAvailabilityById, BookingError } from "@/lib/data/reservations";
+import { bookSlot } from "@/lib/booking/service";
 
 export type BookState = { ok: boolean; message: string };
 
-/** Server action: a student books a coaching slot. */
+/** Server action: a student books a coaching slot (creates the Cal.com event too). */
 export async function bookCoachingAction(
   _prev: BookState,
   formData: FormData
@@ -23,19 +24,22 @@ export async function bookCoachingAction(
   if (!ref) return { ok: false, message: "Aucun dossier de formation associé à votre compte." };
 
   const supabase = createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   const slot = await getAvailabilityById(supabase, org.id, availabilityId);
   if (!slot || slot.kind !== "coaching") {
     return { ok: false, message: "Ce créneau n'est plus disponible." };
   }
 
   try {
-    await createReservation(supabase, {
+    await bookSlot(supabase, {
       orgId: org.id,
       learnerId: ref.learnerId,
       enrollmentId: ref.enrollmentId,
+      learnerEmail: user?.email ?? "",
       kind: "coaching",
-      startsAt: slot.starts_at,
-      endsAt: slot.ends_at,
+      availability: slot,
     });
   } catch (err) {
     const message = err instanceof BookingError ? "Réservation impossible pour ce créneau." : "La réservation a échoué.";
