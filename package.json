@@ -9,8 +9,9 @@
     "start": "next start",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
-    "test": "node --env-file-if-exists=.env.local --test tests/isolation.integration.test.mts",
-    "test:isolation": "node --env-file-if-exists=.env.local --test tests/isolation.integration.test.mts"
+    "test": "node --env-file-if-exists=.env.local --test tests/*.mts",
+    "test:isolation": "node --env-file-if-exists=.env.local --test tests/isolation.integration.test.mts",
+    "test:booking": "node --env-file-if-exists=.env.local --test tests/booking.integration.test.mts"
   },
   "dependencies": {
     "next": "^14.2.5",
