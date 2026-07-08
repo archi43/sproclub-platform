@@ -13,16 +13,32 @@ function secretMatches(provided: string | null, expected: string): boolean {
 }
 
 /**
- * Availability mirror trigger (cron / manual). Protected by a shared secret
- * (`x-cron-secret` == CRON_SECRET), not a user session: it runs as a trusted
- * server job with the service-role client. Intended to be called on a schedule.
+ * Availability mirror trigger (cron / manual). Runs as a trusted server job with
+ * the service-role client, protected by a shared secret — never a user session.
+ * Accepts two callers:
+ *   - Vercel Cron: GET with `Authorization: Bearer <CRON_SECRET>` (added by Vercel).
+ *   - Manual/other cron: POST (or GET) with `x-cron-secret: <CRON_SECRET>`.
  *
  * Pilot config from env: the SproCLUB org, the Cal.com host profile, a rolling
  * window (default 14 days). In production this becomes per-org connector config.
  */
-export async function POST(request: NextRequest) {
+function authorized(request: NextRequest): boolean {
   const secret = process.env.CRON_SECRET;
-  if (!secret || !secretMatches(request.headers.get("x-cron-secret"), secret)) {
+  if (!secret) return false;
+  const bearer = request.headers.get("authorization")?.replace(/^Bearer\s+/i, "") ?? null;
+  return secretMatches(request.headers.get("x-cron-secret"), secret) || secretMatches(bearer, secret);
+}
+
+export async function GET(request: NextRequest) {
+  return runMirror(request);
+}
+
+export async function POST(request: NextRequest) {
+  return runMirror(request);
+}
+
+async function runMirror(request: NextRequest) {
+  if (!authorized(request)) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
 

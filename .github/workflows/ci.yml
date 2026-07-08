@@ -8,12 +8,22 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    # Placeholder values so module-load env validation and `next build` pass.
+    # Real credentials live in Vercel / GitHub secrets, never in the repo.
+    # Integration tests self-skip unless real Supabase secrets are provided.
+    env:
+      NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co' }}
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder-anon-key' }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY || 'placeholder-service-role-key' }}
+      APP_BASE_DOMAIN: localhost:3000
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 24
           cache: npm
       - run: npm install
       - run: npm run typecheck
+      - run: npm run build
+      - run: npm test
       - run: npm run lint --if-present
