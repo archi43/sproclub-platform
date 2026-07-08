@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import Link from "next/link";
 import { getOrgContext } from "@/lib/tenant";
 import { requireOrgRole } from "@/lib/auth";
 import { SignOutButton } from "@/components/sign-out-button";
@@ -34,6 +35,11 @@ export default async function StaffLayout({ children }: { children: ReactNode })
         <strong>{org.name} · Coordination</strong>
         <SignOutButton />
       </header>
+      <nav style={{ display: "flex", gap: 20, padding: "10px 32px", borderBottom: "1px solid #f0f0f0", fontSize: 14 }}>
+        <Link href="/coordination">Jurys</Link>
+        <Link href="/coordination/apprenants">Apprenants</Link>
+        <Link href="/coordination/programmes">Programmes</Link>
+      </nav>
       {children}
     </div>
   );
