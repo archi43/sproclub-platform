@@ -49,6 +49,7 @@ Dans le **SQL Editor** de Supabase, exécuter successivement le contenu de :
 4. `supabase/migrations/0004_booking_invariants.sql`
 5. `supabase/migrations/0005_email_normalization.sql`
 6. `supabase/migrations/0006_staff_coordination.sql`
+7. `supabase/migrations/0007_rls_hardening.sql`
 
 `0003` consolide les rôles sur `memberships`, corrige l'isolation multi-locataire et
 installe le contexte d'organisme (`set_current_org` + claim JWT). `0004` verrouille les

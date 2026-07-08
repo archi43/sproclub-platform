@@ -2,6 +2,13 @@ import { NextResponse, type NextRequest } from "next/server";
 import type { EmailOtpType } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
 
+/** Accept only a same-origin absolute path (single leading slash, no backslash). */
+function safeNext(raw: string | null): string {
+  const fallback = "/mon-parcours";
+  if (!raw || !raw.startsWith("/") || raw.startsWith("//") || raw.startsWith("/\\")) return fallback;
+  return raw;
+}
+
 /**
  * Magic-link landing route. Supports both sign-in flows:
  *   - PKCE (`?code=…`): the standard @supabase/ssr e-mail link.
@@ -15,7 +22,9 @@ export async function GET(request: NextRequest) {
   const code = searchParams.get("code");
   const tokenHash = searchParams.get("token_hash");
   const type = searchParams.get("type") as EmailOtpType | null;
-  const next = searchParams.get("next") ?? "/mon-parcours";
+  // Only allow same-origin relative paths as the post-login destination, to
+  // avoid an open redirect (e.g. `next=@evil.com` → http://host@evil.com).
+  const next = safeNext(searchParams.get("next"));
 
   const supabase = createClient();
 

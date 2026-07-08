@@ -6,6 +6,17 @@ import { createClient } from "@/lib/supabase/server";
 
 export type CoordState = { ok: boolean; message: string };
 
+/**
+ * Map a Postgres/PostgREST error to a user-facing message. The 0004 jury triggers
+ * raise check_violation (23514) with explicit French messages we want to show;
+ * everything else gets a generic message so raw DB errors never reach the UI.
+ */
+function friendlyError(error: { code?: string; message: string }): string {
+  if (error.code === "23514" || error.code === "42501") return error.message;
+  if (error.code === "23505") return "Cet évaluateur fait déjà partie du jury.";
+  return "Action impossible pour le moment.";
+}
+
 /** Assign an evaluator to a defense jury. DB triggers (0004) enforce the rules:
  *  never the referent coach, pool membership, at most two evaluators. */
 export async function assignEvaluatorAction(
@@ -24,10 +35,7 @@ export async function assignEvaluatorAction(
     .from("reservation_evaluators")
     .insert({ org_id: org.id, reservation_id: reservationId, evaluator_id: evaluatorId });
 
-  if (error) {
-    // Trigger messages (coach, pool, max two) are already explicit and in French.
-    return { ok: false, message: error.message };
-  }
+  if (error) return { ok: false, message: friendlyError(error) };
   revalidatePath("/coordination");
   return { ok: true, message: "Évaluateur ajouté au jury." };
 }
@@ -51,7 +59,7 @@ export async function confirmDefenseAction(
     .eq("id", reservationId)
     .eq("org_id", org.id);
 
-  if (error) return { ok: false, message: error.message };
+  if (error) return { ok: false, message: friendlyError(error) };
   revalidatePath("/coordination");
   return { ok: true, message: "Soutenance confirmée." };
 }
