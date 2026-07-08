@@ -8,6 +8,12 @@ export interface Organization {
   brand: Record<string, unknown>;
 }
 
+export interface Membership {
+  org_id: string;
+  profile_id: string;
+  role: AppRole;
+}
+
 export interface Enrollment {
   id: string;
   org_id: string;
