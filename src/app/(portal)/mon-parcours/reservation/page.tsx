@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { getOrgContext } from "@/lib/tenant";
 import { createClient } from "@/lib/supabase/server";
-import { setCurrentOrg } from "@/lib/data/org-context";
 import { getAvailabilities, getReservations } from "@/lib/data/reservations";
 import { BookButton } from "./book-button";
 
@@ -21,7 +20,6 @@ export default async function ReservationPage() {
   if (!org) return <main style={{ padding: 32 }}><p>Organisme introuvable.</p></main>;
 
   const supabase = createClient();
-  await setCurrentOrg(supabase, org.id);
   const [slots, reservations] = await Promise.all([
     getAvailabilities(supabase, org.id, "coaching"),
     getReservations(supabase, org.id),

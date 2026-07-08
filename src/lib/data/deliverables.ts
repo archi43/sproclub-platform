@@ -1,17 +1,16 @@
 import "server-only";
 import { createClient } from "@/lib/supabase/server";
-import { setCurrentOrg } from "@/lib/data/org-context";
 import type { ProjectDeliverable } from "@/lib/types";
 
 /**
  * Deliverables data-access for the student portal.
  * RLS (`deliverables_student_manage`, migration 0004) scopes rows to the
- * authenticated student's own enrollment; this layer never widens that scope.
+ * authenticated student's own enrollment (org from the JWT `app_metadata.org_id`
+ * claim); this layer never widens that scope.
  */
 
 export async function getDeliverables(orgId: string): Promise<ProjectDeliverable[]> {
   const supabase = createClient();
-  await setCurrentOrg(supabase, orgId);
   const { data, error } = await supabase
     .from("project_deliverables")
     .select("id, org_id, enrollment_id, project_number, deliverable_submitted, deliverable_url, submitted_at")
@@ -32,7 +31,6 @@ export async function submitDeliverable(
   deliverableUrl: string
 ): Promise<ProjectDeliverable> {
   const supabase = createClient();
-  await setCurrentOrg(supabase, orgId);
   const { data, error } = await supabase
     .from("project_deliverables")
     .update({

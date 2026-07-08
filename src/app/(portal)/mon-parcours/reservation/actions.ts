@@ -3,7 +3,6 @@
 import { revalidatePath } from "next/cache";
 import { getOrgContext } from "@/lib/tenant";
 import { createClient } from "@/lib/supabase/server";
-import { setCurrentOrg } from "@/lib/data/org-context";
 import { getMyEnrollmentRef } from "@/lib/data/enrollments";
 import { createReservation, getAvailabilityById, BookingError } from "@/lib/data/reservations";
 
@@ -24,8 +23,6 @@ export async function bookCoachingAction(
   if (!ref) return { ok: false, message: "Aucun dossier de formation associé à votre compte." };
 
   const supabase = createClient();
-  await setCurrentOrg(supabase, org.id);
-
   const slot = await getAvailabilityById(supabase, org.id, availabilityId);
   if (!slot || slot.kind !== "coaching") {
     return { ok: false, message: "Ce créneau n'est plus disponible." };

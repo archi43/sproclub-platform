@@ -1,20 +1,19 @@
 import "server-only";
 import { createClient } from "@/lib/supabase/server";
-import { setCurrentOrg } from "@/lib/data/org-context";
 import type { Enrollment } from "@/lib/types";
 
 /**
  * Read the enrollments visible to the current user within one organization.
  *
  * Security is layered:
- *   1. `setCurrentOrg` sets the request organization context.
+ *   1. RLS (`enrollments_read`) is the authoritative filter: org + role scoped.
+ *      `current_org_id()` resolves from the user's JWT `app_metadata.org_id`
+ *      claim — the mechanism that actually holds under PostgREST pooling.
  *   2. `.eq("org_id", orgId)` scopes the query (defense in depth + selects the
  *      active org for multi-org users).
- *   3. RLS (`enrollments_read`) is the authoritative filter: org + role scoped.
  */
 export async function getEnrollmentsForOrg(orgId: string): Promise<Enrollment[]> {
   const supabase = createClient();
-  await setCurrentOrg(supabase, orgId);
 
   const { data, error } = await supabase
     .from("enrollments_ro")
@@ -34,7 +33,6 @@ export async function getMyEnrollmentRef(
   orgId: string
 ): Promise<{ enrollmentId: string; learnerId: string } | null> {
   const supabase = createClient();
-  await setCurrentOrg(supabase, orgId);
   const { data, error } = await supabase
     .from("enrollments_ro")
     .select("id, learner_id")
