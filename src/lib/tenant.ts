@@ -32,12 +32,16 @@ export async function getOrgContext(): Promise<Organization | null> {
   const org = await resolveOrganization({ slug, customDomain });
   if (org) return org;
 
-  // Dev convenience ONLY: on the platform root (e.g. http://localhost:3000,
-  // no sub-domain), fall back to a default org so a single-tenant pilot can be
-  // browsed without a sub-domain. Never active in production.
-  const devSlug = process.env.DEV_DEFAULT_ORG_SLUG;
-  if (!slug && !customDomain && devSlug && process.env.NODE_ENV !== "production") {
-    return resolveOrganization({ slug: devSlug });
+  // Default organization for the platform root (no sub-domain). Two opt-ins:
+  //   - PLATFORM_DEFAULT_ORG_SLUG: intended for a single-tenant deployment
+  //     (pilot/staging), honored in every environment. Leave it UNSET for a
+  //     true multi-tenant deployment so the root stays the platform landing.
+  //   - DEV_DEFAULT_ORG_SLUG: local-dev convenience only (never in production).
+  if (!slug && !customDomain) {
+    const platformSlug = process.env.PLATFORM_DEFAULT_ORG_SLUG;
+    const devSlug = process.env.NODE_ENV !== "production" ? process.env.DEV_DEFAULT_ORG_SLUG : undefined;
+    const fallback = platformSlug || devSlug;
+    if (fallback) return resolveOrganization({ slug: fallback });
   }
   return null;
 }
