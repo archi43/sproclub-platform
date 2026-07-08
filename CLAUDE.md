@@ -47,13 +47,21 @@ le claim JWT `app_metadata.org_id` (robuste avec le pooling PostgREST).
 7 Ouverture à d'autres organismes.
 
 ## État actuel
-Étape 1 en cours. Le squelette **compile et démarre** (typecheck + build propres).
-Auth par lien e-mail (login / callback / déconnexion) + gardes de route par rôle en place.
-Migration `0003` : rôles unifiés sur `memberships`, isolation multi-locataire corrigée,
-contexte d'organisme (`set_current_org` + claim JWT). Test d'isolation inter-organismes
-écrit (`npm run test:isolation`, se saute sans clés réelles). **Reste à faire côté infra :
-créer le projet Supabase (UE), appliquer 0001→0003, seed SproCLUB, provisionner un
-utilisateur** — voir `SETUP.md`.
+Étapes 1 et 2 opérationnelles et **prouvées en réel** sur la base Supabase (projet
+`zbvohktqfgwajjvnpets`, région UE `eu-north-1`).
+- Migrations **0001→0008** + seed SproCLUB appliqués et vérifiés en base ; utilisateur de
+  test provisionné (claim `app_metadata.org_id` + `memberships`). Comptes : student, coach,
+  coordinator, 3 évaluateurs (voir `SETUP.md`).
+- Auth par lien e-mail (login / callback PKCE + token_hash / déconnexion) + gardes de route
+  par rôle. Le squelette **compile, démarre**, build/typecheck propres.
+- **Isolation multi-locataire prouvée** : `npm run test:isolation` → 3/3 verts contre la base.
+- **Invariants de réservation prouvés** : `npm run test:booking` → 5/5 verts contre la base.
+- Cal.eu branché de bout en bout (slots/miroir, createBooking, cancel) ; parcours apprenant
+  (parcours, livrables, coaching, soutenance) et écran de coordination (jury) fonctionnels.
+- Revue sécurité passée : RLS complète (dont `0007`), code mort supprimé (`0008`), open
+  redirect et fuites d'erreurs corrigés. Aucun secret au dépôt.
+Reste (opérationnel) : rotation de la clé Cal.com, planification cron du miroir, invités
+Cal.eu du jury à la confirmation.
 
 ## Réservation (Étape 2)
 Invariants métier **au niveau base** (migration `0004`, triggers), prouvés par
