@@ -59,8 +59,10 @@ Invariants métier **au niveau base** (migration `0004`, triggers), prouvés par
 `npm run test:booking` : gating du dépôt de livrable pour les soutenances, jury de deux
 jamais le coach référent, évaluateurs issus du vivier du programme, cohérence d'organisme.
 Domaine TS : `src/lib/data/reservations.ts` (client injecté), port `src/lib/booking/provider.ts`,
-adaptateur `src/lib/booking/calcom.ts` (config par env/secret, deux types d'événement).
-Reste : clés Cal.com + job de synchro des créneaux (voir `SETUP.md`).
+adaptateur `src/lib/booking/calcom.ts` (instance **Cal.eu**, validé en réel). Miroir des créneaux
+`src/lib/booking/mirror.ts` + route `POST /api/admin/mirror-availabilities` (secret `CRON_SECRET`)
+→ remplit `availabilities` (préfixe ref `cal:`). Types d'événement Coaching/Soutenance créés.
+Reste : test live de `createBooking`, planification cron du miroir, écran d'affectation du jury.
 
 ## Backlog immédiat
 1. Brancher l'API Cal.com (clés + eventTypeIds) et valider l'adaptateur de bout en bout.

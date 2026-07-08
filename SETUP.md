@@ -139,8 +139,27 @@ Reste à brancher l'API Cal.com (adaptateur `src/lib/booking/calcom.ts`) :
    et pousse les réservations confirmées vers Airtable (Planning / Soutenances).
 
 Tant que ces clés sont absentes, `getBookingProvider()` lève `ProviderNotConfiguredError`
-(le reste de l'app fonctionne). Les appels HTTP de l'adaptateur restent à valider de bout
-en bout contre de vraies clés.
+(le reste de l'app fonctionne).
+
+> **Instance EU (RGPD)** : si le compte est sur Cal.eu, `CALCOM_API_BASE=https://api.cal.eu/v2`
+> (une clé `cal_live_` de Cal.eu est rejetée par `api.cal.com`, et inversement).
+
+### Miroir des disponibilités (Cal.com → `availabilities`)
+
+Un job serveur importe les créneaux libres Cal.com dans la table `availabilities`, que
+lisent les écrans de réservation. Configuration (`.env.local`) :
+```dotenv
+CALCOM_HOST_PROFILE_ID=<id du profil hôte des créneaux>
+CRON_SECRET=<secret partagé pour déclencher le job>
+```
+Déclenchement (cron ou manuel) — remplace les créneaux futurs déjà miroités (préfixe
+`cal:`), laisse intacts les autres :
+```bash
+curl -X POST -H "x-cron-secret: $CRON_SECRET" \
+  "http://localhost:3000/api/admin/mirror-availabilities?days=14"
+# → {"ok":true,"results":[{"kind":"coaching","count":N},{"kind":"defense","count":M}]}
+```
+À planifier (ex. toutes les 15 min) via un cron d'hébergeur pointant sur cette route.
 
 ## Sécurité — rappels non négociables
 

@@ -44,9 +44,22 @@ export function calcomConfigFromEnv(): CalcomConfig | null {
 /** Slots endpoint returns times grouped by day: { "2026-07-13": [{ start }] }. */
 type SlotsResponse = { data?: Record<string, { start: string }[]> };
 type BookingResponse = { data: { uid: string; start: string; end: string } };
+type EventTypeResponse = { data: { lengthInMinutes: number } };
 
 export class CalcomProvider implements BookingProvider {
+  private readonly lengths = new Map<string, number>();
+
   constructor(private readonly config: CalcomConfig) {}
+
+  /** Event-type duration in minutes, cached (slots expose only the start). */
+  private async eventTypeLength(eventTypeId: string): Promise<number> {
+    const cached = this.lengths.get(eventTypeId);
+    if (cached !== undefined) return cached;
+    const body = await this.call<EventTypeResponse>(`/event-types/${eventTypeId}`, "2024-06-14");
+    const len = body.data.lengthInMinutes;
+    this.lengths.set(eventTypeId, len);
+    return len;
+  }
 
   private async call<T>(path: string, version: string, init?: RequestInit): Promise<T> {
     const res = await fetch(`${this.config.apiBase}${path}`, {
@@ -67,7 +80,10 @@ export class CalcomProvider implements BookingProvider {
   async listSlots(params: { kind: BookingKind; from: string; to: string }): Promise<Slot[]> {
     const eventTypeId = this.config.eventTypeIds[params.kind];
     const qs = new URLSearchParams({ eventTypeId, start: params.from, end: params.to });
-    const body = await this.call<SlotsResponse>(`/slots?${qs.toString()}`, "2024-09-04");
+    const [body, lengthMin] = await Promise.all([
+      this.call<SlotsResponse>(`/slots?${qs.toString()}`, "2024-09-04"),
+      this.eventTypeLength(eventTypeId),
+    ]);
     const byDay = body.data ?? {};
     return Object.values(byDay)
       .flat()
@@ -76,9 +92,7 @@ export class CalcomProvider implements BookingProvider {
         hostId: "", // resolved when mirroring into `availabilities`
         kind: params.kind,
         startsAt: s.start,
-        // Slots expose only the start; the end is start + event-type length,
-        // applied when mirroring (the event-type duration is known there).
-        endsAt: s.start,
+        endsAt: new Date(new Date(s.start).getTime() + lengthMin * 60_000).toISOString(),
       }));
   }
 
