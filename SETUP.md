@@ -46,9 +46,14 @@ Dans le **SQL Editor** de Supabase, exécuter successivement le contenu de :
 1. `supabase/migrations/0001_pilot_schema.sql`
 2. `supabase/migrations/0002_tenancy.sql`
 3. `supabase/migrations/0003_auth_org_context.sql`
+4. `supabase/migrations/0004_booking_invariants.sql`
+5. `supabase/migrations/0005_email_normalization.sql`
 
 `0003` consolide les rôles sur `memberships`, corrige l'isolation multi-locataire et
-installe le contexte d'organisme (`set_current_org` + claim JWT). Il **doit** être appliqué.
+installe le contexte d'organisme (`set_current_org` + claim JWT). `0004` verrouille les
+invariants de réservation (gate livrable, jury de deux jamais le coach). `0005` normalise
+les e-mails en minuscules à l'écriture (le rattachement RLS repose sur l'égalité d'e-mails).
+Tous **doivent** être appliqués, dans l'ordre.
 
 ## 5. Créer l'organisme SproCLUB
 

@@ -22,7 +22,8 @@ lancement** (SproCLUB d'abord).
   (contexte d'organisme + requêtes métier, séparés de la présentation).
 - `src/app/(auth)/login`, `src/app/auth/callback`, `src/app/auth/signout` — auth par lien e-mail.
 - `src/app/(portal)/mon-parcours` — portail apprenant (pilote, écran P.A1), gardé par `student`.
-- `supabase/migrations/0001` → `0002` → `0003` ; seed `supabase/seed/sproclub_bootstrap.sql`.
+- `supabase/migrations/0001` → `0005` ; seed `supabase/seed/sproclub_bootstrap.sql`.
+  (`0004` invariants réservation, `0005` normalisation e-mails minuscules à l'écriture.)
 
 ## Modèle de rôles (décision)
 Les rôles sont **par organisme**, portés par `memberships` (org_id, profile_id, role) —
