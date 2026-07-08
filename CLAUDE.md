@@ -16,9 +16,21 @@ lancement** (SproCLUB d'abord).
 
 ## Structure
 - `src/middleware.ts` — résolution du tenant (domaine → organisme) + refresh session.
-- `src/lib/tenant.ts` — résolution de l'organisme ; `src/lib/supabase/*` — clients.
-- `src/app/(portal)/mon-parcours` — portail apprenant (pilote, écran P.A1).
-- `supabase/migrations/0001_pilot_schema.sql` puis `0002_tenancy.sql`.
+- `src/lib/host.ts` — parsing d'hôte pur (Edge-safe) ; `src/lib/tenant.ts` — résolution
+  de l'organisme en base (server-only) ; `src/lib/supabase/*` — clients.
+- `src/lib/auth.ts` — gardes de route par rôle ; `src/lib/data/*` — accès aux données
+  (contexte d'organisme + requêtes métier, séparés de la présentation).
+- `src/app/(auth)/login`, `src/app/auth/callback`, `src/app/auth/signout` — auth par lien e-mail.
+- `src/app/(portal)/mon-parcours` — portail apprenant (pilote, écran P.A1), gardé par `student`.
+- `supabase/migrations/0001` → `0002` → `0003` ; seed `supabase/seed/sproclub_bootstrap.sql`.
+
+## Modèle de rôles (décision)
+Les rôles sont **par organisme**, portés par `memberships` (org_id, profile_id, role) —
+source de vérité unique. La table globale `user_roles` (0001) est conservée mais **plus
+utilisée par aucune policy**. Les gardes de route lisent `memberships` ; la RLS (`0003`)
+reste le garde-fou serveur. Contexte d'organisme : `current_org_id()` lit le GUC
+`app.current_org_id` (posé par la RPC `set_current_org`, transaction-locale) ou, à défaut,
+le claim JWT `app_metadata.org_id` (robuste avec le pooling PostgREST).
 
 ## Conventions (standards équipe senior)
 - TypeScript strict, code et identifiants en anglais, commentaires utiles en français.
@@ -33,16 +45,20 @@ lancement** (SproCLUB d'abord).
 7 Ouverture à d'autres organismes.
 
 ## État actuel
-Étape 1 amorcée : squelette Next.js multi-tenant, migrations pilote + cloisonnement,
-un premier écran apprenant lisant `enrollments_ro` filtré par organisme.
+Étape 1 en cours. Le squelette **compile et démarre** (typecheck + build propres).
+Auth par lien e-mail (login / callback / déconnexion) + gardes de route par rôle en place.
+Migration `0003` : rôles unifiés sur `memberships`, isolation multi-locataire corrigée,
+contexte d'organisme (`set_current_org` + claim JWT). Test d'isolation inter-organismes
+écrit (`npm run test:isolation`, se saute sans clés réelles). **Reste à faire côté infra :
+créer le projet Supabase (UE), appliquer 0001→0003, seed SproCLUB, provisionner un
+utilisateur** — voir `SETUP.md`.
 
 ## Backlog immédiat
-1. `npm install` puis `npm run typecheck` (valider la compilation en local).
-2. Authentification Supabase (lien e-mail) + gardes de route par rôle.
-3. Appliquer les migrations, créer l'organisme SproCLUB (bloc Bootstrap de `0002_tenancy.sql`).
-4. Contexte d'organisme en base (`app.current_org_id`) dans la couche d'accès aux données.
-5. Réservation Cal.com (deux calendriers, jury de deux hors coach, ouverture au dépôt du livrable).
-6. Brancher la synchronisation `../sync_cible` vers Postgres pour l'organisme SproCLUB.
+1. Créer le projet Supabase (UE), appliquer les migrations, seed SproCLUB (`SETUP.md`).
+2. Provisionner les premiers utilisateurs (claim `app_metadata.org_id` + `memberships`).
+3. Lancer `npm run test:isolation` contre la vraie base pour prouver l'isolation.
+4. Réservation Cal.com (deux calendriers, jury de deux hors coach, ouverture au dépôt du livrable).
+5. Brancher la synchronisation `../sync_cible` vers Postgres pour l'organisme SproCLUB.
 
 ## Documents de référence (dossier parent SPROPULSE)
 Cahier de conception, cahier des charges écran par écran, dictionnaire de données,
