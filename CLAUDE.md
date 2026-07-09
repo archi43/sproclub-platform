@@ -118,6 +118,9 @@ vers ces jetons et primitives, sans changer la logique.
   dossier + saisie CR ; `src/lib/data/coaching.ts` (lecture/écriture RLS des `coaching_reports`).
 - `src/lib/compliance-rules.ts` (règles pures, testées hors DB) + `src/lib/data/compliance.ts`
   (lecture RLS) ; écrans `coordination/pilotage` (S0.1) et `coordination/conformite` (S3.1).
+- `src/lib/reporting-rules.ts` (pur : segmentation + CSV, garde anti-injection de formule) +
+  `src/lib/data/reporting.ts` ; écran `coordination/reporting`, export `coordination/reporting/export`
+  (route gardée, tracée), cron `api/admin/export-bpf` (Module 5).
 - `supabase/migrations/0001` → `0014` ; seed `supabase/seed/sproclub_bootstrap.sql`.
   (`0004` invariants réservation, `0005` normalisation e-mails minuscules à l'écriture,
   `0012` gestion utilisateurs/rôles : désactivation qui coupe l'accès + policies de gestion,
@@ -147,9 +150,10 @@ le claim JWT `app_metadata.org_id` (robuste avec le pooling PostgREST).
 ## État actuel
 Produit **en ligne** (staging) et prouvé en réel. Base Supabase UE (`zbvohktqfgwajjvnpets`,
 `eu-north-1`) ; app déployée sur **Vercel région `fra1`** : **https://sproclub-platform.vercel.app**.
-Migrations **0001→0014** + seed appliqués. Suite de tests **36/36** verte contre la vraie base
+Migrations **0001→0014** + seed appliqués. Suite de tests **42/42** verte contre la vraie base
 (non-régression 14 + `test:roles` 6 + `test:operations` 5 + `test:coach` 5 + `test:compliance` 6
-[pures, sans DB]). Note déploiement :
++ `test:reporting` 7 [pures, sans DB]). **3 crons** (sync 05:00, miroir 06:30, export BPF lundi 07:00).
+Note déploiement :
 appliquer chaque migration **avant** le code (0012 : garde de rôle lit `memberships.deactivated_at` ;
 0013 : sync écrit `enrollments_ro.pending_reports` ; 0014 : portail coach lit `coaching_reports`).
 
