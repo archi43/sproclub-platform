@@ -11,6 +11,22 @@ fondations n'est nécessaire.
 réservation avec invariants en base (5/5), portail apprenant de base, écran de
 coordination du jury. Base Supabase UE, Cal.eu branché.
 
+## Statut d'avancement
+- ✅ **INC-0** (mise en ligne) : staging Vercel UE, 2 crons, CI qui exécute la vraie suite
+  d'intégration (Supabase local), blocage de merge actif (ruleset, dépôt public).
+- ✅ **INC-1** (données réelles) : sync Airtable→Postgres idempotente, 511 dossiers réels.
+- ✅ **INC-2** (espace admin) : référentiel programmes + liste/fiche apprenant 360.
+- ✅ **Design system** : Tailwind + charte SproCLUB + primitives, appliqué à tous les écrans.
+- ✅ **INC-10** (gestion des utilisateurs et des rôles) : écran admin direction/coordinator —
+  invitation (provisioning service-role + claim `org_id`), désactivation qui **coupe l'accès**
+  via RLS (helpers ignorent les memberships désactivés), rôles par organisme avec attribution
+  (`invited_by`/`deactivated_by`, CA-T3), vivier d'évaluateurs par programme. Politiques de
+  gestion RLS sur `memberships` (0012) : direction/coordinator gèrent, un coordinateur ne peut
+  jamais toucher un compte de direction. `test:roles` (6) + non-régression 14/14.
+- ⏭️ **Prochain : INC-3** (opérations pédagogiques), puis INC-4 (portail coach).
+
+Suite `main` : **branche → PR → CI verte → merge → déploiement** (previews Vercel actifs).
+
 ## Principes d'accélération
 - **Lots plus gros** : un incrément = un module entier ou un chantier cohérent, pas
   une micro-tâche.
@@ -218,7 +234,7 @@ DoD : documents générés avec les bonnes données, archivés et retrouvables, 
 obligatoires présentes, tests verts.
 ```
 
-## INC-10 — Gestion des utilisateurs et des rôles
+## INC-10 — Gestion des utilisateurs et des rôles ✅ livré
 **Objectif** : administrer les comptes en production sans passer par la base.
 **Périmètre** : inviter et désactiver des utilisateurs (direction, coordinateur, coach,
 évaluateur, apprenant), gérer leurs `memberships` et rôles, et administrer le vivier

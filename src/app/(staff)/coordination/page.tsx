@@ -1,5 +1,8 @@
 import { getOrgContext } from "@/lib/tenant";
 import { getDefenses, getPoolEvaluators, type JuryEvaluator } from "@/lib/data/coordination";
+import { PageHeader, EmptyState } from "@/components/ui/page-header";
+import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { AssignForm, ConfirmForm, type Candidate } from "./jury-forms";
 
 const fmt = new Intl.DateTimeFormat("fr-FR", {
@@ -15,22 +18,15 @@ function evaluatorLabel(e: JuryEvaluator): string {
   return e.name ? `${e.name} (${e.email})` : e.email;
 }
 
-/**
- * Coordination — jury assignment (écran staff).
- * Assign exactly two evaluators (never the referent coach, always from the
- * program pool — enforced by DB triggers) then confirm the defense.
- */
+/** Coordination — jury assignment (écran staff). */
 export default async function CoordinationPage() {
   const org = await getOrgContext();
-  if (!org) return <div><p>Organisme introuvable.</p></div>;
+  if (!org) return <p className="text-grey-600">Organisme introuvable.</p>;
 
   const defenses = await getDefenses(org.id);
-
-  // Candidate evaluators per defense: pool for the program, minus the referent
-  // coach and anyone already on the jury.
   const candidatesByDefense = await Promise.all(
-    defenses.map(async (d) => {
-      if (!d.program) return [] as Candidate[];
+    defenses.map(async (d): Promise<Candidate[]> => {
+      if (!d.program) return [];
       const pool = await getPoolEvaluators(org.id, d.program);
       const assigned = new Set(d.evaluators.map((e) => e.evaluatorId));
       const coach = (d.coachEmail ?? "").toLowerCase();
@@ -41,53 +37,55 @@ export default async function CoordinationPage() {
   );
 
   return (
-    <div className="space-y-5">
-      <h1>Affectation des jurys</h1>
+    <div>
+      <PageHeader title="Affectation des jurys" description="Deux évaluateurs par soutenance, jamais le coach référent." />
       {defenses.length === 0 ? (
-        <p>Aucune soutenance à traiter pour le moment.</p>
+        <EmptyState title="Aucune soutenance à traiter" description="Les soutenances réservées apparaîtront ici." />
       ) : (
-        <ul style={{ listStyle: "none", padding: 0, display: "flex", flexDirection: "column", gap: 20 }}>
+        <ul className="space-y-4">
           {defenses.map((d, i) => {
             const complete = d.evaluators.length === 2;
             return (
-              <li key={d.id} style={{ border: "1px solid #e5e5e5", borderRadius: 8, padding: 16 }}>
-                <div style={{ display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: 8 }}>
-                  <strong>
-                    {d.learnerName} — Projet {d.projectNumber} — {d.program ?? "programme ?"}
-                  </strong>
-                  <span style={{ color: "#555" }}>
-                    {fmt.format(new Date(d.startsAt))} · {d.status}
-                  </span>
-                </div>
-                <p style={{ margin: "8px 0", color: "#555" }}>
-                  Coach référent (exclu du jury) : {d.coachEmail ?? "—"}
-                </p>
-
-                <p style={{ margin: "4px 0" }}>
-                  <strong>Jury ({d.evaluators.length}/2)</strong> :{" "}
-                  {d.evaluators.length === 0
-                    ? "aucun évaluateur"
-                    : d.evaluators.map((e) => evaluatorLabel(e)).join(", ")}
-                </p>
-
-                {!complete && (
-                  <div style={{ marginTop: 8 }}>
-                    {candidatesByDefense[i].length === 0 ? (
-                      <em>Aucun évaluateur éligible dans le vivier de ce programme.</em>
-                    ) : (
-                      <AssignForm reservationId={d.id} candidates={candidatesByDefense[i]} />
-                    )}
+              <li key={d.id}>
+                <Card>
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div>
+                      <p className="font-heading font-semibold text-brand">
+                        {d.learnerName} — Projet {d.projectNumber}
+                      </p>
+                      <p className="text-sm text-grey-600">
+                        {d.program ?? "Programme ?"} · {fmt.format(new Date(d.startsAt))}
+                      </p>
+                    </div>
+                    <Badge tone={d.status === "confirmed" ? "success" : "warning"}>{d.status}</Badge>
                   </div>
-                )}
 
-                {complete && d.status !== "confirmed" && (
-                  <div style={{ marginTop: 8 }}>
-                    <ConfirmForm reservationId={d.id} />
-                  </div>
-                )}
-                {d.status === "confirmed" && (
-                  <p style={{ color: "#0a7d33", marginTop: 8 }}>✓ Soutenance confirmée</p>
-                )}
+                  <p className="mt-2 text-sm text-grey-600">
+                    Coach référent (exclu du jury) : {d.coachEmail ?? "—"}
+                  </p>
+
+                  <p className="mt-2 text-sm">
+                    <span className="font-semibold text-brand">Jury ({d.evaluators.length}/2)</span> :{" "}
+                    {d.evaluators.length === 0 ? "aucun évaluateur" : d.evaluators.map(evaluatorLabel).join(", ")}
+                  </p>
+
+                  {!complete && (
+                    <div className="mt-3">
+                      {candidatesByDefense[i].length === 0 ? (
+                        <p className="text-sm italic text-grey-600">Aucun évaluateur éligible dans le vivier de ce programme.</p>
+                      ) : (
+                        <AssignForm reservationId={d.id} candidates={candidatesByDefense[i]} />
+                      )}
+                    </div>
+                  )}
+
+                  {complete && d.status !== "confirmed" && (
+                    <div className="mt-3">
+                      <ConfirmForm reservationId={d.id} />
+                    </div>
+                  )}
+                  {d.status === "confirmed" && <p className="mt-3 text-sm text-success">✓ Soutenance confirmée</p>}
+                </Card>
               </li>
             );
           })}

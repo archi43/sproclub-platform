@@ -2,15 +2,16 @@
 
 import { useFormState, useFormStatus } from "react-dom";
 import { bookCoachingAction, type BookState } from "./actions";
+import { Button } from "@/components/ui/button";
 
 const initial: BookState = { ok: false, message: "" };
 
 function Submit() {
   const { pending } = useFormStatus();
   return (
-    <button type="submit" disabled={pending} style={{ padding: "6px 12px" }}>
+    <Button type="submit" size="sm" disabled={pending}>
       {pending ? "Réservation…" : "Réserver"}
-    </button>
+    </Button>
   );
 }
 
@@ -18,11 +19,11 @@ function Submit() {
 export function BookButton({ availabilityId }: { availabilityId: string }) {
   const [state, action] = useFormState(bookCoachingAction, initial);
   return (
-    <form action={action} style={{ display: "inline-flex", gap: 8, alignItems: "center" }}>
+    <form action={action} className="flex items-center gap-2">
       <input type="hidden" name="availabilityId" value={availabilityId} />
       <Submit />
       {state.message && (
-        <span role="status" style={{ color: state.ok ? "#0a7d33" : "#b00020" }}>
+        <span role="status" className={state.ok ? "text-sm text-success" : "text-sm text-error"}>
           {state.message}
         </span>
       )}

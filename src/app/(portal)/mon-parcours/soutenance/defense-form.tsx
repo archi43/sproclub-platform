@@ -2,6 +2,8 @@
 
 import { useFormState, useFormStatus } from "react-dom";
 import { bookDefenseAction, type DefenseState } from "./actions";
+import { Button } from "@/components/ui/button";
+import { Select } from "@/components/ui/form";
 
 const initial: DefenseState = { ok: false, message: "" };
 
@@ -13,9 +15,9 @@ export interface SlotOption {
 function Submit() {
   const { pending } = useFormStatus();
   return (
-    <button type="submit" disabled={pending} style={{ padding: "6px 12px" }}>
+    <Button type="submit" size="sm" disabled={pending}>
       {pending ? "Réservation…" : "Réserver la soutenance"}
-    </button>
+    </Button>
   );
 }
 
@@ -23,21 +25,23 @@ function Submit() {
 export function DefenseForm({ projectNumber, slots }: { projectNumber: number; slots: SlotOption[] }) {
   const [state, action] = useFormState(bookDefenseAction, initial);
   return (
-    <form action={action} style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+    <form action={action} className="space-y-2">
       <input type="hidden" name="projectNumber" value={projectNumber} />
-      <select name="availabilityId" required defaultValue="" style={{ padding: 8 }}>
-        <option value="" disabled>
-          Choisir un créneau…
-        </option>
-        {slots.map((s) => (
-          <option key={s.id} value={s.id}>
-            {s.label}
+      <div className="flex flex-wrap items-center gap-2">
+        <Select name="availabilityId" required defaultValue="" aria-label="Créneau de soutenance" className="min-w-56">
+          <option value="" disabled>
+            Choisir un créneau…
           </option>
-        ))}
-      </select>
-      <Submit />
+          {slots.map((s) => (
+            <option key={s.id} value={s.id}>
+              {s.label}
+            </option>
+          ))}
+        </Select>
+        <Submit />
+      </div>
       {state.message && (
-        <span role="status" style={{ color: state.ok ? "#0a7d33" : "#b00020" }}>
+        <span role="status" className={state.ok ? "text-sm text-success" : "text-sm text-error"}>
           {state.message}
         </span>
       )}

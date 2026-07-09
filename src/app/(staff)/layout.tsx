@@ -7,6 +7,7 @@ const nav: NavItem[] = [
   { href: "/coordination", label: "Jurys" },
   { href: "/coordination/apprenants", label: "Apprenants" },
   { href: "/coordination/programmes", label: "Programmes" },
+  { href: "/coordination/administration", label: "Administration" },
 ];
 
 /**

@@ -1,46 +1,50 @@
-import Link from "next/link";
 import { getOrgContext } from "@/lib/tenant";
 import { getDeliverables } from "@/lib/data/deliverables";
+import { PageHeader, EmptyState } from "@/components/ui/page-header";
+import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { DeliverableForm } from "./deliverable-form";
 
 /**
  * Student portal — "Mes livrables" (écran de dépôt).
- * Submitting a deliverable opens the defense booking for that project (the gate
- * is enforced in the database, migration 0004).
+ * Submitting a deliverable opens the defense booking for that project (gate in DB, 0004).
  */
 export default async function DeliverablesPage() {
   const org = await getOrgContext();
-  if (!org) return <div><p>Organisme introuvable.</p></div>;
+  if (!org) return <p className="text-grey-600">Organisme introuvable.</p>;
 
   const deliverables = await getDeliverables(org.id);
 
   return (
-    <div className="space-y-5">
-      <p style={{ marginBottom: 8 }}>
-        <Link href="/mon-parcours">← Mon parcours</Link>
-      </p>
-      <h1>Mes livrables</h1>
+    <div>
+      <PageHeader title="Mes livrables" description="Déposez vos livrables ; le dépôt ouvre la réservation de soutenance." />
       {deliverables.length === 0 ? (
-        <p>Aucun projet à rendre pour le moment.</p>
+        <EmptyState title="Aucun projet à rendre" description="Vos projets à rendre apparaîtront ici." />
       ) : (
-        <ul style={{ listStyle: "none", padding: 0, display: "flex", flexDirection: "column", gap: 16 }}>
+        <ul className="space-y-4">
           {deliverables.map((d) => (
-            <li key={d.id} style={{ border: "1px solid #e5e5e5", borderRadius: 8, padding: 16 }}>
-              <strong>Projet {d.project_number}</strong>
-              {d.deliverable_submitted ? (
-                <p style={{ color: "#0a7d33", margin: "8px 0 0" }}>
-                  ✓ Déposé{d.deliverable_url ? " — " : ""}
-                  {d.deliverable_url && (
-                    <a href={d.deliverable_url} target="_blank" rel="noreferrer">
-                      voir le livrable
-                    </a>
-                  )}
-                </p>
-              ) : (
-                <div style={{ marginTop: 8 }}>
-                  <DeliverableForm deliverableId={d.id} />
+            <li key={d.id}>
+              <Card>
+                <div className="flex items-center justify-between gap-3">
+                  <p className="font-heading font-semibold text-brand">Projet {d.project_number}</p>
+                  {d.deliverable_submitted && <Badge tone="success">Déposé</Badge>}
                 </div>
-              )}
+                {d.deliverable_submitted ? (
+                  <p className="mt-2 text-sm text-grey-600">
+                    {d.deliverable_url ? (
+                      <a href={d.deliverable_url} target="_blank" rel="noreferrer">
+                        Voir le livrable
+                      </a>
+                    ) : (
+                      "Livrable déposé."
+                    )}
+                  </p>
+                ) : (
+                  <div className="mt-3">
+                    <DeliverableForm deliverableId={d.id} />
+                  </div>
+                )}
+              </Card>
             </li>
           ))}
         </ul>

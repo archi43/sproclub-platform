@@ -1,7 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { timingSafeEqual } from "node:crypto";
-import { createClient as createAdmin } from "@supabase/supabase-js";
-import { env, serviceRoleKey } from "@/lib/env";
+import { adminClient } from "@/lib/supabase/admin";
 import { fetchCommandes, AirtableNotConfiguredError } from "@/lib/sync/airtable-source";
 import { syncCommandes } from "@/lib/sync/run";
 
@@ -37,9 +36,7 @@ async function runSync(request: NextRequest) {
   }
 
   const slug = process.env.DEV_DEFAULT_ORG_SLUG ?? process.env.PLATFORM_DEFAULT_ORG_SLUG ?? "sproclub";
-  const admin = createAdmin(env.supabaseUrl, serviceRoleKey(), {
-    auth: { persistSession: false, autoRefreshToken: false },
-  });
+  const admin = adminClient();
 
   const { data: org } = await admin.from("organizations").select("id").eq("slug", slug).single();
   if (!org) return NextResponse.json({ error: `org '${slug}' not found` }, { status: 404 });

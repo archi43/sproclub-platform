@@ -107,9 +107,14 @@ vers ces jetons et primitives, sans changer la logique.
   (contexte d'organisme + requêtes métier, séparés de la présentation).
 - `src/app/(auth)/login`, `src/app/auth/callback`, `src/app/auth/signout` — auth par lien e-mail.
 - `src/app/(portal)/mon-parcours` — portail apprenant (pilote, écran P.A1), gardé par `student`.
-- `src/app/(staff)/coordination` — écran d'affectation du jury, gardé par `direction`/`coordinator`.
-- `supabase/migrations/0001` → `0005` ; seed `supabase/seed/sproclub_bootstrap.sql`.
-  (`0004` invariants réservation, `0005` normalisation e-mails minuscules à l'écriture.)
+- `src/app/(staff)/coordination` — affectation du jury + `coordination/administration` (INC-10 :
+  gestion utilisateurs/rôles + vivier), gardés par `direction`/`coordinator`.
+- `src/lib/data/members.ts`, `src/lib/data/evaluators.ts` — gestion des memberships/vivier (RLS) ;
+  `src/lib/members/provision.ts` — invitation service-role ; `src/lib/supabase/admin.ts` — client
+  service-role factoré (bypass RLS, derrière garde de rôle).
+- `supabase/migrations/0001` → `0012` ; seed `supabase/seed/sproclub_bootstrap.sql`.
+  (`0004` invariants réservation, `0005` normalisation e-mails minuscules à l'écriture,
+  `0012` gestion utilisateurs/rôles : désactivation qui coupe l'accès + policies de gestion.)
 
 ## Modèle de rôles (décision)
 Les rôles sont **par organisme**, portés par `memberships` (org_id, profile_id, role) —
@@ -134,7 +139,9 @@ le claim JWT `app_metadata.org_id` (robuste avec le pooling PostgREST).
 ## État actuel
 Produit **en ligne** (staging) et prouvé en réel. Base Supabase UE (`zbvohktqfgwajjvnpets`,
 `eu-north-1`) ; app déployée sur **Vercel région `fra1`** : **https://sproclub-platform.vercel.app**.
-Migrations **0001→0010** + seed appliqués. Suite de tests **14/14** verte contre la vraie base.
+Migrations **0001→0012** + seed appliqués. Suite de tests **20/20** verte contre la vraie base
+(non-régression 14 + `test:roles` 6). Note déploiement : appliquer la migration **avant** le
+déploiement du code (le garde de rôle lit `memberships.deactivated_at`).
 
 Incréments livrés (voir `PLAN_DEV_PRODUIT.md`) :
 - **Fondations + pilote (Étapes 1-2)** : multi-locataire (RLS), auth lien e-mail (callback
@@ -156,6 +163,24 @@ Incréments livrés (voir `PLAN_DEV_PRODUIT.md`) :
 - **INC-2 (espace admin)** : référentiel programmes (Module 4, table `programs` + règle de
   publication) et Module 2 (liste apprenants filtrable + fiche 360 sur données réelles), sous
   `src/app/(staff)/coordination/*`, gardés direction/coordinator ; `test:admin` (RLS de rôle) 4/4.
+- **Design system livré** : Tailwind + tokens de marque (#24365E / #F74335), polices Montserrat/
+  Hind Madurai (`next/font`), primitives accessibles `src/components/ui` (Button, Input/Select/
+  Textarea/Field, Card, Badge, Alert, Table, PageHeader, EmptyState, Skeleton, ErrorState) + app
+  shell. **Charte appliquée à TOUS les écrans** (accueil, login, mon-parcours, portail, coordination) ;
+  plus aucun style inline ; états chargement (loading.tsx)/vide/erreur (error.tsx), responsive + a11y.
+- **INC-10 (gestion des utilisateurs et des rôles)** : écran admin `coordination/administration`
+  (direction/coordinator). Invitation = provisioning **service-role** (`src/lib/members/provision.ts` :
+  find-or-create auth user + claim `app_metadata.org_id` + profile + membership, avec compensation) —
+  seule opération que la RLS ne peut faire. **Désactivation qui coupe réellement l'accès** :
+  `memberships.deactivated_at`/`deactivated_by` (`0012`), et les helpers `is_member`/`has_org_role`/
+  `has_current_org_role`/`shares_org_with`/`set_current_org` ignorent les lignes désactivées → RLS
+  refuse tout. Attribution des écritures (CA-T3) via `invited_by`/`deactivated_by`. Rôles/vivier gérés
+  **par la RLS** (`src/lib/data/members.ts`, `src/lib/data/evaluators.ts`, client injecté) : nouvelles
+  policies `membership_staff_read` + `membership_manage` (0012) — direction/coordinator gèrent, un
+  coordinateur ne peut **jamais** créer/modifier/supprimer un membership `direction`. Gardes appli :
+  pas d'auto-désactivation, dernier compte de direction protégé. Client admin factoré
+  (`src/lib/supabase/admin.ts`, réutilisé par `tenant.ts` + route sync). `test:roles` **6/6** (matrice
+  RLS, coupure d'accès, réactivation) ; **non-régression 14/14**.
 
 Comptes de test : student (melissa.blld), coach, coordinator, 3 évaluateurs, hôte Cal.eu (voir `SETUP.md`).
 Reste (opérationnel) : **rotation** clé Cal.com + token Airtable (transités par le chat) ;
@@ -175,10 +200,10 @@ avec compensation (annulation) si l'insert échoue ; dégradation propre si Cal.
 Reste : planification cron du miroir, écran d'affectation du jury, mise à jour du jury sur Cal.eu.
 
 ## Backlog immédiat (suite du `PLAN_DEV_PRODUIT.md`)
-Séquence recommandée : **INC-10** (gestion des utilisateurs/rôles — indispensable pour
-onboarder de vrais comptes), puis **INC-3** (opérations pédagogiques) et **INC-4** (portail
-coach + invités jury Cal.eu), puis INC-8/9 (espace apprenant, documents), INC-5/6 (conformité,
+Séquence recommandée : **INC-3** (opérations pédagogiques) puis **INC-4** (portail coach +
+invités jury Cal.eu), puis INC-8/9 (espace apprenant, documents), INC-5/6 (conformité,
 reporting), INC-11/12 (RGPD/audit, exploitation) avant ouverture à de vrais étudiants.
+(INC-10 gestion des utilisateurs/rôles : ✅ livré.)
 
 ## Documents de référence (dossier parent SPROPULSE)
 Cahier de conception, cahier des charges écran par écran, dictionnaire de données,
