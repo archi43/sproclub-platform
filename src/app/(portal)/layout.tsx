@@ -5,6 +5,7 @@ import { AppHeader, PageContainer, type NavItem } from "@/components/app-shell";
 
 const nav: NavItem[] = [
   { href: "/mon-parcours", label: "Mon parcours" },
+  { href: "/mon-parcours/dossier", label: "Mon dossier" },
   { href: "/mon-parcours/livrables", label: "Mes livrables" },
   { href: "/mon-parcours/reservation", label: "Coaching" },
   { href: "/mon-parcours/soutenance", label: "Soutenance" },
