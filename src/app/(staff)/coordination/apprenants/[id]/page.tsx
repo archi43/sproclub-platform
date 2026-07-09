@@ -2,8 +2,10 @@ import type { ReactNode } from "react";
 import Link from "next/link";
 import { getOrgContext } from "@/lib/tenant";
 import { getLearnerSheet } from "@/lib/data/admin-learners";
+import { listReportsForLearner } from "@/lib/data/coaching";
 import { PageHeader } from "@/components/ui/page-header";
 import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 
 const pct = (v: unknown) => (typeof v === "number" ? `${Math.round(v * 100)}%` : "—");
 const val = (v: unknown) => (v === null || v === undefined || v === "" ? "—" : String(v));
@@ -31,7 +33,10 @@ export default async function FicheApprenant({ params }: { params: { id: string 
   const org = await getOrgContext();
   if (!org) return <p className="text-grey-600">Organisme introuvable.</p>;
 
-  const sheet = await getLearnerSheet(org.id, params.id);
+  const [sheet, reports] = await Promise.all([
+    getLearnerSheet(org.id, params.id),
+    listReportsForLearner(org.id, params.id),
+  ]);
   if (!sheet) {
     return (
       <div className="space-y-4">
@@ -105,6 +110,24 @@ export default async function FicheApprenant({ params }: { params: { id: string 
           </Section>
         </div>
       ))}
+
+      <Section title="Comptes rendus de coaching">
+        {reports.length === 0 ? (
+          <span className="text-grey-600">Aucun compte rendu saisi par le coach.</span>
+        ) : (
+          <ul className="space-y-2">
+            {reports.map((r) => (
+              <li key={r.id} className="rounded-lg border border-grey-300 bg-surface p-3">
+                <div className="mb-1 flex items-center gap-2 text-xs text-grey-600">
+                  <span>{val(r.sessionDate ?? r.createdAt.slice(0, 10))}</span>
+                  {r.grade != null && <Badge tone="brand">Note {r.grade}</Badge>}
+                </div>
+                <p className="whitespace-pre-wrap text-ink">{r.body}</p>
+              </li>
+            ))}
+          </ul>
+        )}
+      </Section>
     </div>
   );
 }

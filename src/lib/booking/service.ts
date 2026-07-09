@@ -75,3 +75,41 @@ export async function bookSlot(supabase: SupabaseClient, input: BookSlotInput): 
     throw err;
   }
 }
+
+/**
+ * Add a confirmed defense's two evaluators as guests on its Cal.eu event
+ * (Étape 3 — closes the booking loop). BEST-EFFORT: never throws, so a
+ * calendar-side failure can't roll back a confirmation that already succeeded
+ * in the DB. No-op when Cal.com is not configured or the reservation has no
+ * provider booking. `supabase` must be able to read the jury (staff RLS).
+ */
+export async function addJuryGuests(
+  supabase: SupabaseClient,
+  orgId: string,
+  reservationId: string
+): Promise<void> {
+  const provider = resolveProvider();
+  if (!provider) return;
+
+  const { data } = await supabase
+    .from("reservations")
+    .select("calcom_booking_id, evaluators:reservation_evaluators(evaluator:profiles(email))")
+    .eq("org_id", orgId)
+    .eq("id", reservationId)
+    .maybeSingle();
+
+  const row = data as { calcom_booking_id: string | null; evaluators: { evaluator: { email: string } | null }[] | null } | null;
+  const bookingId = row?.calcom_booking_id;
+  if (!bookingId) return;
+
+  const emails = (row?.evaluators ?? [])
+    .map((e) => e.evaluator?.email)
+    .filter((e): e is string => !!e);
+  if (emails.length === 0) return;
+
+  try {
+    await provider.addGuests(bookingId, emails);
+  } catch {
+    /* best-effort; the confirmation stands. A later reconcile can retry. */
+  }
+}
