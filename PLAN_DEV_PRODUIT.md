@@ -51,7 +51,13 @@ coordination du jury. Base Supabase UE, Cal.eu branché.
   hebdo, `CRON_SECRET`). Règles pures testées hors DB (`test:reporting` 7). Non-régression 42/42.
   **Différé** : volet économique (marges/coûts formateurs, données non synchronisées) ; envoi de
   l'export vers Storage/e-mail.
-- ⏭️ **Prochain : INC-8/9** (espace apprenant complet, génération de documents) ou INC-11/12 (RGPD/exploitation).
+- ✅ **INC-8** (espace apprenant complet — « Mon dossier » P.A2) : écran `mon-parcours/dossier` —
+  résultats (avancement, projets, note), certification, insertion, satisfaction, et **documents**
+  (attestations…) via **Supabase Storage cloisonné** (bucket privé `learner-docs`, RLS par org +
+  par apprenant : chemin `{org_id}/{email}/{fichier}`, `0015`) avec URLs signées courtes. Écritures
+  service-role uniquement. `test:storage` (5) prouve l'isolation (apprenant ne lit que ses fichiers,
+  cross-org refusé). Non-régression 48/48.
+- ⏭️ **Prochain : INC-9** (génération de documents — attestations/conventions dans Storage) ou INC-11/12.
 
 Suite `main` : **branche → PR → CI verte → merge → déploiement** (previews Vercel actifs).
 
@@ -226,7 +232,7 @@ Coordonne avec les automatisations Airtable existantes pour éviter les doublons
 DoD : relances clés automatiques, journal consultable, pas de doublon, tests verts.
 ```
 
-## INC-8 — Espace apprenant complet (Mon dossier)
+## INC-8 — Espace apprenant complet (Mon dossier) ✅ livré (résultats/insertion/documents + Storage isolé par org & apprenant)
 **Objectif** : compléter le portail apprenant au-delà du parcours et de la réservation.
 **Périmètre** : écran « Mon dossier » (P.A2) — documents (attestations, convention,
 certificat) via Supabase Storage cloisonné par organisme, résultats (notes,

@@ -18,7 +18,8 @@
     "test:operations": "node --env-file-if-exists=.env.local --test tests/operations.integration.test.mts",
     "test:coach": "node --env-file-if-exists=.env.local --test tests/coach.integration.test.mts",
     "test:compliance": "node --test tests/compliance.unit.test.mts",
-    "test:reporting": "node --test tests/reporting.unit.test.mts"
+    "test:reporting": "node --test tests/reporting.unit.test.mts",
+    "test:storage": "node --env-file-if-exists=.env.local --test tests/storage.integration.test.mts"
   },
   "dependencies": {
     "@supabase/ssr": "^0.5.1",
