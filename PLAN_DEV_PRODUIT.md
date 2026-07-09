@@ -31,7 +31,14 @@ coordination du jury. Base Supabase UE, Cal.eu branché.
   `test:operations` (5) + non-régression. **Différé** (données Airtable non synchronisées) : gestion
   complète des serveurs SAP (table Affectation ressources) et calendrier planning S1.2 → incrément
   d'extension de sync ultérieur.
-- ⏭️ **Prochain : INC-4** (portail coach + boucle réservation).
+- ✅ **INC-4** (portail coach + boucle réservation, Étape 3) : route group `(coach)` gardé `coach` —
+  « Mes apprenants » (avancement, planning, soutenances, livrables) + saisie des **comptes rendus/
+  notes** (table `coaching_reports`, 0014), visibles côté admin (fiche apprenant). **Périmètre coach
+  resserré** en RLS (learners/reservations/deliverables limités à ses propres dossiers). Invités jury
+  ajoutés à l'événement **Cal.eu** à la confirmation (`addGuests`, best-effort). `test:coach` (5) +
+  non-régression. **Différé + credential** : remontée Airtable des CR (token write) et publication
+  multi-coach des disponibilités (config Cal.eu par coach).
+- ⏭️ **Prochain : INC-5** (conformité Module 3 + pilotage direction Module 0).
 
 Suite `main` : **branche → PR → CI verte → merge → déploiement** (previews Vercel actifs).
 
@@ -137,7 +144,7 @@ DoD : file triée par urgence, refus d'affectation coach=évaluateur, alerte fin
 30 jours, tests verts, non-régression.
 ```
 
-## INC-4 — Portail coach + boucle réservation complète (Étape 3)
+## INC-4 — Portail coach + boucle réservation complète (Étape 3) ✅ livré (portail + CR + invités jury Cal.eu ; remontée Airtable des CR + dispos multi-coach différées)
 **Objectif** : outiller les intervenants et fermer la boucle réservation.
 **Périmètre** : portail coach (ses apprenants : avancement, planning, soutenances,
 documents), saisie des comptes rendus et notes, publication des disponibilités (deux

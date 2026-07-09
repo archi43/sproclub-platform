@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { getOrgContext } from "@/lib/tenant";
 import { createClient } from "@/lib/supabase/server";
+import { addJuryGuests } from "@/lib/booking/service";
 
 export type CoordState = { ok: boolean; message: string };
 
@@ -60,6 +61,11 @@ export async function confirmDefenseAction(
     .eq("org_id", org.id);
 
   if (error) return { ok: false, message: friendlyError(error) };
+
+  // Étape 3 — add the two evaluators as guests on the Cal.eu event. Best-effort:
+  // the confirmation stands even if the calendar update fails or Cal isn't set.
+  await addJuryGuests(supabase, org.id, reservationId);
+
   revalidatePath("/coordination");
   return { ok: true, message: "Soutenance confirmée." };
 }

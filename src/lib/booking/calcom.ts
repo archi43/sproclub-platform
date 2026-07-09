@@ -114,6 +114,22 @@ export class CalcomProvider implements BookingProvider {
   async cancelBooking(providerBookingId: string): Promise<void> {
     await this.call(`/bookings/${providerBookingId}/cancel`, "2024-08-13", { method: "POST" });
   }
+
+  /** Add guests to an existing booking (PATCH /bookings/{uid}). The token is the
+   *  same read-write key used by createBooking. The learner is the booking's
+   *  ATTENDEE (set at creation), not a guest, so replacing the guest list with
+   *  the evaluators never drops the learner; guests start empty, so the target
+   *  state is exactly the two evaluators. Call-site treats failures as
+   *  best-effort (jury confirmation must not be blocked by the calendar).
+   *  NB: verify the PATCH guests semantics against the live Cal.eu API before
+   *  relying on it in production (only POST/cancel were validated in réel). */
+  async addGuests(providerBookingId: string, guestEmails: string[]): Promise<void> {
+    if (guestEmails.length === 0) return;
+    await this.call(`/bookings/${providerBookingId}`, "2024-08-13", {
+      method: "PATCH",
+      body: JSON.stringify({ guests: guestEmails }),
+    });
+  }
 }
 
 /** Resolve the active booking provider, or throw if not yet configured. */

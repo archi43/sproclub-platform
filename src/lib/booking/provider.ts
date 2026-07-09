@@ -40,6 +40,10 @@ export interface BookingProvider {
   createBooking(request: BookingRequest): Promise<BookingResult>;
   /** Cancel a previously created booking. */
   cancelBooking(providerBookingId: string): Promise<void>;
+  /** Add guests (e.g. the two defense evaluators) to an existing booking. Used
+   *  at jury confirmation, since the defense is booked before the jury is set.
+   *  Best-effort at the call site — not all providers support post-hoc edits. */
+  addGuests(providerBookingId: string, guestEmails: string[]): Promise<void>;
 }
 
 /** Raised when a provider is selected but not yet configured (missing keys). */

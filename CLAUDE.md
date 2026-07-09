@@ -114,10 +114,13 @@ vers ces jetons et primitives, sans changer la logique.
   service-role factoré (bypass RLS, derrière garde de rôle).
 - `src/lib/data/operations.ts` — file d'actions priorisée S1.1 (opérations, lecture RLS) ;
   écran `src/app/(staff)/coordination/operations`.
-- `supabase/migrations/0001` → `0013` ; seed `supabase/seed/sproclub_bootstrap.sql`.
+- `src/app/(coach)` — portail coach (route group gardé `coach`) : « Mes apprenants » +
+  dossier + saisie CR ; `src/lib/data/coaching.ts` (lecture/écriture RLS des `coaching_reports`).
+- `supabase/migrations/0001` → `0014` ; seed `supabase/seed/sproclub_bootstrap.sql`.
   (`0004` invariants réservation, `0005` normalisation e-mails minuscules à l'écriture,
   `0012` gestion utilisateurs/rôles : désactivation qui coupe l'accès + policies de gestion,
-  `0013` `enrollments_ro.pending_reports` pour la file d'opérations.)
+  `0013` `enrollments_ro.pending_reports` pour la file d'opérations, `0014` portail coach :
+  périmètre coach resserré (RLS) + table `coaching_reports`.)
 
 ## Modèle de rôles (décision)
 Les rôles sont **par organisme**, portés par `memberships` (org_id, profile_id, role) —
@@ -142,10 +145,10 @@ le claim JWT `app_metadata.org_id` (robuste avec le pooling PostgREST).
 ## État actuel
 Produit **en ligne** (staging) et prouvé en réel. Base Supabase UE (`zbvohktqfgwajjvnpets`,
 `eu-north-1`) ; app déployée sur **Vercel région `fra1`** : **https://sproclub-platform.vercel.app**.
-Migrations **0001→0013** + seed appliqués. Suite de tests **25/25** verte contre la vraie base
-(non-régression 14 + `test:roles` 6 + `test:operations` 5). Note déploiement : appliquer chaque
-migration **avant** le code (0012 : le garde de rôle lit `memberships.deactivated_at` ; 0013 : la
-sync écrit `enrollments_ro.pending_reports`).
+Migrations **0001→0014** + seed appliqués. Suite de tests **30/30** verte contre la vraie base
+(non-régression 14 + `test:roles` 6 + `test:operations` 5 + `test:coach` 5). Note déploiement :
+appliquer chaque migration **avant** le code (0012 : garde de rôle lit `memberships.deactivated_at` ;
+0013 : sync écrit `enrollments_ro.pending_reports` ; 0014 : portail coach lit `coaching_reports`).
 
 Incréments livrés (voir `PLAN_DEV_PRODUIT.md`) :
 - **Fondations + pilote (Étapes 1-2)** : multi-locataire (RLS), auth lien e-mail (callback
@@ -195,6 +198,17 @@ Incréments livrés (voir `PLAN_DEV_PRODUIT.md`) :
   d'alerte, exclusions, tri, jury incomplet, périmètre coach). **Différé** (données Airtable non
   synchronisées) : gestion complète des serveurs SAP (table *Affectation ressources*) et calendrier
   planning S1.2 → futur incrément d'extension de sync.
+- **INC-4 (portail coach + boucle réservation, Étape 3)** : route group `src/app/(coach)` gardé
+  `coach` — « Mes apprenants » (avancement, planning, soutenances, livrables) et saisie des **comptes
+  rendus/notes** (`coaching_reports`, app-owned, `0014`), **visibles côté admin** (fiche apprenant).
+  **Périmètre coach resserré en RLS** (`0014`) : `learners_read`/`reservations_staff_read`/
+  `deliverables_staff_read` limitent désormais le coach à ses **propres** dossiers (`coach_email`) ;
+  policy `coaching_reports_coach_manage` (écrit ses dossiers, auteur = lui-même) + `_staff_read`
+  (direction/coordinator). À la confirmation d'une soutenance, les deux évaluateurs sont ajoutés
+  comme **invités Cal.eu** (`BookingProvider.addGuests` → `PATCH /bookings`, best-effort, dégradation
+  propre). `test:coach` **5/5** (périmètre étanche, écriture scoped, auteur=appelant, visibilité admin) ;
+  **non-régression**. **Différé + credential** : remontée Airtable des CR (token **write**, actuellement
+  read-only) et publication multi-coach des disponibilités (config Cal.eu par coach).
 
 Comptes de test : student (melissa.blld), coach, coordinator, 3 évaluateurs, hôte Cal.eu (voir `SETUP.md`).
 Reste (opérationnel) : **rotation** clé Cal.com + token Airtable (transités par le chat) ;
@@ -214,10 +228,11 @@ avec compensation (annulation) si l'insert échoue ; dégradation propre si Cal.
 Reste : planification cron du miroir, écran d'affectation du jury, mise à jour du jury sur Cal.eu.
 
 ## Backlog immédiat (suite du `PLAN_DEV_PRODUIT.md`)
-Séquence recommandée : **INC-4** (portail coach + invités jury Cal.eu), puis INC-8/9 (espace
-apprenant, documents), INC-5/6 (conformité, reporting), INC-11/12 (RGPD/audit, exploitation)
-avant ouverture à de vrais étudiants. (INC-10 rôles + INC-3 opérations S1.1 : ✅ livrés ;
-reste d'INC-3 — serveurs SAP + planning S1.2 — en attente d'extension de la sync Airtable.)
+Séquence recommandée : **INC-5** (conformité Module 3 + pilotage direction Module 0), puis INC-6
+(reporting), INC-8/9 (espace apprenant, documents), INC-11/12 (RGPD/audit, exploitation) avant
+ouverture à de vrais étudiants. (INC-10 rôles, INC-3 opérations S1.1, INC-4 portail coach : ✅ livrés.
+Restes différés : INC-3 serveurs SAP + planning S1.2, et INC-4 remontée Airtable des CR
+[token write] + dispos multi-coach — en attente d'extension sync / credential.)
 
 ## Documents de référence (dossier parent SPROPULSE)
 Cahier de conception, cahier des charges écran par écran, dictionnaire de données,
