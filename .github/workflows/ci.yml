@@ -8,14 +8,6 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    # Placeholder values so module-load env validation and `next build` pass.
-    # Real credentials live in Vercel / GitHub secrets, never in the repo.
-    # Integration tests self-skip unless real Supabase secrets are provided.
-    env:
-      NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co' }}
-      NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder-anon-key' }}
-      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY || 'placeholder-service-role-key' }}
-      APP_BASE_DOMAIN: localhost:3000
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -23,7 +15,42 @@ jobs:
           node-version: 24
           cache: npm
       - run: npm install
-      - run: npm run typecheck
-      - run: npm run build
-      - run: npm test
-      - run: npm run lint --if-present
+
+      # Typecheck + build + lint with placeholder env (no DB needed at build).
+      - name: Typecheck, build, lint
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: https://placeholder.supabase.co
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: placeholder-anon-key
+          SUPABASE_SERVICE_ROLE_KEY: placeholder-service-role-key
+          APP_BASE_DOMAIN: localhost:3000
+        run: |
+          npm run typecheck
+          npm run build
+          npm run lint --if-present
+
+      # Real integration tests against a throwaway local Supabase (Postgres +
+      # Auth + PostgREST) — protects RLS and the booking/sync invariants.
+      # Local keys are the well-known public dev keys, not secrets.
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+      - name: Start local Supabase (applies migrations)
+        run: supabase start
+
+      - name: Integration tests
+        run: |
+          set -euo pipefail
+          eval "$(supabase status -o env)"
+          export NEXT_PUBLIC_SUPABASE_URL="$API_URL"
+          export NEXT_PUBLIC_SUPABASE_ANON_KEY="$ANON_KEY"
+          export SUPABASE_SERVICE_ROLE_KEY="$SERVICE_ROLE_KEY"
+          # Fail loudly if keys/migrations are missing (never let tests silently skip).
+          test -n "$SERVICE_ROLE_KEY" || { echo "::error::missing local Supabase keys"; exit 1; }
+          curl -sf -H "apikey: $SERVICE_ROLE_KEY" -H "Authorization: Bearer $SERVICE_ROLE_KEY" \
+            "$API_URL/rest/v1/organizations?select=id&limit=1" > /dev/null \
+            || { echo "::error::migrations not applied / DB unreachable"; exit 1; }
+          npm test
+
+      - name: Stop local Supabase
+        if: always()
+        run: supabase stop

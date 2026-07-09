@@ -41,16 +41,19 @@ function fixture(): SourceRecord[] {
       [SRC.coachEmail]: extra.coach ? [extra.coach] : undefined,
     },
   });
+  const noEmail: SourceRecord = { id: `${runId}-c4`, fields: { [SRC.prenom]: "Sans", [SRC.nom]: "Email", [SRC.programme]: "X" } };
   return [
     mk(`${runId}-c1`, `${runId}-e1`, `${runId}-alice@EXEMPLE.fr`, { prenom: "Alice", nom: "A", programme: "Consultant ERP", statut: "3 - En cours", financeur: "CPF", date: "2026-09-01", coach: "COACH@Sproclub.test" }),
     mk(`${runId}-c2`, `${runId}-e1`, `${runId}-alice@exemple.fr`, { prenom: "Alice", nom: "A", programme: "Consultant ERP", statut: "Terminé", financeur: "Entreprise", date: "2027-01-01" }),
     mk(`${runId}-c3`, `${runId}-e2`, `${runId}-bob@exemple.fr`, { prenom: "Bob", nom: "B", programme: "Data", statut: "en cours", financeur: "France Travail", date: "2026-10-01" }),
+    noEmail, // volontairement sans e-mail → doit être écarté et compté
   ];
 }
 
 /** Mirror of src/lib/sync/run.ts (same real builders + conflict targets). */
-async function runSync(source: SourceRecord[]) {
+async function runSync(source: SourceRecord[]): Promise<{ skippedNoEmail: number }> {
   const now = new Date().toISOString();
+  const skippedNoEmail = source.filter((rec) => !normalizeEmail(rec.fields[SRC.email])).length;
   const byEmail = new Map<string, ReturnType<typeof buildLearner>>();
   for (const rec of source) {
     const l = buildLearner(rec);
@@ -70,6 +73,7 @@ async function runSync(source: SourceRecord[]) {
     .filter(Boolean) as Record<string, unknown>[];
   const en = await admin.from("enrollments_ro").upsert(enrollmentRows, { onConflict: "airtable_record_id" });
   assert.ok(!en.error, `enrollments upsert: ${en.error?.message}`);
+  return { skippedNoEmail };
 }
 
 async function counts() {
@@ -92,11 +96,13 @@ after(async () => {
   await admin.from("organizations").delete().eq("id", orgId);
 });
 
-test("first sync maps and deduplicates correctly", { skip }, async () => {
-  await runSync(fixture());
+test("first sync maps, deduplicates, and skips records without an e-mail", { skip }, async () => {
+  const stats = await runSync(fixture());
+  // The 4th fixture record has no e-mail → skipped and counted, not silently lost.
+  assert.equal(stats.skippedNoEmail, 1, "one source record without e-mail is skipped");
   const c = await counts();
   assert.equal(c.learners, 2, "two distinct e-mails → two learners (deduped)");
-  assert.equal(c.enrollments, 3, "three Commandes → three enrollments");
+  assert.equal(c.enrollments, 3, "three usable Commandes → three enrollments (no-email one skipped)");
 
   // Mapping spot-checks on the shared learner + its enrollments.
   const alice = await admin.from("learners_ro").select("email, first_name, unique_learner_id").eq("org_id", orgId).eq("email", `${runId}-alice@exemple.fr`).single();

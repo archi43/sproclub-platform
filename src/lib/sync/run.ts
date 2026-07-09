@@ -73,12 +73,18 @@ export async function syncCommandes(
     stats.enrollments += group.length;
   }
 
-  // --- Observability: one summary row in sync_log ---------------------------
+  // --- Observability -------------------------------------------------------
+  // Explicit: how many source records were skipped and why (no usable e-mail),
+  // so a drop in the synced count is never a silent loss.
+  console.log(
+    `[sync] commandes_formation: source=${stats.source} skipped_no_email=${stats.skippedNoEmail} ` +
+      `learners=${stats.learners} enrollments=${stats.enrollments}`
+  );
   await admin.from("sync_log").insert({
     entity: "commandes_formation",
     direction: "airtable_to_pg",
     status: "ok",
-    detail: JSON.stringify(stats),
+    detail: JSON.stringify({ ...stats, skipReason: "source record without a usable e-mail" }),
   });
 
   return stats;
