@@ -22,6 +22,7 @@ export const SRC = {
   coachEmail: "Email coach référent",
   avancement: "Avancement réél",
   retard: "NBRE DE JOURS DE RETARD REEL",
+  crASaisir: "Nombre de compte rendus d'évaluations passées à saisir",
   projetsValides: "Nombre de projets validés",
   projetsOblig: "Nombre de projets obligatoires à valider",
   note: "Note globale ( sur 4)",
@@ -141,6 +142,7 @@ export interface EnrollmentRow {
   site?: string;
   progress?: number;
   late_days?: number;
+  pending_reports?: number;
   projects_validated?: number;
   projects_required?: number;
   global_grade?: number;
@@ -189,6 +191,7 @@ export function buildEnrollment(rec: SourceRecord): EnrollmentRow {
     site: normalizeSite(g(SRC.site)),
     progress: asNumber(g(SRC.avancement)),
     late_days: asNumber(g(SRC.retard)),
+    pending_reports: asNumber(g(SRC.crASaisir)),
     projects_validated: asNumber(g(SRC.projetsValides)),
     projects_required: asNumber(g(SRC.projetsOblig)),
     global_grade: asNumber(g(SRC.note)),
