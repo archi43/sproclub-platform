@@ -116,6 +116,8 @@ vers ces jetons et primitives, sans changer la logique.
   écran `src/app/(staff)/coordination/operations`.
 - `src/app/(coach)` — portail coach (route group gardé `coach`) : « Mes apprenants » +
   dossier + saisie CR ; `src/lib/data/coaching.ts` (lecture/écriture RLS des `coaching_reports`).
+- `src/lib/compliance-rules.ts` (règles pures, testées hors DB) + `src/lib/data/compliance.ts`
+  (lecture RLS) ; écrans `coordination/pilotage` (S0.1) et `coordination/conformite` (S3.1).
 - `supabase/migrations/0001` → `0014` ; seed `supabase/seed/sproclub_bootstrap.sql`.
   (`0004` invariants réservation, `0005` normalisation e-mails minuscules à l'écriture,
   `0012` gestion utilisateurs/rôles : désactivation qui coupe l'accès + policies de gestion,
@@ -145,8 +147,9 @@ le claim JWT `app_metadata.org_id` (robuste avec le pooling PostgREST).
 ## État actuel
 Produit **en ligne** (staging) et prouvé en réel. Base Supabase UE (`zbvohktqfgwajjvnpets`,
 `eu-north-1`) ; app déployée sur **Vercel région `fra1`** : **https://sproclub-platform.vercel.app**.
-Migrations **0001→0014** + seed appliqués. Suite de tests **30/30** verte contre la vraie base
-(non-régression 14 + `test:roles` 6 + `test:operations` 5 + `test:coach` 5). Note déploiement :
+Migrations **0001→0014** + seed appliqués. Suite de tests **36/36** verte contre la vraie base
+(non-régression 14 + `test:roles` 6 + `test:operations` 5 + `test:coach` 5 + `test:compliance` 6
+[pures, sans DB]). Note déploiement :
 appliquer chaque migration **avant** le code (0012 : garde de rôle lit `memberships.deactivated_at` ;
 0013 : sync écrit `enrollments_ro.pending_reports` ; 0014 : portail coach lit `coaching_reports`).
 

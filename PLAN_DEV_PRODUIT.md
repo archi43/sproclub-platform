@@ -38,7 +38,13 @@ coordination du jury. Base Supabase UE, Cal.eu branché.
   ajoutés à l'événement **Cal.eu** à la confirmation (`addGuests`, best-effort). `test:coach` (5) +
   non-régression. **Différé + credential** : remontée Airtable des CR (token write) et publication
   multi-coach des disponibilités (config Cal.eu par coach).
-- ⏭️ **Prochain : INC-5** (conformité Module 3 + pilotage direction Module 0).
+- ✅ **INC-5** (conformité Module 3 + pilotage direction Module 0) : écrans **S3.1** (grille de
+  complétude des pièces obligatoires par dossier, dossiers terminés non conformes en rouge, filtre
+  programme/CPF) et **S0.1** (pilotage : compteurs par statut, taux réussite/insertion/satisfaction/NPS
+  **avec effectif, masqués si n=0 — CA-T5**, alerte dossiers non conformes en tête). Lecture seule sur
+  `enrollments_ro` (aucune migration) ; règles métier en fonctions **pures** testées hors DB
+  (`test:compliance` 6). Non-régression 36/36.
+- ⏭️ **Prochain : INC-6** (reporting/indicateurs) ou INC-8/9 (espace apprenant, documents).
 
 Suite `main` : **branche → PR → CI verte → merge → déploiement** (previews Vercel actifs).
 
@@ -163,7 +169,7 @@ DoD : périmètre coach étanche (test RLS), saisies visibles côté admin, disp
 miroir OK, invités jury présents sur Cal.eu, tests verts, non-régression.
 ```
 
-## INC-5 — Conformité (Module 3) + Pilotage direction (Module 0)
+## INC-5 — Conformité (Module 3) + Pilotage direction (Module 0) ✅ livré (S3.1 complétude + S0.1 pilotage ; S3.2/S3.3 couverts par KPIs + filtre CPF)
 **Objectif** : protéger l'organisme en audit et donner la vue de tête.
 **Périmètre** : complétude des dossiers S3.1, indicateurs réglementaires S3.2, dossiers
 CPF prioritaires S3.3 ; accueil direction hiérarchisé S0.1 (alertes en tête, résultats

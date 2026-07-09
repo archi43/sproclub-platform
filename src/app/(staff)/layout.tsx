@@ -4,9 +4,11 @@ import { requireOrgRole } from "@/lib/auth";
 import { AppHeader, PageContainer, type NavItem } from "@/components/app-shell";
 
 const nav: NavItem[] = [
+  { href: "/coordination/pilotage", label: "Pilotage" },
   { href: "/coordination/operations", label: "Opérations" },
   { href: "/coordination", label: "Jurys" },
   { href: "/coordination/apprenants", label: "Apprenants" },
+  { href: "/coordination/conformite", label: "Conformité" },
   { href: "/coordination/programmes", label: "Programmes" },
   { href: "/coordination/administration", label: "Administration" },
 ];
