@@ -11,6 +11,16 @@ fondations n'est nécessaire.
 réservation avec invariants en base (5/5), portail apprenant de base, écran de
 coordination du jury. Base Supabase UE, Cal.eu branché.
 
+## Statut d'avancement
+- ✅ **INC-0** (mise en ligne) : staging Vercel UE, 2 crons, CI qui exécute la vraie suite
+  d'intégration (Supabase local), blocage de merge actif (ruleset, dépôt public).
+- ✅ **INC-1** (données réelles) : sync Airtable→Postgres idempotente, 511 dossiers réels.
+- ✅ **INC-2** (espace admin) : référentiel programmes + liste/fiche apprenant 360.
+- ✅ **Design system** : Tailwind + charte SproCLUB + primitives, appliqué à tous les écrans.
+- ⏭️ **Prochain : INC-10** (gestion des utilisateurs et des rôles), puis INC-3 / INC-4.
+
+Suite `main` : **branche → PR → CI verte → merge → déploiement** (previews Vercel actifs).
+
 ## Principes d'accélération
 - **Lots plus gros** : un incrément = un module entier ou un chantier cohérent, pas
   une micro-tâche.

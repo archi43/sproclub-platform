@@ -2,6 +2,8 @@ import type { ReactNode } from "react";
 import Link from "next/link";
 import { getOrgContext } from "@/lib/tenant";
 import { getLearnerSheet } from "@/lib/data/admin-learners";
+import { PageHeader } from "@/components/ui/page-header";
+import { Card } from "@/components/ui/card";
 
 const pct = (v: unknown) => (typeof v === "number" ? `${Math.round(v * 100)}%` : "—");
 const val = (v: unknown) => (v === null || v === undefined || v === "" ? "—" : String(v));
@@ -9,32 +11,32 @@ const bool = (v: unknown) => (v === true ? "Oui" : v === false ? "Non" : "—");
 
 function Field({ label, value }: { label: string; value: string }) {
   return (
-    <div style={{ display: "flex", gap: 8 }}>
-      <span style={{ color: "#777", minWidth: 190 }}>{label}</span>
-      <span>{value}</span>
+    <div className="flex gap-3">
+      <span className="min-w-48 shrink-0 text-grey-600">{label}</span>
+      <span className="text-ink">{value}</span>
     </div>
   );
 }
 function Section({ title, children }: { title: string; children: ReactNode }) {
   return (
-    <section style={{ border: "1px solid #e5e5e5", borderRadius: 8, padding: 16, marginBottom: 16 }}>
-      <h3 style={{ marginTop: 0, fontSize: 15 }}>{title}</h3>
-      <div style={{ display: "grid", gap: 6 }}>{children}</div>
-    </section>
+    <Card>
+      <h3 className="mb-3 text-sm font-semibold text-brand">{title}</h3>
+      <div className="grid gap-1.5 text-sm">{children}</div>
+    </Card>
   );
 }
 
 /** Module 2 / S2.2 — 360 learner sheet on real data. */
 export default async function FicheApprenant({ params }: { params: { id: string } }) {
   const org = await getOrgContext();
-  if (!org) return <div><p>Organisme introuvable.</p></div>;
+  if (!org) return <p className="text-grey-600">Organisme introuvable.</p>;
 
   const sheet = await getLearnerSheet(org.id, params.id);
   if (!sheet) {
     return (
-      <div className="space-y-5">
-        <p><Link href="/coordination/apprenants">← Apprenants</Link></p>
-        <p>Apprenant introuvable (ou hors de votre périmètre).</p>
+      <div className="space-y-4">
+        <Link href="/coordination/apprenants" className="text-sm">← Apprenants</Link>
+        <p className="text-grey-600">Apprenant introuvable (ou hors de votre périmètre).</p>
       </div>
     );
   }
@@ -44,8 +46,8 @@ export default async function FicheApprenant({ params }: { params: { id: string 
 
   return (
     <div className="max-w-3xl space-y-5">
-      <p><Link href="/coordination/apprenants">← Apprenants</Link></p>
-      <h1>{name}</h1>
+      <Link href="/coordination/apprenants" className="text-sm">← Apprenants</Link>
+      <PageHeader title={name} />
 
       <Section title="Identité">
         <Field label="Nom" value={name} />
@@ -55,10 +57,10 @@ export default async function FicheApprenant({ params }: { params: { id: string 
         <Field label="Type de stagiaire" value={val(learner.trainee_type)} />
       </Section>
 
-      {enrollments.length === 0 && <p>Aucun dossier de formation.</p>}
+      {enrollments.length === 0 && <p className="text-sm text-grey-600">Aucun dossier de formation.</p>}
       {enrollments.map((e, i) => (
-        <div key={String(e.id ?? i)} style={{ marginBottom: 24 }}>
-          <h2 style={{ fontSize: 17 }}>Dossier — {val(e.program)}</h2>
+        <div key={String(e.id ?? i)} className="space-y-3">
+          <h2 className="text-lg font-semibold text-brand">Dossier — {val(e.program)}</h2>
 
           <Section title="Inscription">
             <Field label="Programme" value={val(e.program)} />

@@ -156,6 +156,11 @@ Incréments livrés (voir `PLAN_DEV_PRODUIT.md`) :
 - **INC-2 (espace admin)** : référentiel programmes (Module 4, table `programs` + règle de
   publication) et Module 2 (liste apprenants filtrable + fiche 360 sur données réelles), sous
   `src/app/(staff)/coordination/*`, gardés direction/coordinator ; `test:admin` (RLS de rôle) 4/4.
+- **Design system livré** : Tailwind + tokens de marque (#24365E / #F74335), polices Montserrat/
+  Hind Madurai (`next/font`), primitives accessibles `src/components/ui` (Button, Input/Select/
+  Textarea/Field, Card, Badge, Alert, Table, PageHeader, EmptyState, Skeleton, ErrorState) + app
+  shell. **Charte appliquée à TOUS les écrans** (accueil, login, mon-parcours, portail, coordination) ;
+  plus aucun style inline ; états chargement (loading.tsx)/vide/erreur (error.tsx), responsive + a11y.
 
 Comptes de test : student (melissa.blld), coach, coordinator, 3 évaluateurs, hôte Cal.eu (voir `SETUP.md`).
 Reste (opérationnel) : **rotation** clé Cal.com + token Airtable (transités par le chat) ;

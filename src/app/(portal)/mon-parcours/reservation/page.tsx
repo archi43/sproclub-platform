@@ -1,7 +1,9 @@
-import Link from "next/link";
 import { getOrgContext } from "@/lib/tenant";
 import { createClient } from "@/lib/supabase/server";
 import { getAvailabilities, getReservations } from "@/lib/data/reservations";
+import { PageHeader, EmptyState } from "@/components/ui/page-header";
+import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { BookButton } from "./book-button";
 
 const fmt = new Intl.DateTimeFormat("fr-FR", {
@@ -13,11 +15,10 @@ const fmt = new Intl.DateTimeFormat("fr-FR", {
   timeZone: "Europe/Paris",
 });
 
-/** Student portal — coaching booking (pilot). Defense booking opens once the
- *  matching deliverable is submitted (see /mon-parcours/livrables). */
+/** Student portal — coaching booking (pilot). */
 export default async function ReservationPage() {
   const org = await getOrgContext();
-  if (!org) return <div><p>Organisme introuvable.</p></div>;
+  if (!org) return <p className="text-grey-600">Organisme introuvable.</p>;
 
   const supabase = createClient();
   const [slots, reservations] = await Promise.all([
@@ -27,45 +28,41 @@ export default async function ReservationPage() {
   const booked = new Set(reservations.map((r) => r.starts_at));
 
   return (
-    <div className="space-y-5">
-      <p style={{ marginBottom: 8 }}>
-        <Link href="/mon-parcours">← Mon parcours</Link>
-      </p>
-      <h1>Réserver un coaching</h1>
+    <div className="space-y-8">
+      <div>
+        <PageHeader title="Réserver un coaching" description="Choisissez un créneau parmi les disponibilités." />
+        {slots.length === 0 ? (
+          <EmptyState title="Aucun créneau proposé" description="Les créneaux de coaching apparaîtront ici." />
+        ) : (
+          <ul className="space-y-2">
+            {slots.map((s) => (
+              <li key={s.id}>
+                <Card className="flex flex-wrap items-center justify-between gap-3 py-3">
+                  <span className="text-sm">{fmt.format(new Date(s.starts_at))}</span>
+                  {booked.has(s.starts_at) ? <Badge tone="success">Réservé</Badge> : <BookButton availabilityId={s.id} />}
+                </Card>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
 
-      <h2 style={{ fontSize: 18 }}>Créneaux disponibles</h2>
-      {slots.length === 0 ? (
-        <p>Aucun créneau de coaching proposé pour le moment.</p>
-      ) : (
-        <ul style={{ listStyle: "none", padding: 0, display: "flex", flexDirection: "column", gap: 12 }}>
-          {slots.map((s) => (
-            <li
-              key={s.id}
-              style={{ display: "flex", gap: 16, alignItems: "center", justifyContent: "space-between", border: "1px solid #e5e5e5", borderRadius: 8, padding: 12 }}
-            >
-              <span>{fmt.format(new Date(s.starts_at))}</span>
-              {booked.has(s.starts_at) ? (
-                <span style={{ color: "#0a7d33" }}>✓ Réservé</span>
-              ) : (
-                <BookButton availabilityId={s.id} />
-              )}
-            </li>
-          ))}
-        </ul>
-      )}
-
-      <h2 style={{ fontSize: 18, marginTop: 32 }}>Mes réservations</h2>
-      {reservations.length === 0 ? (
-        <p>Aucune réservation pour le moment.</p>
-      ) : (
-        <ul>
-          {reservations.map((r) => (
-            <li key={r.id}>
-              {r.kind === "coaching" ? "Coaching" : "Soutenance"} — {fmt.format(new Date(r.starts_at))} ({r.status})
-            </li>
-          ))}
-        </ul>
-      )}
+      <div>
+        <h2 className="mb-3 text-lg font-semibold text-brand">Mes réservations</h2>
+        {reservations.length === 0 ? (
+          <p className="text-sm text-grey-600">Aucune réservation pour le moment.</p>
+        ) : (
+          <ul className="space-y-2">
+            {reservations.map((r) => (
+              <li key={r.id} className="flex items-center gap-3 text-sm">
+                <Badge tone="brand">{r.kind === "coaching" ? "Coaching" : "Soutenance"}</Badge>
+                <span>{fmt.format(new Date(r.starts_at))}</span>
+                <span className="text-grey-600">({r.status})</span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
     </div>
   );
 }

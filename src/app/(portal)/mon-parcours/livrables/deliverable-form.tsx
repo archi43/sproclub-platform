@@ -2,15 +2,18 @@
 
 import { useFormState, useFormStatus } from "react-dom";
 import { submitDeliverableAction, type SubmitState } from "./actions";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/form";
+import { Alert } from "@/components/ui/alert";
 
 const initial: SubmitState = { ok: false, message: "" };
 
 function Submit() {
   const { pending } = useFormStatus();
   return (
-    <button type="submit" disabled={pending} style={{ padding: "8px 14px" }}>
+    <Button type="submit" size="sm" disabled={pending}>
       {pending ? "Dépôt…" : "Déposer"}
-    </button>
+    </Button>
   );
 }
 
@@ -18,21 +21,20 @@ function Submit() {
 export function DeliverableForm({ deliverableId }: { deliverableId: string }) {
   const [state, action] = useFormState(submitDeliverableAction, initial);
   return (
-    <form action={action} style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+    <form action={action} className="space-y-2">
       <input type="hidden" name="deliverableId" value={deliverableId} />
-      <input
-        name="url"
-        type="url"
-        required
-        placeholder="https://lien-vers-votre-livrable"
-        style={{ padding: 8, minWidth: 280 }}
-      />
-      <Submit />
-      {state.message && (
-        <span role="status" style={{ color: state.ok ? "#0a7d33" : "#b00020" }}>
-          {state.message}
-        </span>
-      )}
+      <div className="flex flex-wrap items-center gap-2">
+        <Input
+          name="url"
+          type="url"
+          required
+          aria-label="Lien vers votre livrable"
+          placeholder="https://lien-vers-votre-livrable"
+          className="min-w-64 flex-1"
+        />
+        <Submit />
+      </div>
+      {state.message && <Alert tone={state.ok ? "success" : "error"}>{state.message}</Alert>}
     </form>
   );
 }

@@ -1,6 +1,10 @@
 import Link from "next/link";
 import { getOrgContext } from "@/lib/tenant";
 import { listDossiers, dossierFilterOptions, type DossierFilters } from "@/lib/data/admin-learners";
+import { PageHeader, EmptyState } from "@/components/ui/page-header";
+import { Button } from "@/components/ui/button";
+import { Select } from "@/components/ui/form";
+import { Table, THead, TBody, Tr, Th, Td } from "@/components/ui/table";
 
 /** Module 2 / S2.1 — filterable list of dossiers (direction/coordinator; a coach
  *  sees only their own via RLS). One row = one dossier. */
@@ -10,7 +14,7 @@ export default async function ApprenantsPage({
   searchParams: Record<string, string | string[] | undefined>;
 }) {
   const org = await getOrgContext();
-  if (!org) return <div><p>Organisme introuvable.</p></div>;
+  if (!org) return <p className="text-grey-600">Organisme introuvable.</p>;
 
   const pick = (k: string) => {
     const v = searchParams[k];
@@ -25,64 +29,66 @@ export default async function ApprenantsPage({
 
   const [rows, options] = await Promise.all([listDossiers(org.id, filters), dossierFilterOptions(org.id)]);
 
-  const sel = { padding: 6, fontSize: 14 } as const;
   return (
-    <div className="space-y-5">
-      <h1>Apprenants</h1>
+    <div>
+      <PageHeader title="Apprenants" description={`${rows.length} dossier(s)`} />
 
-      <form method="get" style={{ display: "flex", gap: 12, flexWrap: "wrap", alignItems: "center", margin: "12px 0 20px" }}>
-        <select name="program" defaultValue={filters.program ?? ""} style={sel}>
+      <form method="get" className="mb-5 flex flex-wrap items-center gap-2">
+        <Select name="program" defaultValue={filters.program ?? ""} aria-label="Programme" className="w-auto">
           <option value="">Tous les programmes</option>
           {options.programs.map((p) => <option key={p} value={p}>{p}</option>)}
-        </select>
-        <select name="status" defaultValue={filters.status ?? ""} style={sel}>
+        </Select>
+        <Select name="status" defaultValue={filters.status ?? ""} aria-label="Statut" className="w-auto">
           <option value="">Tous les statuts</option>
           {options.statuses.map((s) => <option key={s} value={s}>{s}</option>)}
-        </select>
-        <select name="financer" defaultValue={filters.financer ?? ""} style={sel}>
+        </Select>
+        <Select name="financer" defaultValue={filters.financer ?? ""} aria-label="Financeur" className="w-auto">
           <option value="">Tous les financeurs</option>
           {options.financers.map((f) => <option key={f} value={f}>{f}</option>)}
-        </select>
-        <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 14 }}>
-          <input type="checkbox" name="late" value="1" defaultChecked={filters.late} /> En retard
+        </Select>
+        <label className="flex items-center gap-2 text-sm text-grey-600">
+          <input type="checkbox" name="late" value="1" defaultChecked={filters.late} className="accent-brand" /> En retard
         </label>
-        <button type="submit" style={{ padding: "6px 12px" }}>Filtrer</button>
-        <Link href="/coordination/apprenants" style={{ fontSize: 13 }}>Réinitialiser</Link>
+        <Button type="submit" size="sm">Filtrer</Button>
+        <Link href="/coordination/apprenants" className="text-sm text-grey-600 no-underline hover:underline">
+          Réinitialiser
+        </Link>
       </form>
 
-      <p style={{ color: "#555", fontSize: 14 }}>{rows.length} dossier(s)</p>
-      <div style={{ overflowX: "auto" }}>
-        <table style={{ borderCollapse: "collapse", width: "100%", fontSize: 14 }}>
-          <thead>
-            <tr style={{ textAlign: "left", borderBottom: "2px solid #e5e5e5" }}>
-              <th style={{ padding: 8 }}>Apprenant</th>
-              <th style={{ padding: 8 }}>Programme</th>
-              <th style={{ padding: 8 }}>Financeur</th>
-              <th style={{ padding: 8 }}>Statut</th>
-              <th style={{ padding: 8 }}>Avancement</th>
-              <th style={{ padding: 8 }}>Retard</th>
-            </tr>
-          </thead>
-          <tbody>
+      {rows.length === 0 ? (
+        <EmptyState title="Aucun dossier" description="Aucun dossier ne correspond à ces filtres." />
+      ) : (
+        <Table>
+          <THead>
+            <Tr>
+              <Th>Apprenant</Th>
+              <Th>Programme</Th>
+              <Th>Financeur</Th>
+              <Th>Statut</Th>
+              <Th>Avancement</Th>
+              <Th>Retard</Th>
+            </Tr>
+          </THead>
+          <TBody>
             {rows.map((r) => (
-              <tr key={r.enrollmentId} style={{ borderBottom: "1px solid #f0f0f0" }}>
-                <td style={{ padding: 8 }}>
+              <Tr key={r.enrollmentId}>
+                <Td>
                   <Link href={`/coordination/apprenants/${r.learnerId}`}>
                     {[r.firstName, r.lastName].filter(Boolean).join(" ") || r.email}
                   </Link>
-                </td>
-                <td style={{ padding: 8 }}>{r.program ?? "—"}</td>
-                <td style={{ padding: 8 }}>{r.financer ?? "—"}</td>
-                <td style={{ padding: 8 }}>{r.status ?? "—"}</td>
-                <td style={{ padding: 8 }}>{r.progress != null ? `${Math.round(r.progress * 100)}%` : "—"}</td>
-                <td style={{ padding: 8, color: (r.lateDays ?? 0) > 0 ? "#b00020" : undefined }}>
+                </Td>
+                <Td>{r.program ?? "—"}</Td>
+                <Td>{r.financer ?? "—"}</Td>
+                <Td>{r.status ?? "—"}</Td>
+                <Td>{r.progress != null ? `${Math.round(r.progress * 100)}%` : "—"}</Td>
+                <Td className={(r.lateDays ?? 0) > 0 ? "font-medium text-error" : undefined}>
                   {r.lateDays != null ? `${r.lateDays} j` : "—"}
-                </td>
-              </tr>
+                </Td>
+              </Tr>
             ))}
-          </tbody>
-        </table>
-      </div>
+          </TBody>
+        </Table>
+      )}
     </div>
   );
 }
