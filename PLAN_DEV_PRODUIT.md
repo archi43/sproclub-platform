@@ -23,7 +23,15 @@ coordination du jury. Base Supabase UE, Cal.eu branché.
   (`invited_by`/`deactivated_by`, CA-T3), vivier d'évaluateurs par programme. Politiques de
   gestion RLS sur `memberships` (0012) : direction/coordinator gèrent, un coordinateur ne peut
   jamais toucher un compte de direction. `test:roles` (6) + non-régression 14/14.
-- ⏭️ **Prochain : INC-3** (opérations pédagogiques), puis INC-4 (portail coach).
+- ✅ **INC-3** (opérations pédagogiques, Module 1) : écran **S1.1 « Conduite de la semaine »** —
+  file d'actions triée par urgence sur données réelles (soutenances à venir + jury à compléter,
+  accès serveur à libérer via `access_end_date` ≤30/≤7 j, apprenants en retard, comptes rendus
+  à saisir), dossiers terminés exclus, filtre programme, liens vers fiche apprenant et affectation
+  jury. Champ `pending_reports` ajouté à la sync (0013). Règle coach≠évaluateur déjà en base (0004).
+  `test:operations` (5) + non-régression. **Différé** (données Airtable non synchronisées) : gestion
+  complète des serveurs SAP (table Affectation ressources) et calendrier planning S1.2 → incrément
+  d'extension de sync ultérieur.
+- ⏭️ **Prochain : INC-4** (portail coach + boucle réservation).
 
 Suite `main` : **branche → PR → CI verte → merge → déploiement** (previews Vercel actifs).
 
@@ -112,7 +120,7 @@ DoD : création de programme sans code ; fiche apprenant complète en données r
 filtres opérationnels ; tests RLS de rôle verts ; non-régression isolation/réservation.
 ```
 
-## INC-3 — Opérations pédagogiques (Module 1)
+## INC-3 — Opérations pédagogiques (Module 1) ✅ livré (S1.1 ; S1.2 planning + S1.3 serveurs SAP différés faute de données synchronisées)
 **Objectif** : la conduite quotidienne du coordinateur.
 **Périmètre** : file de tâches priorisée S1.1 (soutenances à venir, CR en attente,
 serveurs à libérer, retards), planning et affectations S1.2 (règle d'indépendance),
