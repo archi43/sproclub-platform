@@ -44,7 +44,14 @@ coordination du jury. Base Supabase UE, Cal.eu branché.
   **avec effectif, masqués si n=0 — CA-T5**, alerte dossiers non conformes en tête). Lecture seule sur
   `enrollments_ro` (aucune migration) ; règles métier en fonctions **pures** testées hors DB
   (`test:compliance` 6). Non-régression 36/36.
-- ⏭️ **Prochain : INC-6** (reporting/indicateurs) ou INC-8/9 (espace apprenant, documents).
+- ✅ **INC-6** (indicateurs et reporting, Module 5) : écran `coordination/reporting` — tableaux
+  **segmentables** (programme/financeur/statut) filtrables par période, indicateurs par segment
+  **avec effectif** (CA-T5) ; **export CSV daté** (route gardée direction/coordinator, RLS, garde
+  anti-injection de formule, tracé dans `sync_log`) ; **export périodique** (cron `/api/admin/export-bpf`
+  hebdo, `CRON_SECRET`). Règles pures testées hors DB (`test:reporting` 7). Non-régression 42/42.
+  **Différé** : volet économique (marges/coûts formateurs, données non synchronisées) ; envoi de
+  l'export vers Storage/e-mail.
+- ⏭️ **Prochain : INC-8/9** (espace apprenant complet, génération de documents) ou INC-11/12 (RGPD/exploitation).
 
 Suite `main` : **branche → PR → CI verte → merge → déploiement** (previews Vercel actifs).
 
@@ -187,7 +194,7 @@ DoD : complétude correcte (ex. 3/5 = 60%), alertes conformité visibles, effect
 affichés, tests verts, non-régression.
 ```
 
-## INC-6 — Indicateurs et reporting (Module 5)
+## INC-6 — Indicateurs et reporting (Module 5) ✅ livré (tableaux segmentables + export CSV daté + cron périodique ; volet économique différé faute de données de coûts)
 **Objectif** : chiffres fiables et déclarations officielles.
 **Périmètre** : tableaux de bord activité et résultats (par programme, spécialité,
 financeur, période), volet économique, exports réglementaires (BPF, bilan) et export
