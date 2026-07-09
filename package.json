@@ -16,7 +16,8 @@
     "test:admin": "node --env-file-if-exists=.env.local --test tests/admin-rls.integration.test.mts",
     "test:roles": "node --env-file-if-exists=.env.local --test tests/roles.integration.test.mts",
     "test:operations": "node --env-file-if-exists=.env.local --test tests/operations.integration.test.mts",
-    "test:coach": "node --env-file-if-exists=.env.local --test tests/coach.integration.test.mts"
+    "test:coach": "node --env-file-if-exists=.env.local --test tests/coach.integration.test.mts",
+    "test:compliance": "node --test tests/compliance.unit.test.mts"
   },
   "dependencies": {
     "@supabase/ssr": "^0.5.1",
