@@ -47,21 +47,31 @@ le claim JWT `app_metadata.org_id` (robuste avec le pooling PostgREST).
 7 Ouverture à d'autres organismes.
 
 ## État actuel
-Étapes 1 et 2 opérationnelles et **prouvées en réel** sur la base Supabase (projet
-`zbvohktqfgwajjvnpets`, région UE `eu-north-1`).
-- Migrations **0001→0008** + seed SproCLUB appliqués et vérifiés en base ; utilisateur de
-  test provisionné (claim `app_metadata.org_id` + `memberships`). Comptes : student, coach,
-  coordinator, 3 évaluateurs (voir `SETUP.md`).
-- Auth par lien e-mail (login / callback PKCE + token_hash / déconnexion) + gardes de route
-  par rôle. Le squelette **compile, démarre**, build/typecheck propres.
-- **Isolation multi-locataire prouvée** : `npm run test:isolation` → 3/3 verts contre la base.
-- **Invariants de réservation prouvés** : `npm run test:booking` → 5/5 verts contre la base.
-- Cal.eu branché de bout en bout (slots/miroir, createBooking, cancel) ; parcours apprenant
-  (parcours, livrables, coaching, soutenance) et écran de coordination (jury) fonctionnels.
-- Revue sécurité passée : RLS complète (dont `0007`), code mort supprimé (`0008`), open
-  redirect et fuites d'erreurs corrigés. Aucun secret au dépôt.
-Reste (opérationnel) : rotation de la clé Cal.com, planification cron du miroir, invités
-Cal.eu du jury à la confirmation.
+Produit **en ligne** (staging) et prouvé en réel. Base Supabase UE (`zbvohktqfgwajjvnpets`,
+`eu-north-1`) ; app déployée sur **Vercel région `fra1`** : **https://sproclub-platform.vercel.app**.
+Migrations **0001→0010** + seed appliqués. Suite de tests **14/14** verte contre la vraie base.
+
+Incréments livrés (voir `PLAN_DEV_PRODUIT.md`) :
+- **Fondations + pilote (Étapes 1-2)** : multi-locataire (RLS), auth lien e-mail (callback
+  PKCE + token_hash) + gardes de rôle, isolation prouvée (`test:isolation` 3/3), invariants
+  de réservation en base (`test:booking` 5/5). Portail apprenant (parcours, livrables,
+  coaching, soutenance) + coordination (affectation du jury). Cal.eu branché de bout en bout
+  (miroir des créneaux, createBooking, cancel). Revue sécurité passée (RLS complète, code
+  mort supprimé, open redirect corrigé). Aucun secret au dépôt.
+- **INC-0 (mise en ligne)** : déploiement Vercel UE, variables d'env dans Vercel, redirections
+  auth Supabase, **2 crons quotidiens** (sync 05:00 UTC, miroir 06:30 UTC), **CI** verte
+  (typecheck+build+tests+lint) — enforcement « merge bloqué » = GitHub Pro (dépôt privé),
+  resté **indicatif** par choix.
+- **INC-1 (données réelles)** : sync **Airtable → Postgres** lecture seule, idempotente
+  (`src/lib/sync/*`, route `/api/admin/sync-airtable` + cron). **491 apprenants / 511 dossiers
+  réels** synchronisés ; `test:sync` 2/2.
+- **INC-2 (espace admin)** : référentiel programmes (Module 4, table `programs` + règle de
+  publication) et Module 2 (liste apprenants filtrable + fiche 360 sur données réelles), sous
+  `src/app/(staff)/coordination/*`, gardés direction/coordinator ; `test:admin` (RLS de rôle) 4/4.
+
+Comptes de test : student (melissa.blld), coach, coordinator, 3 évaluateurs, hôte Cal.eu (voir `SETUP.md`).
+Reste (opérationnel) : **rotation** clé Cal.com + token Airtable (transités par le chat) ;
+SMTP dédié (Resend) pour lever la limite d'envoi ; connexion GitHub↔Vercel pour l'auto-deploy fiable.
 
 ## Réservation (Étape 2)
 Invariants métier **au niveau base** (migration `0004`, triggers), prouvés par
@@ -76,12 +86,11 @@ Les actions de réservation (coaching/soutenance) passent par `src/lib/booking/s
 avec compensation (annulation) si l'insert échoue ; dégradation propre si Cal.com non configuré.
 Reste : planification cron du miroir, écran d'affectation du jury, mise à jour du jury sur Cal.eu.
 
-## Backlog immédiat
-1. Brancher l'API Cal.com (clés + eventTypeIds) et valider l'adaptateur de bout en bout.
-2. Job de miroir des créneaux Cal.com → `availabilities` ; push des réservations vers Airtable.
-3. Écrans de réservation (portail apprenant) + écran d'affectation jury (coordination).
-4. Brancher la synchronisation `../sync_cible` vers Postgres pour l'organisme SproCLUB.
-5. Remote Git privé (GitHub).
+## Backlog immédiat (suite du `PLAN_DEV_PRODUIT.md`)
+Séquence recommandée : **INC-10** (gestion des utilisateurs/rôles — indispensable pour
+onboarder de vrais comptes), puis **INC-3** (opérations pédagogiques) et **INC-4** (portail
+coach + invités jury Cal.eu), puis INC-8/9 (espace apprenant, documents), INC-5/6 (conformité,
+reporting), INC-11/12 (RGPD/audit, exploitation) avant ouverture à de vrais étudiants.
 
 ## Documents de référence (dossier parent SPROPULSE)
 Cahier de conception, cahier des charges écran par écran, dictionnaire de données,
