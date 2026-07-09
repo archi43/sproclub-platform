@@ -29,13 +29,15 @@ export async function requireUser(): Promise<User> {
   return user;
 }
 
-/** The current user's roles within a given organization. */
+/** The current user's ACTIVE roles within a given organization. Deactivated
+ *  memberships (see 0012) grant nothing — they are ignored here and by RLS. */
 export async function getRolesForOrg(orgId: string): Promise<AppRole[]> {
   const supabase = createClient();
   const { data } = await supabase
     .from("memberships")
     .select("role")
-    .eq("org_id", orgId);
+    .eq("org_id", orgId)
+    .is("deactivated_at", null);
   return (data ?? []).map((row) => row.role as AppRole);
 }
 
