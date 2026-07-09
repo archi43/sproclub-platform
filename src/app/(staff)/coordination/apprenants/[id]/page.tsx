@@ -27,15 +27,15 @@ function Section({ title, children }: { title: string; children: ReactNode }) {
 /** Module 2 / S2.2 — 360 learner sheet on real data. */
 export default async function FicheApprenant({ params }: { params: { id: string } }) {
   const org = await getOrgContext();
-  if (!org) return <main style={{ padding: 32 }}><p>Organisme introuvable.</p></main>;
+  if (!org) return <div><p>Organisme introuvable.</p></div>;
 
   const sheet = await getLearnerSheet(org.id, params.id);
   if (!sheet) {
     return (
-      <main style={{ padding: 32, fontFamily: "system-ui" }}>
+      <div className="space-y-5">
         <p><Link href="/coordination/apprenants">← Apprenants</Link></p>
         <p>Apprenant introuvable (ou hors de votre périmètre).</p>
-      </main>
+      </div>
     );
   }
 
@@ -43,7 +43,7 @@ export default async function FicheApprenant({ params }: { params: { id: string 
   const name = [learner.first_name, learner.last_name].filter(Boolean).join(" ") || learner.email;
 
   return (
-    <main style={{ padding: 32, fontFamily: "system-ui", maxWidth: 820 }}>
+    <div className="max-w-3xl space-y-5">
       <p><Link href="/coordination/apprenants">← Apprenants</Link></p>
       <h1>{name}</h1>
 
@@ -103,6 +103,6 @@ export default async function FicheApprenant({ params }: { params: { id: string 
           </Section>
         </div>
       ))}
-    </main>
+    </div>
   );
 }

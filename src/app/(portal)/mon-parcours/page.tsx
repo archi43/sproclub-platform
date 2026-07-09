@@ -1,6 +1,8 @@
-import Link from "next/link";
 import { getOrgContext } from "@/lib/tenant";
 import { getEnrollmentsForOrg } from "@/lib/data/enrollments";
+import { PageHeader, EmptyState } from "@/components/ui/page-header";
+import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 
 /**
  * Student portal — "Mon parcours" (pilot, écran P.A1).
@@ -9,35 +11,30 @@ import { getEnrollmentsForOrg } from "@/lib/data/enrollments";
  */
 export default async function MonParcours() {
   const org = await getOrgContext();
-  if (!org) {
-    return (
-      <main style={{ padding: 32 }}>
-        <p>Organisme introuvable pour ce domaine.</p>
-      </main>
-    );
-  }
+  if (!org) return <p className="text-grey-600">Organisme introuvable.</p>;
 
   const enrollments = await getEnrollmentsForOrg(org.id);
 
   return (
-    <main style={{ padding: 32, fontFamily: "system-ui" }}>
-      <h1>Mon parcours — {org.name}</h1>
-      <nav style={{ display: "flex", gap: 16, margin: "8px 0 24px" }}>
-        <Link href="/mon-parcours/livrables">Mes livrables</Link>
-        <Link href="/mon-parcours/reservation">Réserver un coaching</Link>
-        <Link href="/mon-parcours/soutenance">Réserver une soutenance</Link>
-      </nav>
+    <div>
+      <PageHeader title="Mon parcours" description={`Vos dossiers de formation chez ${org.name}.`} />
       {enrollments.length === 0 ? (
-        <p>Aucun dossier de formation pour le moment.</p>
+        <EmptyState title="Aucun dossier de formation" description="Vos dossiers apparaîtront ici une fois enregistrés." />
       ) : (
-        <ul>
+        <ul className="grid gap-4 sm:grid-cols-2">
           {enrollments.map((e) => (
             <li key={e.id}>
-              {e.program ?? "Programme"} — {e.status ?? "statut inconnu"}
+              <Card>
+                <div className="flex items-start justify-between gap-3">
+                  <p className="font-heading font-semibold text-brand">{e.program ?? "Programme"}</p>
+                  <Badge tone="brand">{e.status ?? "Statut inconnu"}</Badge>
+                </div>
+                {e.specialty && <p className="mt-1 text-sm text-grey-600">{e.specialty}</p>}
+              </Card>
             </li>
           ))}
         </ul>
       )}
-    </main>
+    </div>
   );
 }

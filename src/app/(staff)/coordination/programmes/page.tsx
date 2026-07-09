@@ -5,12 +5,12 @@ import { CreateProgramForm, PublishButton } from "./program-ui";
 /** Module 4 / S4.1 — programme catalogue (direction/coordinator). */
 export default async function ProgrammesPage() {
   const org = await getOrgContext();
-  if (!org) return <main style={{ padding: 32 }}><p>Organisme introuvable.</p></main>;
+  if (!org) return <div><p>Organisme introuvable.</p></div>;
 
   const programs = await listPrograms(org.id);
 
   return (
-    <main style={{ padding: 32, fontFamily: "system-ui" }}>
+    <div className="space-y-5">
       <h1>Catalogue des programmes</h1>
 
       <section style={{ margin: "16px 0 32px", padding: 16, border: "1px solid #e5e5e5", borderRadius: 8 }}>
@@ -51,6 +51,6 @@ export default async function ProgrammesPage() {
           </tbody>
         </table>
       )}
-    </main>
+    </div>
   );
 }

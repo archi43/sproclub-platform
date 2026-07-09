@@ -10,12 +10,12 @@ import { DeliverableForm } from "./deliverable-form";
  */
 export default async function DeliverablesPage() {
   const org = await getOrgContext();
-  if (!org) return <main style={{ padding: 32 }}><p>Organisme introuvable.</p></main>;
+  if (!org) return <div><p>Organisme introuvable.</p></div>;
 
   const deliverables = await getDeliverables(org.id);
 
   return (
-    <main style={{ padding: 32, fontFamily: "system-ui" }}>
+    <div className="space-y-5">
       <p style={{ marginBottom: 8 }}>
         <Link href="/mon-parcours">← Mon parcours</Link>
       </p>
@@ -45,6 +45,6 @@ export default async function DeliverablesPage() {
           ))}
         </ul>
       )}
-    </main>
+    </div>
   );
 }

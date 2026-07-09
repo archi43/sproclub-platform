@@ -1,4 +1,19 @@
 import type { ReactNode } from "react";
+import { Montserrat, Hind_Madurai } from "next/font/google";
+import "./globals.css";
+
+const heading = Montserrat({
+  subsets: ["latin"],
+  weight: ["600", "700"],
+  variable: "--font-heading",
+  display: "swap",
+});
+const body = Hind_Madurai({
+  subsets: ["latin"],
+  weight: ["400", "500"],
+  variable: "--font-body",
+  display: "swap",
+});
 
 export const metadata = {
   title: "SproCLUB Platform",
@@ -7,7 +22,7 @@ export const metadata = {
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="fr">
+    <html lang="fr" className={`${heading.variable} ${body.variable}`}>
       <body>{children}</body>
     </html>
   );
