@@ -22,7 +22,7 @@ function evaluatorLabel(e: JuryEvaluator): string {
  */
 export default async function CoordinationPage() {
   const org = await getOrgContext();
-  if (!org) return <main style={{ padding: 32 }}><p>Organisme introuvable.</p></main>;
+  if (!org) return <div><p>Organisme introuvable.</p></div>;
 
   const defenses = await getDefenses(org.id);
 
@@ -41,7 +41,7 @@ export default async function CoordinationPage() {
   );
 
   return (
-    <main style={{ padding: 32, fontFamily: "system-ui" }}>
+    <div className="space-y-5">
       <h1>Affectation des jurys</h1>
       {defenses.length === 0 ? (
         <p>Aucune soutenance à traiter pour le moment.</p>
@@ -93,6 +93,6 @@ export default async function CoordinationPage() {
           })}
         </ul>
       )}
-    </main>
+    </div>
   );
 }

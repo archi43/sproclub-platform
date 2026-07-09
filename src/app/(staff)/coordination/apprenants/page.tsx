@@ -10,7 +10,7 @@ export default async function ApprenantsPage({
   searchParams: Record<string, string | string[] | undefined>;
 }) {
   const org = await getOrgContext();
-  if (!org) return <main style={{ padding: 32 }}><p>Organisme introuvable.</p></main>;
+  if (!org) return <div><p>Organisme introuvable.</p></div>;
 
   const pick = (k: string) => {
     const v = searchParams[k];
@@ -27,7 +27,7 @@ export default async function ApprenantsPage({
 
   const sel = { padding: 6, fontSize: 14 } as const;
   return (
-    <main style={{ padding: 32, fontFamily: "system-ui" }}>
+    <div className="space-y-5">
       <h1>Apprenants</h1>
 
       <form method="get" style={{ display: "flex", gap: 12, flexWrap: "wrap", alignItems: "center", margin: "12px 0 20px" }}>
@@ -83,6 +83,6 @@ export default async function ApprenantsPage({
           </tbody>
         </table>
       </div>
-    </main>
+    </div>
   );
 }

@@ -1,31 +1,43 @@
+import Link from "next/link";
 import { getOrgContext } from "@/lib/tenant";
 import { getCurrentUser } from "@/lib/auth";
+import { Button } from "@/components/ui/button";
 import { SignOutButton } from "@/components/sign-out-button";
 
 export default async function Home() {
   const [org, user] = await Promise.all([getOrgContext(), getCurrentUser()]);
 
   return (
-    <main style={{ padding: 32, fontFamily: "system-ui" }}>
-      <h1>Plateforme pédagogique</h1>
-      {org ? (
-        <p>
-          Espace de l'organisme : <strong>{org.name}</strong>
-        </p>
-      ) : (
-        <p>Accueil de la plateforme. Aucun organisme résolu pour ce domaine.</p>
-      )}
+    <main className="mx-auto flex min-h-screen max-w-3xl flex-col justify-center px-6 py-16">
+      <div className="flex items-center gap-3">
+        <span aria-hidden className="grid h-10 w-10 place-items-center rounded-lg bg-brand text-sm font-bold text-white">
+          SC
+        </span>
+        <h1 className="text-3xl font-bold text-brand">Plateforme pédagogique</h1>
+      </div>
 
-      {user ? (
-        <div style={{ display: "flex", gap: 16, alignItems: "center", marginTop: 16 }}>
-          <a href="/mon-parcours">Accéder à mon parcours</a>
-          <SignOutButton />
-        </div>
-      ) : (
-        <p style={{ marginTop: 16 }}>
-          <a href="/login">Se connecter</a>
-        </p>
-      )}
+      <p className="mt-4 text-grey-600">
+        {org ? (
+          <>Espace de l&apos;organisme <strong className="text-ink">{org.name}</strong>.</>
+        ) : (
+          <>Accueil de la plateforme. Aucun organisme résolu pour ce domaine.</>
+        )}
+      </p>
+
+      <div className="mt-8 flex items-center gap-3">
+        {user ? (
+          <>
+            <Link href="/mon-parcours">
+              <Button>Accéder à mon parcours</Button>
+            </Link>
+            <SignOutButton />
+          </>
+        ) : (
+          <Link href="/login">
+            <Button>Se connecter</Button>
+          </Link>
+        )}
+      </div>
     </main>
   );
 }

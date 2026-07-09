@@ -17,7 +17,7 @@ const fmt = new Intl.DateTimeFormat("fr-FR", {
  *  matching deliverable is submitted (see /mon-parcours/livrables). */
 export default async function ReservationPage() {
   const org = await getOrgContext();
-  if (!org) return <main style={{ padding: 32 }}><p>Organisme introuvable.</p></main>;
+  if (!org) return <div><p>Organisme introuvable.</p></div>;
 
   const supabase = createClient();
   const [slots, reservations] = await Promise.all([
@@ -27,7 +27,7 @@ export default async function ReservationPage() {
   const booked = new Set(reservations.map((r) => r.starts_at));
 
   return (
-    <main style={{ padding: 32, fontFamily: "system-ui" }}>
+    <div className="space-y-5">
       <p style={{ marginBottom: 8 }}>
         <Link href="/mon-parcours">← Mon parcours</Link>
       </p>
@@ -66,6 +66,6 @@ export default async function ReservationPage() {
           ))}
         </ul>
       )}
-    </main>
+    </div>
   );
 }

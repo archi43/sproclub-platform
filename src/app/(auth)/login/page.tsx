@@ -2,15 +2,19 @@
 
 import { useFormState, useFormStatus } from "react-dom";
 import { requestMagicLink, type LoginState } from "./actions";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Field, Input } from "@/components/ui/form";
+import { Alert } from "@/components/ui/alert";
 
 const initialState: LoginState = { ok: false, message: "" };
 
 function SubmitButton() {
   const { pending } = useFormStatus();
   return (
-    <button type="submit" disabled={pending} style={{ padding: "10px 16px", fontSize: 16 }}>
+    <Button type="submit" disabled={pending} className="w-full">
       {pending ? "Envoi…" : "Recevoir un lien de connexion"}
-    </button>
+    </Button>
   );
 }
 
@@ -18,29 +22,30 @@ export default function LoginPage() {
   const [state, formAction] = useFormState(requestMagicLink, initialState);
 
   return (
-    <main style={{ maxWidth: 420, margin: "10vh auto", padding: 24, fontFamily: "system-ui" }}>
-      <h1>Connexion</h1>
-      <p style={{ color: "#555" }}>
-        Saisissez votre adresse e-mail : vous recevrez un lien de connexion sécurisé.
-      </p>
-      <form action={formAction} style={{ display: "flex", flexDirection: "column", gap: 12, marginTop: 16 }}>
-        <label htmlFor="email">Adresse e-mail</label>
-        <input
-          id="email"
-          name="email"
-          type="email"
-          required
-          autoComplete="email"
-          placeholder="vous@exemple.fr"
-          style={{ padding: 10, fontSize: 16 }}
-        />
-        <SubmitButton />
-      </form>
-      {state.message && (
-        <p role="status" style={{ marginTop: 16, color: state.ok ? "#0a7d33" : "#b00020" }}>
-          {state.message}
+    <main className="mx-auto flex min-h-screen max-w-md flex-col justify-center px-6 py-16">
+      <div className="mb-6 flex items-center gap-3">
+        <span aria-hidden className="grid h-9 w-9 place-items-center rounded-lg bg-brand text-sm font-bold text-white">
+          SC
+        </span>
+        <h1 className="text-2xl font-bold text-brand">Connexion</h1>
+      </div>
+
+      <Card>
+        <p className="mb-4 text-sm text-grey-600">
+          Saisissez votre adresse e-mail : vous recevrez un lien de connexion sécurisé.
         </p>
-      )}
+        <form action={formAction} className="space-y-4">
+          <Field label="Adresse e-mail" htmlFor="email">
+            <Input id="email" name="email" type="email" required autoComplete="email" placeholder="vous@exemple.fr" />
+          </Field>
+          <SubmitButton />
+        </form>
+        {state.message && (
+          <div className="mt-4">
+            <Alert tone={state.ok ? "success" : "error"}>{state.message}</Alert>
+          </div>
+        )}
+      </Card>
     </main>
   );
 }

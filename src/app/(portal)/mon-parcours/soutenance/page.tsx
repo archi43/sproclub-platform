@@ -21,7 +21,7 @@ const fmt = new Intl.DateTimeFormat("fr-FR", {
  */
 export default async function SoutenancePage() {
   const org = await getOrgContext();
-  if (!org) return <main style={{ padding: 32 }}><p>Organisme introuvable.</p></main>;
+  if (!org) return <div><p>Organisme introuvable.</p></div>;
 
   const supabase = createClient();
   const [deliverables, reservations, slots] = await Promise.all([
@@ -42,7 +42,7 @@ export default async function SoutenancePage() {
   const defenses = reservations.filter((r) => r.kind === "defense");
 
   return (
-    <main style={{ padding: 32, fontFamily: "system-ui" }}>
+    <div className="space-y-5">
       <p style={{ marginBottom: 8 }}>
         <Link href="/mon-parcours">← Mon parcours</Link>
       </p>
@@ -80,6 +80,6 @@ export default async function SoutenancePage() {
           ))}
         </ul>
       )}
-    </main>
+    </div>
   );
 }
