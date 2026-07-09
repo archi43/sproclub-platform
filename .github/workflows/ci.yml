@@ -39,16 +39,23 @@ jobs:
 
       - name: Integration tests
         run: |
-          set -euo pipefail
-          eval "$(supabase status -o env)"
-          export NEXT_PUBLIC_SUPABASE_URL="$API_URL"
-          export NEXT_PUBLIC_SUPABASE_ANON_KEY="$ANON_KEY"
-          export SUPABASE_SERVICE_ROLE_KEY="$SERVICE_ROLE_KEY"
-          # Fail loudly if keys/migrations are missing (never let tests silently skip).
-          test -n "$SERVICE_ROLE_KEY" || { echo "::error::missing local Supabase keys"; exit 1; }
-          curl -sf -H "apikey: $SERVICE_ROLE_KEY" -H "Authorization: Bearer $SERVICE_ROLE_KEY" \
-            "$API_URL/rest/v1/organizations?select=id&limit=1" > /dev/null \
-            || { echo "::error::migrations not applied / DB unreachable"; exit 1; }
+          set -eo pipefail
+          STATUS=$(supabase status -o json)
+          echo "status keys: $(echo "$STATUS" | jq -c 'keys')"
+          export NEXT_PUBLIC_SUPABASE_URL=$(echo "$STATUS" | jq -r '.API_URL')
+          export NEXT_PUBLIC_SUPABASE_ANON_KEY=$(echo "$STATUS" | jq -r '.ANON_KEY')
+          export SUPABASE_SERVICE_ROLE_KEY=$(echo "$STATUS" | jq -r '.SERVICE_ROLE_KEY')
+          echo "URL=$NEXT_PUBLIC_SUPABASE_URL anon_len=${#NEXT_PUBLIC_SUPABASE_ANON_KEY} svc_len=${#SUPABASE_SERVICE_ROLE_KEY}"
+          # Wait for PostgREST + assert migrations applied (organizations exists).
+          code=000
+          for i in $(seq 1 15); do
+            code=$(curl -s -o /dev/null -w "%{http_code}" \
+              -H "apikey: $SUPABASE_SERVICE_ROLE_KEY" -H "Authorization: Bearer $SUPABASE_SERVICE_ROLE_KEY" \
+              "$NEXT_PUBLIC_SUPABASE_URL/rest/v1/organizations?select=id&limit=1")
+            [ "$code" = "200" ] && break
+            echo "waiting for PostgREST… ($code)"; sleep 2
+          done
+          [ "$code" = "200" ] || { echo "::error::organizations not reachable (HTTP $code)"; exit 1; }
           npm test
 
       - name: Stop local Supabase
