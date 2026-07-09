@@ -148,7 +148,8 @@ Incréments livrés (voir `PLAN_DEV_PRODUIT.md`) :
   vraie suite d'intégration** contre un Supabase **local jetable** (`supabase start`, migrations
   appliquées, 14 tests, 0 sauté) → protège réellement RLS + invariants ; aucun secret (clés
   locales de dev publiques). Grants API explicites (`0011`) pour un Postgres local autonome.
-  Blocage de merge dur = GitHub Pro / dépôt public (dépôt personnel privé → resté **indicatif**).
+  **Blocage de merge actif** (dépôt public + ruleset `main-ci-required` : job CI requis avant
+  merge sur `main`) → « toujours vert » contraignant, via PR. Dépôt : **public**.
 - **INC-1 (données réelles)** : sync **Airtable → Postgres** lecture seule, idempotente
   (`src/lib/sync/*`, route `/api/admin/sync-airtable` + cron). **511 dossiers réels** synchronisés
   (519 Commandes, **8 sans e-mail écartées et loggées** — pas de perte silencieuse) ; `test:sync` 2/2.
