@@ -52,7 +52,10 @@ export async function listMembers(orgId: string): Promise<MemberSummary[]> {
   const supabase = createClient();
   const { data, error } = await supabase
     .from("memberships")
-    .select("profile_id, role, created_at, deactivated_at, profile:profiles(email, full_name)")
+    // Disambiguate the embed: memberships has THREE FKs to profiles since 0012
+    // (profile_id, invited_by, deactivated_by). Name the intended constraint so
+    // PostgREST doesn't error on the ambiguity.
+    .select("profile_id, role, created_at, deactivated_at, profile:profiles!memberships_profile_id_fkey(email, full_name)")
     .eq("org_id", orgId);
   if (error) throw new Error(`Failed to load members: ${error.message}`);
 

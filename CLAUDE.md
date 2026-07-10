@@ -179,8 +179,9 @@ le claim JWT `app_metadata.org_id` (robuste avec le pooling PostgREST).
 ## État actuel
 Produit **en ligne** (staging) et prouvé en réel. Base Supabase UE (`zbvohktqfgwajjvnpets`,
 `eu-north-1`) ; app déployée sur **Vercel région `fra1`** : **https://sproclub-platform.vercel.app**.
-Migrations **0001→0021** + seed appliqués. Suite de tests **86/86** verte contre la vraie base
-(inclut `test:rgpd` 10, `test:observability` 6, `test:notifications` 8, `test:nav` 5). Exécution **sérialisée**
+Migrations **0001→0021** + seed appliqués. Suite de tests **89/89** verte contre la vraie base
+(inclut `test:rgpd` 10, `test:observability` 6, `test:notifications` 8, `test:nav` 5, `test:members` 3).
+Exécution **sérialisée**
 (`npm test` → `--test-concurrency=1`) pour éviter la flakiness de rate-limit auth sous concurrence.
 **5 crons** (sync 05:00, miroir 06:30, export BPF lundi 07:00, purge rétention 03:15, relances 08:00). Note déploiement :
 appliquer chaque migration **avant** le code (0012 : garde de rôle lit `memberships.deactivated_at` ;
@@ -226,7 +227,10 @@ Incréments livrés (voir `PLAN_DEV_PRODUIT.md`) :
   coordinateur ne peut **jamais** créer/modifier/supprimer un membership `direction`. Gardes appli :
   pas d'auto-désactivation, dernier compte de direction protégé. Client admin factoré
   (`src/lib/supabase/admin.ts`, réutilisé par `tenant.ts` + route sync). `test:roles` **6/6** (matrice
-  RLS, coupure d'accès, réactivation) ; **non-régression 14/14**.
+  RLS, coupure d'accès, réactivation) ; **non-régression 14/14**. **Correctif (bug prod)** : depuis `0012`,
+  `memberships` a 3 FK vers `profiles` → l'embed PostgREST `profile:profiles(...)` était ambigu et cassait
+  l'écran Administration ; désambiguïsé en `profiles!memberships_profile_id_fkey` (`listMembers`,
+  `listEvaluatorCandidates`), couvert par `test:members` 3.
 - **INC-3 (opérations pédagogiques, Module 1 / S1.1)** : écran `coordination/operations`
   « Conduite de la semaine » — file d'actions **triée par urgence** sur données réelles :
   soutenances à venir (+ jury à compléter), **accès serveur à libérer** (`access_end_date` ≤30/≤7 j,
