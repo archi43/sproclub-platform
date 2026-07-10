@@ -53,7 +53,9 @@ export async function listEvaluatorCandidates(orgId: string): Promise<EvaluatorC
   const supabase = createClient();
   const { data, error } = await supabase
     .from("memberships")
-    .select("profile_id, profile:profiles(email, full_name)")
+    // Disambiguate: memberships has three FKs to profiles since 0012
+    // (profile_id, invited_by, deactivated_by) — name the intended one.
+    .select("profile_id, profile:profiles!memberships_profile_id_fkey(email, full_name)")
     .eq("org_id", orgId)
     .eq("role", "evaluator")
     .is("deactivated_at", null);
