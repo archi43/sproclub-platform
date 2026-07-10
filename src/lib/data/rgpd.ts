@@ -82,7 +82,8 @@ export async function exportPersonalData(orgId: string, learnerId: string): Prom
   const enrollmentsRes = await supabase.from("enrollments_ro").select("*").eq("org_id", orgId).eq("learner_id", learnerId);
   const enrollmentIds = (enrollmentsRes.data ?? []).map((e) => (e as { id: string }).id);
 
-  const [reservations, deliverables, reports, emissions] = await Promise.all([
+  const learnerEmail = (learner as { email: string }).email;
+  const [reservations, deliverables, reports, emissions, notifications] = await Promise.all([
     supabase.from("reservations").select("id, kind, project_number, starts_at, status").eq("org_id", orgId).eq("learner_id", learnerId),
     enrollmentIds.length
       ? supabase.from("project_deliverables").select("id, enrollment_id, project_number, deliverable_submitted, submitted_at").eq("org_id", orgId).in("enrollment_id", enrollmentIds)
@@ -90,7 +91,8 @@ export async function exportPersonalData(orgId: string, learnerId: string): Prom
     enrollmentIds.length
       ? supabase.from("coaching_reports").select("id, enrollment_id, session_date, body, grade, created_at").eq("org_id", orgId).in("enrollment_id", enrollmentIds)
       : Promise.resolve({ data: [] as unknown[] }),
-    supabase.from("document_emissions").select("kind, storage_path, generated_at").eq("org_id", orgId).eq("learner_email", (learner as { email: string }).email),
+    supabase.from("document_emissions").select("kind, storage_path, generated_at").eq("org_id", orgId).eq("learner_email", learnerEmail),
+    supabase.from("notifications").select("kind, subject, status, sent_at, created_at").eq("org_id", orgId).eq("recipient_email", learnerEmail),
   ]);
 
   return {
@@ -102,6 +104,7 @@ export async function exportPersonalData(orgId: string, learnerId: string): Prom
     deliverables: deliverables.data ?? [],
     coachingReports: reports.data ?? [],
     documents: emissions.data ?? [],
+    notifications: notifications.data ?? [],
   };
 }
 
@@ -152,6 +155,12 @@ export async function eraseLearner(
     .update({ insertion_company: null, insertion_role: null })
     .eq("org_id", orgId)
     .eq("learner_id", learnerId);
+
+  // 3b) Purge the notification journal + opt-out prefs for this person (INC-7):
+  //     subject/body/recipient hold the name & e-mail in clear — no legal reason
+  //     to keep a relance journal after erasure. No downstream FK, so delete.
+  await admin.from("notifications").delete().eq("org_id", orgId).eq("recipient_email", email);
+  await admin.from("notification_prefs").delete().eq("org_id", orgId).eq("email", email);
 
   // 4) Remove their stored documents (folder keyed by the original e-mail).
   //    Errors must surface — otherwise we'd claim erasure while PII files remain.

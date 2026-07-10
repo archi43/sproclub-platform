@@ -141,13 +141,20 @@ vers ces jetons et primitives, sans changer la logique.
   `api/admin/purge-retention` (purge de rétention automatisée). Alerting webhook optionnel
   (`OPS_ALERT_WEBHOOK`, aucun secret au dépôt). `RUNBOOK.md` : incident, sauvegarde/restauration,
   rotation des secrets.
-- `supabase/migrations/0001` → `0020` ; seed `supabase/seed/sproclub_bootstrap.sql`.
+- `src/lib/notification-rules.ts` (INC-7, pur : relances dues + `dedupeKey` stable) + `src/lib/data/
+  notifications.ts` (calcul service-role, enqueue idempotent, dispatch, journal ; clients/mailer/horloge
+  injectables) + port `src/lib/notifications/mailer.ts` (adaptateur Resend, **dégradation propre** si non
+  configuré). Tables `notifications` (journal, unique `org_id,dedupe_key`) + `notification_prefs` (opt-out)
+  (`0021`, RLS staff). Cron `api/admin/run-notifications` (rappels soutenance/fin d'accès/CR) ; écran
+  `coordination/notifications` (journal). Anti-doublon Airtable via `NOTIF_DISABLED_KINDS`.
+- `supabase/migrations/0001` → `0021` ; seed `supabase/seed/sproclub_bootstrap.sql`.
   (`0004` invariants réservation, `0005` normalisation e-mails minuscules à l'écriture,
   `0012` gestion utilisateurs/rôles : désactivation qui coupe l'accès + policies de gestion,
   `0013` `enrollments_ro.pending_reports` pour la file d'opérations, `0014` portail coach :
   périmètre coach resserré (RLS) + table `coaching_reports`, `0016` `document_emissions`,
   `0017` RGPD (`audit_log`/`log_access`, `data_erasures`/`is_erased`), `0018`/`0019` lockdown `is_erased`,
-  `0020` exploitation (`ops_events` + `rate_limit_events`/`rate_limit_touch`).)
+  `0020` exploitation (`ops_events` + `rate_limit_events`/`rate_limit_touch`),
+  `0021` notifications (`notifications` + `notification_prefs`).)
 
 ## Modèle de rôles (décision)
 Les rôles sont **par organisme**, portés par `memberships` (org_id, profile_id, role) —
@@ -172,14 +179,15 @@ le claim JWT `app_metadata.org_id` (robuste avec le pooling PostgREST).
 ## État actuel
 Produit **en ligne** (staging) et prouvé en réel. Base Supabase UE (`zbvohktqfgwajjvnpets`,
 `eu-north-1`) ; app déployée sur **Vercel région `fra1`** : **https://sproclub-platform.vercel.app**.
-Migrations **0001→0020** + seed appliqués. Suite de tests **73/73** verte contre la vraie base
-(inclut `test:rgpd` 10 et `test:observability` 6). Exécution **sérialisée** (`npm test` →
-`--test-concurrency=1`) pour éviter la flakiness de rate-limit auth sous concurrence.
-**4 crons** (sync 05:00, miroir 06:30, export BPF lundi 07:00, purge rétention 03:15). Note déploiement :
+Migrations **0001→0021** + seed appliqués. Suite de tests **81/81** verte contre la vraie base
+(inclut `test:rgpd` 10, `test:observability` 6, `test:notifications` 8). Exécution **sérialisée**
+(`npm test` → `--test-concurrency=1`) pour éviter la flakiness de rate-limit auth sous concurrence.
+**5 crons** (sync 05:00, miroir 06:30, export BPF lundi 07:00, purge rétention 03:15, relances 08:00). Note déploiement :
 appliquer chaque migration **avant** le code (0012 : garde de rôle lit `memberships.deactivated_at` ;
 0013 : sync écrit `enrollments_ro.pending_reports` ; 0014 : portail coach lit `coaching_reports` ;
 0017→0019 : audit + effacement RGPD, `is_erased` réservé au service-role ;
-0020 : exploitation, `ops_events` lu par l'écran + routes/crons y écrivent, `rate_limit_touch` réservé au service-role).
+0020 : exploitation, `ops_events` lu par l'écran + routes/crons y écrivent, `rate_limit_touch` réservé au service-role ;
+0021 : notifications, cron `run-notifications` écrit `notifications`, écran + prefs lus par le staff).
 
 Incréments livrés (voir `PLAN_DEV_PRODUIT.md`) :
 - **Fondations + pilote (Étapes 1-2)** : multi-locataire (RLS), auth lien e-mail (callback
@@ -264,6 +272,17 @@ Incréments livrés (voir `PLAN_DEV_PRODUIT.md`) :
   e-mail destinataire). `test:observability` **6** (3 pur + 3 intégration : fenêtre de débit, fonction
   service-role only, table verrouillée, RLS `ops_events` staff/coach/isolation) ; **non-régression**. **Différé** : exécution réelle du test de restauration
   en staging (procédure documentée) ; SMTP dédié (Resend).
+- **INC-7 (notifications et relances)** : pipeline **calcul → enqueue idempotent → dispatch** des
+  relances e-mail (rappel de soutenance ≤3 j, fin d'accès serveur ≤7 j, comptes rendus à saisir → coach),
+  calculées depuis le modèle opérationnel. Règle **pure** `buildDueNotifications` (relances dues +
+  `dedupeKey` stable, testée hors DB). **Port/adaptateur** mailer (`src/lib/notifications/mailer.ts`,
+  Resend) avec **dégradation propre** : sans credential, les relances restent `pending` sans casser
+  l'app. Journal `notifications` (unique `org_id,dedupe_key` → idempotence cron), préférences d'**opt-out**
+  `notification_prefs`, RLS staff (`0021`). Cron `api/admin/run-notifications` (résumé dans le journal
+  d'exploitation) ; écran `coordination/notifications`. **Anti-doublon Airtable** via `NOTIF_DISABLED_KINDS`.
+  `test:notifications` **8** (5 pur + 3 intégration : idempotence, RLS staff/coach/isolation, opt-out) ;
+  **non-régression**. **Pause credential** : `RESEND_API_KEY` + `NOTIF_FROM` pour activer l'envoi réel.
+  **Différé** : échéances CPF (champ absent du modèle) ; confirmations événementielles.
 
 Comptes de test : student (melissa.blld), coach, coordinator, 3 évaluateurs, hôte Cal.eu (voir `SETUP.md`).
 Reste (opérationnel) : **rotation** clé Cal.com + token Airtable (transités par le chat) ;
@@ -283,11 +302,11 @@ avec compensation (annulation) si l'insert échoue ; dégradation propre si Cal.
 Reste : planification cron du miroir, écran d'affectation du jury, mise à jour du jury sur Cal.eu.
 
 ## Backlog immédiat (suite du `PLAN_DEV_PRODUIT.md`)
-Séquence recommandée : **INC-7** (notifications) puis INC-13 (accessibilité/mobile) en finition,
-avant l'ouverture à d'autres organismes (Étape 7). (INC-2→INC-6, INC-8→INC-12, INC-10 : ✅ livrés.
+Séquence recommandée : **INC-13** (accessibilité/mobile) en finition, avant l'ouverture à d'autres
+organismes (Étape 7). (INC-2→INC-12, INC-10 : ✅ livrés.
 Restes différés : INC-3 serveurs SAP + planning S1.2 ; INC-4 remontée Airtable des CR [token write] +
-dispos multi-coach ; INC-12 exécution réelle du test de restauration en staging + SMTP dédié Resend —
-en attente d'extension sync / credential.)
+dispos multi-coach ; INC-12 exécution réelle du test de restauration en staging ; INC-7 credential
+Resend (`RESEND_API_KEY`/`NOTIF_FROM`) pour l'envoi réel + échéances CPF — en attente d'extension sync / credential.)
 
 ## Documents de référence (dossier parent SPROPULSE)
 Cahier de conception, cahier des charges écran par écran, dictionnaire de données,
