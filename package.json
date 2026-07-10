@@ -21,7 +21,8 @@
     "test:reporting": "node --test tests/reporting.unit.test.mts",
     "test:storage": "node --env-file-if-exists=.env.local --test tests/storage.integration.test.mts",
     "test:documents": "node --env-file-if-exists=.env.local --test tests/documents.unit.test.mts tests/documents.integration.test.mts",
-    "test:rgpd": "node --env-file-if-exists=.env.local --test tests/rgpd.unit.test.mts tests/rgpd.integration.test.mts"
+    "test:rgpd": "node --env-file-if-exists=.env.local --test tests/rgpd.unit.test.mts tests/rgpd.integration.test.mts",
+    "test:observability": "node --env-file-if-exists=.env.local --test tests/ratelimit.unit.test.mts tests/observability.integration.test.mts"
   },
   "dependencies": {
     "@supabase/ssr": "^0.5.1",

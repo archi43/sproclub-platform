@@ -3,6 +3,7 @@ import { timingSafeEqual } from "node:crypto";
 import { adminClient } from "@/lib/supabase/admin";
 import { fetchCommandes, AirtableNotConfiguredError } from "@/lib/sync/airtable-source";
 import { syncCommandes } from "@/lib/sync/run";
+import { logOpsEvent } from "@/lib/data/ops";
 
 /**
  * Airtable → Postgres sync trigger (cron / manual). Trusted server job with the
@@ -49,14 +50,15 @@ async function runSync(request: NextRequest) {
     if (err instanceof AirtableNotConfiguredError) {
       return NextResponse.json({ ok: false, error: err.message }, { status: 503 });
     }
-    // Best-effort failure log for observability.
+    const message = err instanceof Error ? err.message : "sync failed";
+    // Best-effort failure log for observability (domain log + unified ops feed).
     await admin.from("sync_log").insert({
       entity: "commandes_formation",
       direction: "airtable_to_pg",
       status: "error",
-      detail: err instanceof Error ? err.message : "sync failed",
+      detail: message,
     });
-    const message = err instanceof Error ? err.message : "sync failed";
+    await logOpsEvent({ orgId: org.id as string, level: "error", source: "cron.sync", message: "Échec de la synchronisation Airtable", detail: message });
     return NextResponse.json({ ok: false, error: message }, { status: 502 });
   }
 }

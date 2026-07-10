@@ -2,6 +2,9 @@
 
 import { headers } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
+import { getOrgContext } from "@/lib/tenant";
+import { checkRateLimit, logOpsEvent } from "@/lib/data/ops";
+import { LOGIN_LIMIT, LOGIN_EMAIL_LIMIT, clientIdentifier } from "@/lib/ratelimit-rules";
 
 export type LoginState = { ok: boolean; message: string };
 
@@ -28,6 +31,32 @@ export async function requestMagicLink(
     return { ok: false, message: "Veuillez saisir une adresse e-mail valide." };
   }
 
+  // Rate limit the public login entry point on two independent axes: per client
+  // IP (broad spam from one source) and per recipient e-mail (targeted mailbomb
+  // that rotates IPs). Blocked if either budget is exhausted.
+  const h = headers();
+  const key = clientIdentifier(h.get("x-real-ip"), h.get("x-forwarded-for"));
+  const org = await getOrgContext();
+  const [allowedByIp, allowedByEmail] = await Promise.all([
+    checkRateLimit(LOGIN_LIMIT, key),
+    checkRateLimit(LOGIN_EMAIL_LIMIT, email),
+  ]);
+  if (!allowedByIp || !allowedByEmail) {
+    if (org) {
+      await logOpsEvent({
+        orgId: org.id,
+        level: "warn",
+        source: "login",
+        message: "Débit de connexion dépassé",
+        detail: allowedByEmail ? `client=${key}` : "cible=e-mail",
+      });
+    }
+    return {
+      ok: false,
+      message: "Trop de tentatives de connexion. Patientez quelques minutes avant de réessayer.",
+    };
+  }
+
   const supabase = createClient();
   const { error } = await supabase.auth.signInWithOtp({
     email,
@@ -48,6 +77,15 @@ export async function requestMagicLink(
         ok: false,
         message: "Trop d'envois récents (limite du service e-mail). Patientez quelques minutes avant de réessayer.",
       };
+    }
+    if (org) {
+      await logOpsEvent({
+        orgId: org.id,
+        level: "error",
+        source: "login",
+        message: "Échec d'envoi du lien de connexion",
+        detail: error.message,
+      });
     }
     return { ok: false, message: "Impossible d'envoyer le lien. Réessayez plus tard." };
   }

@@ -16,10 +16,22 @@ rétention des données personnelles des apprenants et les mécanismes légaux i
 | Dossier de formation (preuves Qualiopi / BPF) | **3 ans** après la fin de l'action | obligations Qualiopi / financeurs |
 | Documents émis (attestations, convention, certificat) | 3 ans | idem |
 | Journal d'audit des accès (`audit_log`) | **12 mois** glissants | traçabilité RGPD |
+| Journal d'exploitation (`ops_events`) | **90 jours** | observabilité |
+| Compteur de débit (`rate_limit_events`) | **2 jours** | technique (anti-abus) |
 | Comptes utilisateurs inactifs (memberships désactivés) | purge après **24 mois** | minimisation |
 
-Les durées sont indicatives et à valider avec le DPO ; la purge automatique (cron) relève
-d'INC-12 (exploitation).
+Les durées sont indicatives et à valider avec le DPO.
+
+**Données techniques (sécurité)** : `ops_events.detail` et `rate_limit_events.key` peuvent
+contenir une **adresse IP** client (logs de connexion / anti-abus). Base légale : intérêt
+légitime (sécurité, prévention de la fraude). Conservation courte : `ops_events` 90 jours,
+`rate_limit_events` 2 jours ; l'e-mail destinataire n'est **pas** journalisé dans `ops_events`.
+
+**Purge automatique (INC-12)** : le cron `/api/admin/purge-retention` (quotidien, 03:15 UTC,
+protégé par `CRON_SECRET`) supprime les données opérationnelles expirées — `audit_log` > 12 mois,
+`ops_events` > 90 jours, `rate_limit_events` > 2 jours — et journalise un résumé dans le journal
+d'exploitation. Les dossiers de formation et documents (preuves Qualiopi/BPF, 3 ans) ne sont
+**pas** concernés par cette purge. Voir `RUNBOOK.md`.
 
 ## Droits des personnes (implémentés — INC-11)
 - **Accès / portabilité** : export des données personnelles d'un apprenant au format JSON

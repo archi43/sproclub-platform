@@ -73,7 +73,14 @@ coordination du jury. Base Supabase UE, Cal.eu branché.
   Revue sécurité : `is_erased` verrouillé service-role (`0018`/`0019`) — corrige une fuite inter-locataire.
   `0017`→`0019` + `RETENTION.md`. `test:rgpd` **10** (5 pur + 5 intégration). Suite serialisée
   (`--test-concurrency=1`) → **67/67** déterministe.
-- ⏭️ **Prochain : INC-12** (exploitation/observabilité) ou INC-7 (notifications) / INC-13 (mobile/a11y).
+- ✅ **INC-12** (exploitation et observabilité) : **journal d'exploitation** (`ops_events`, org_id + RLS
+  staff, écrit service-role) alimenté par les crons, l'action de connexion et les routes ; écran
+  `coordination/exploitation` (tuiles 24 h/7 j, filtre niveau) ; **rate limiting** du login (fenêtre
+  glissante `rate_limit_touch`/`rate_limit_events` verrouillés, `0020`) + observation des sondages sur
+  endpoints protégés ; **purge de rétention** automatisée (cron `purge-retention`, finit le différé
+  INC-11) ; **alerting** optionnel par webhook (sans secret) ; `RUNBOOK.md` (incident, sauvegarde/
+  restauration, rotation des secrets). `0020` + `test:observability` **6** (3 pur + 3 intégration) → **73/73**.
+- ⏭️ **Prochain : INC-7** (notifications) puis INC-13 (accessibilité/mobile).
 
 Suite `main` : **branche → PR → CI verte → merge → déploiement** (previews Vercel actifs).
 
@@ -323,13 +330,20 @@ DoD : accès tracés, export et effacement opérationnels sans casser l'intégri
 verts, non-régression.
 ```
 
-## INC-12 — Exploitation et observabilité
+## INC-12 — Exploitation et observabilité ✅ livré (journal d'exploitation + rate limiting + purge + runbook)
 **Objectif** : fiabiliser l'exploitation d'un produit en production.
 **Périmètre** : surveillance des erreurs (alerting), limitation de débit sur les points
 d'entrée publics (login, miroir), sauvegardes vérifiées et restauration testée, rotation
 des secrets (dont la clé Cal.com), runbook d'incident.
 **Dépendances** : INC-0. **Critères** : une erreur serveur est remontée ; un abus sur le
 login est freiné ; une restauration de sauvegarde est prouvée ; la rotation de clé est documentée.
+**Livré** : `0020` (`ops_events` + `rate_limit_events`/`rate_limit_touch`), `src/lib/data/ops.ts`,
+`src/lib/ratelimit-rules.ts` (pur), rate limiting du login + logs des routes publiques, écran
+`coordination/exploitation`, cron `/api/admin/purge-retention` (purge de rétention automatisée,
+finit le différé INC-11), alerting webhook optionnel, `RUNBOOK.md` (incident, sauvegarde/
+restauration testée, rotation des secrets Cal.eu/Airtable/service-role/`CRON_SECRET`),
+`RETENTION.md` mis à jour. `test:observability` **6** (3 pur + 3 intégration). **Différé** :
+exécution réelle du test de restauration en staging (procédure documentée) ; SMTP dédié (Resend).
 
 ### Brief à coller
 ```
