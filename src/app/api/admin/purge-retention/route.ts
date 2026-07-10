@@ -10,6 +10,7 @@ import { logOpsEvent } from "@/lib/data/ops";
  * per the policy in RETENTION.md:
  *   - audit_log        : 12 months (traçabilité RGPD glissante)
  *   - ops_events       : 90 days
+ *   - notifications    : 90 days (le journal de relances contient nom/e-mail)
  *   - rate_limit_events: 2 days (well beyond any active window)
  * Anonymized learner rows are NOT touched (retention of Qualiopi/BPF evidence is
  * a separate, longer policy handled elsewhere).
@@ -47,6 +48,7 @@ async function run(request: NextRequest) {
   const targets: { table: string; column: string; cutoff: string }[] = [
     { table: "audit_log", column: "at", cutoff: new Date(now - 365 * DAY).toISOString() },
     { table: "ops_events", column: "at", cutoff: new Date(now - 90 * DAY).toISOString() },
+    { table: "notifications", column: "created_at", cutoff: new Date(now - 90 * DAY).toISOString() },
     { table: "rate_limit_events", column: "at", cutoff: new Date(now - 2 * DAY).toISOString() },
   ];
 

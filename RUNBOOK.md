@@ -88,6 +88,21 @@ Déclenchement manuel : `curl -H "x-cron-secret: <CRON_SECRET>" https://<host>/a
    sur `main` : le ruleset `main-ci-required` l'interdit).
 5. **Consigner** : noter l'incident, la cause et l'action dans le suivi projet.
 
+## 7bis. Notifications & relances (INC-7)
+- **Activation** : l'envoi réel nécessite `RESEND_API_KEY` + `NOTIF_FROM` (Vercel env). Sans
+  eux, les relances sont calculées et journalisées en statut `pending` mais **rien n'est
+  envoyé** (dégradation propre). Écran de suivi : `coordination/notifications`.
+- **Anti-doublon Airtable (IMPORTANT avant activation)** : tant qu'une automatisation Airtable
+  de relance reste active, **désactiver** la même relance côté app via `NOTIF_DISABLED_KINDS`
+  (liste séparée par virgules) — sinon double envoi. Kinds : `defense_reminder`,
+  `server_access_ending`, `report_pending`. Procédure recommandée au premier déploiement :
+  1. poser `NOTIF_DISABLED_KINDS` = tous les kinds encore gérés par Airtable ;
+  2. migrer une relance à la fois : désactiver l'automatisation Airtable correspondante, puis
+     retirer le kind de `NOTIF_DISABLED_KINDS` ;
+  3. vérifier le journal `coordination/notifications` après chaque bascule.
+- **Fréquence** : cron `run-notifications` quotidien (08:00 UTC). Idempotent (clé
+  `org_id,dedupe_key`) : une ré-exécution ne renvoie jamais un doublon.
+
 ## 7. Déploiement (rappel)
 Appliquer chaque **migration avant le code** (`supabase db push`). La CI exécute la vraie
 suite d'intégration contre un Supabase local jetable ; le merge sur `main` est bloqué tant

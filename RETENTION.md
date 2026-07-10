@@ -17,6 +17,7 @@ rétention des données personnelles des apprenants et les mécanismes légaux i
 | Documents émis (attestations, convention, certificat) | 3 ans | idem |
 | Journal d'audit des accès (`audit_log`) | **12 mois** glissants | traçabilité RGPD |
 | Journal d'exploitation (`ops_events`) | **90 jours** | observabilité |
+| Journal de relances (`notifications`) | **90 jours** | minimisation (nom/e-mail en clair) |
 | Compteur de débit (`rate_limit_events`) | **2 jours** | technique (anti-abus) |
 | Comptes utilisateurs inactifs (memberships désactivés) | purge après **24 mois** | minimisation |
 
@@ -29,8 +30,9 @@ légitime (sécurité, prévention de la fraude). Conservation courte : `ops_eve
 
 **Purge automatique (INC-12)** : le cron `/api/admin/purge-retention` (quotidien, 03:15 UTC,
 protégé par `CRON_SECRET`) supprime les données opérationnelles expirées — `audit_log` > 12 mois,
-`ops_events` > 90 jours, `rate_limit_events` > 2 jours — et journalise un résumé dans le journal
-d'exploitation. Les dossiers de formation et documents (preuves Qualiopi/BPF, 3 ans) ne sont
+`ops_events` > 90 jours, `notifications` > 90 jours, `rate_limit_events` > 2 jours — et journalise un
+résumé dans le journal d'exploitation. Le droit à l'oubli (`eraseLearner`) purge en plus immédiatement
+le journal de relances et les préférences de la personne effacée. Les dossiers de formation et documents (preuves Qualiopi/BPF, 3 ans) ne sont
 **pas** concernés par cette purge. Voir `RUNBOOK.md`.
 
 ## Droits des personnes (implémentés — INC-11)
