@@ -3,9 +3,11 @@ import Link from "next/link";
 import { getOrgContext } from "@/lib/tenant";
 import { getLearnerSheet } from "@/lib/data/admin-learners";
 import { listReportsForLearner } from "@/lib/data/coaching";
+import { listEmissions, type Emission } from "@/lib/data/documents-admin";
 import { PageHeader } from "@/components/ui/page-header";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { GenerateDocuments } from "./documents-ui";
 
 const pct = (v: unknown) => (typeof v === "number" ? `${Math.round(v * 100)}%` : "—");
 const val = (v: unknown) => (v === null || v === undefined || v === "" ? "—" : String(v));
@@ -48,6 +50,7 @@ export default async function FicheApprenant({ params }: { params: { id: string 
 
   const { learner, enrollments } = sheet;
   const name = [learner.first_name, learner.last_name].filter(Boolean).join(" ") || learner.email;
+  const emissionsByEnrollment = await Promise.all(enrollments.map((e) => listEmissions(org.id, String(e.id))));
 
   return (
     <div className="max-w-3xl space-y-5">
@@ -107,6 +110,27 @@ export default async function FicheApprenant({ params }: { params: { id: string 
             <Field label="Attestation d'entrée envoyée" value={bool(e.attestation_entry_sent)} />
             <Field label="Attestation de fin envoyée" value={bool(e.attestation_end_sent)} />
             <Field label="Convention signée" value={bool(e.convention_signed)} />
+          </Section>
+
+          <Section title="Documents (génération)">
+            <GenerateDocuments enrollmentId={String(e.id)} learnerId={params.id} />
+            {emissionsByEnrollment[i].length > 0 && (
+              <ul className="mt-3 divide-y divide-grey-300/60">
+                {emissionsByEnrollment[i].map((doc: Emission) => (
+                  <li key={doc.id} className="flex items-center justify-between gap-3 py-2">
+                    <span>
+                      {doc.kindLabel}
+                      <span className="ml-2 text-xs text-grey-600">{doc.generatedAt.slice(0, 10)}</span>
+                    </span>
+                    {doc.url ? (
+                      <a href={doc.url} target="_blank" rel="noopener noreferrer" aria-label={`Télécharger ${doc.kindLabel}`} className="text-sm text-brand no-underline hover:underline">
+                        Télécharger
+                      </a>
+                    ) : null}
+                  </li>
+                ))}
+              </ul>
+            )}
           </Section>
         </div>
       ))}
