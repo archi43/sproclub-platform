@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { timingSafeEqual } from "node:crypto";
 import { adminClient } from "@/lib/supabase/admin";
 import { buildExportCsv } from "@/lib/data/reporting";
+import { logOpsEvent } from "@/lib/data/ops";
 
 /**
  * Periodic regulatory export (Module 5). Trusted server job (service-role
@@ -59,6 +60,8 @@ async function run(request: NextRequest) {
       },
     });
   } catch (err) {
-    return NextResponse.json({ ok: false, error: err instanceof Error ? err.message : "export failed" }, { status: 500 });
+    const message = err instanceof Error ? err.message : "export failed";
+    await logOpsEvent({ orgId: org.id as string, level: "error", source: "cron.export-bpf", message: "Échec de l'export BPF", detail: message });
+    return NextResponse.json({ ok: false, error: message }, { status: 500 });
   }
 }

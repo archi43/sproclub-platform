@@ -4,6 +4,7 @@
   "crons": [
     { "path": "/api/admin/sync-airtable", "schedule": "0 5 * * *" },
     { "path": "/api/admin/mirror-availabilities", "schedule": "30 6 * * *" },
-    { "path": "/api/admin/export-bpf", "schedule": "0 7 * * 1" }
+    { "path": "/api/admin/export-bpf", "schedule": "0 7 * * 1" },
+    { "path": "/api/admin/purge-retention", "schedule": "15 3 * * *" }
   ]
 }

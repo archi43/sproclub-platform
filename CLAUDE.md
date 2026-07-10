@@ -134,12 +134,20 @@ vers ces jetons et primitives, sans changer la logique.
   (service-role only ; `0019` révoque le grant par défaut Supabase à anon/authenticated).
   `RETENTION.md` documente durées + droits. Section RGPD sur la fiche apprenant (clients injectables
   pour prouver l'effacement en test ; journal ignoré sur préfetch Next).
-- `supabase/migrations/0001` → `0019` ; seed `supabase/seed/sproclub_bootstrap.sql`.
+- `src/lib/data/ops.ts` (INC-12) : journal d'exploitation `ops_events` (org_id + RLS staff, écrit
+  service-role) + `checkRateLimit` (RPC `rate_limit_touch`, `0020`) ; `src/lib/ratelimit-rules.ts`
+  (pur : identifiant client + limites nommées, testé hors DB). Écran `coordination/exploitation`
+  (tuiles + filtre niveau). Rate limiting du login + logs des routes publiques/crons. Cron
+  `api/admin/purge-retention` (purge de rétention automatisée). Alerting webhook optionnel
+  (`OPS_ALERT_WEBHOOK`, aucun secret au dépôt). `RUNBOOK.md` : incident, sauvegarde/restauration,
+  rotation des secrets.
+- `supabase/migrations/0001` → `0020` ; seed `supabase/seed/sproclub_bootstrap.sql`.
   (`0004` invariants réservation, `0005` normalisation e-mails minuscules à l'écriture,
   `0012` gestion utilisateurs/rôles : désactivation qui coupe l'accès + policies de gestion,
   `0013` `enrollments_ro.pending_reports` pour la file d'opérations, `0014` portail coach :
   périmètre coach resserré (RLS) + table `coaching_reports`, `0016` `document_emissions`,
-  `0017` RGPD (`audit_log`/`log_access`, `data_erasures`/`is_erased`), `0018`/`0019` lockdown `is_erased`.)
+  `0017` RGPD (`audit_log`/`log_access`, `data_erasures`/`is_erased`), `0018`/`0019` lockdown `is_erased`,
+  `0020` exploitation (`ops_events` + `rate_limit_events`/`rate_limit_touch`).)
 
 ## Modèle de rôles (décision)
 Les rôles sont **par organisme**, portés par `memberships` (org_id, profile_id, role) —
@@ -164,13 +172,14 @@ le claim JWT `app_metadata.org_id` (robuste avec le pooling PostgREST).
 ## État actuel
 Produit **en ligne** (staging) et prouvé en réel. Base Supabase UE (`zbvohktqfgwajjvnpets`,
 `eu-north-1`) ; app déployée sur **Vercel région `fra1`** : **https://sproclub-platform.vercel.app**.
-Migrations **0001→0019** + seed appliqués. Suite de tests **67/67** verte contre la vraie base
-(inclut `test:rgpd` 10 : 5 pur + 5 intégration). Exécution **sérialisée** (`npm test` →
+Migrations **0001→0020** + seed appliqués. Suite de tests **73/73** verte contre la vraie base
+(inclut `test:rgpd` 10 et `test:observability` 6). Exécution **sérialisée** (`npm test` →
 `--test-concurrency=1`) pour éviter la flakiness de rate-limit auth sous concurrence.
-**3 crons** (sync 05:00, miroir 06:30, export BPF lundi 07:00). Note déploiement :
+**4 crons** (sync 05:00, miroir 06:30, export BPF lundi 07:00, purge rétention 03:15). Note déploiement :
 appliquer chaque migration **avant** le code (0012 : garde de rôle lit `memberships.deactivated_at` ;
 0013 : sync écrit `enrollments_ro.pending_reports` ; 0014 : portail coach lit `coaching_reports` ;
-0017→0019 : audit + effacement RGPD, `is_erased` réservé au service-role).
+0017→0019 : audit + effacement RGPD, `is_erased` réservé au service-role ;
+0020 : exploitation, `ops_events` lu par l'écran + routes/crons y écrivent, `rate_limit_touch` réservé au service-role).
 
 Incréments livrés (voir `PLAN_DEV_PRODUIT.md`) :
 - **Fondations + pilote (Étapes 1-2)** : multi-locataire (RLS), auth lien e-mail (callback
@@ -242,6 +251,19 @@ Incréments livrés (voir `PLAN_DEV_PRODUIT.md`) :
   `test:rgpd` **10** (5 pur + 5 intégration : attribution, journal staff-only, registre org-scoped +
   écriture refusée, anonymisation à FK intacte, skip-list de sync) ; **non-régression**. `RETENTION.md`
   documente durées + droits. **Différé** : purge automatique (cron) → INC-12.
+- **INC-12 (exploitation et observabilité)** : **journal d'exploitation** (`ops_events`, org_id + RLS
+  staff-read, écrit service-role, `0020`) alimenté par les crons (sync/miroir/export/purge), l'action de
+  connexion et les routes ; écran `coordination/exploitation` (tuiles 24 h/7 j, filtre niveau, charte).
+  **Rate limiting** des points d'entrée publics : `rate_limit_touch` (SECURITY DEFINER service-role) +
+  table verrouillée `rate_limit_events` (fenêtre glissante) ; login limité (5/15 min/IP, fail-safe),
+  observation bornée des sondages sur endpoints protégés. **Purge de rétention** automatisée (cron
+  `api/admin/purge-retention` : `audit_log` 12 mois, `ops_events` 90 j, `rate_limit_events` 2 j — finit
+  le différé INC-11). **Alerting** optionnel par webhook (`OPS_ALERT_WEBHOOK`, aucun secret au dépôt).
+  `RUNBOOK.md` (incident, sauvegarde/restauration testée, rotation des secrets Cal.eu/Airtable/
+  service-role/`CRON_SECRET`). `src/lib/ratelimit-rules.ts` pur (login limité par IP **et** par
+  e-mail destinataire). `test:observability` **6** (3 pur + 3 intégration : fenêtre de débit, fonction
+  service-role only, table verrouillée, RLS `ops_events` staff/coach/isolation) ; **non-régression**. **Différé** : exécution réelle du test de restauration
+  en staging (procédure documentée) ; SMTP dédié (Resend).
 
 Comptes de test : student (melissa.blld), coach, coordinator, 3 évaluateurs, hôte Cal.eu (voir `SETUP.md`).
 Reste (opérationnel) : **rotation** clé Cal.com + token Airtable (transités par le chat) ;
@@ -261,11 +283,11 @@ avec compensation (annulation) si l'insert échoue ; dégradation propre si Cal.
 Reste : planification cron du miroir, écran d'affectation du jury, mise à jour du jury sur Cal.eu.
 
 ## Backlog immédiat (suite du `PLAN_DEV_PRODUIT.md`)
-Séquence recommandée : **INC-5** (conformité Module 3 + pilotage direction Module 0), puis INC-6
-(reporting), INC-8/9 (espace apprenant, documents), INC-11/12 (RGPD/audit, exploitation) avant
-ouverture à de vrais étudiants. (INC-10 rôles, INC-3 opérations S1.1, INC-4 portail coach : ✅ livrés.
-Restes différés : INC-3 serveurs SAP + planning S1.2, et INC-4 remontée Airtable des CR
-[token write] + dispos multi-coach — en attente d'extension sync / credential.)
+Séquence recommandée : **INC-7** (notifications) puis INC-13 (accessibilité/mobile) en finition,
+avant l'ouverture à d'autres organismes (Étape 7). (INC-2→INC-6, INC-8→INC-12, INC-10 : ✅ livrés.
+Restes différés : INC-3 serveurs SAP + planning S1.2 ; INC-4 remontée Airtable des CR [token write] +
+dispos multi-coach ; INC-12 exécution réelle du test de restauration en staging + SMTP dédié Resend —
+en attente d'extension sync / credential.)
 
 ## Documents de référence (dossier parent SPROPULSE)
 Cahier de conception, cahier des charges écran par écran, dictionnaire de données,

@@ -3,6 +3,7 @@ import { timingSafeEqual } from "node:crypto";
 import { createClient as createAdmin } from "@supabase/supabase-js";
 import { env, serviceRoleKey } from "@/lib/env";
 import { mirrorAvailabilities } from "@/lib/booking/mirror";
+import { logOpsEvent } from "@/lib/data/ops";
 
 /** Constant-time secret comparison (avoids leaking the secret via timing). */
 function secretMatches(provided: string | null, expected: string): boolean {
@@ -38,6 +39,9 @@ export async function POST(request: NextRequest) {
 }
 
 async function runMirror(request: NextRequest) {
+  // Keep the reject path cheap (memory-only): a secret-protected endpoint must not
+  // do DB work before authorizing, or a flood becomes a cost-amplification vector.
+  // Volumetric abuse on public endpoints is handled by the platform firewall.
   if (!authorized(request)) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
@@ -48,6 +52,7 @@ async function runMirror(request: NextRequest) {
   }
 
   const slug = process.env.DEV_DEFAULT_ORG_SLUG ?? "sproclub";
+
   // Clamp the window: default 14, bounded to [1, 60] (NaN falls back to 14).
   const days = Math.min(60, Math.max(1, Number(new URL(request.url).searchParams.get("days")) || 14));
 
@@ -66,6 +71,7 @@ async function runMirror(request: NextRequest) {
     return NextResponse.json({ ok: true, org: slug, from, to, results });
   } catch (err) {
     const message = err instanceof Error ? err.message : "mirror failed";
+    await logOpsEvent({ orgId: org.id as string, level: "error", source: "cron.mirror", message: "Échec du miroir des disponibilités", detail: message });
     return NextResponse.json({ ok: false, error: message }, { status: 502 });
   }
 }
