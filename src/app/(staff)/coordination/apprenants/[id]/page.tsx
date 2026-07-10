@@ -1,13 +1,17 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
+import { headers } from "next/headers";
 import { getOrgContext } from "@/lib/tenant";
 import { getLearnerSheet } from "@/lib/data/admin-learners";
 import { listReportsForLearner } from "@/lib/data/coaching";
 import { listEmissions, type Emission } from "@/lib/data/documents-admin";
+import { learnerAuditTrail, logDossierAccess } from "@/lib/data/rgpd";
+import { getRolesForOrg } from "@/lib/auth";
 import { PageHeader } from "@/components/ui/page-header";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { GenerateDocuments } from "./documents-ui";
+import { EraseLearner } from "./rgpd-ui";
 
 const pct = (v: unknown) => (typeof v === "number" ? `${Math.round(v * 100)}%` : "—");
 const val = (v: unknown) => (v === null || v === undefined || v === "" ? "—" : String(v));
@@ -51,6 +55,14 @@ export default async function FicheApprenant({ params }: { params: { id: string 
   const { learner, enrollments } = sheet;
   const name = [learner.first_name, learner.last_name].filter(Boolean).join(" ") || learner.email;
   const emissionsByEnrollment = await Promise.all(enrollments.map((e) => listEmissions(org.id, String(e.id))));
+
+  // RGPD: audit this dossier access; load the trail + the caller's roles. Skip a
+  // Next.js router prefetch (hovering the list) — it is not a real consultation
+  // and would pollute the journal's probative value.
+  const isPrefetch = headers().get("next-router-prefetch") === "1";
+  if (!isPrefetch) await logDossierAccess("dossier.view", params.id);
+  const [audit, roles] = await Promise.all([learnerAuditTrail(org.id, params.id), getRolesForOrg(org.id)]);
+  const isDirection = roles.includes("direction");
 
   return (
     <div className="max-w-3xl space-y-5">
@@ -151,6 +163,36 @@ export default async function FicheApprenant({ params }: { params: { id: string 
             ))}
           </ul>
         )}
+      </Section>
+
+      <Section title="RGPD">
+        <div className="flex flex-wrap items-center gap-3">
+          <a
+            href={`/coordination/apprenants/${params.id}/rgpd/export`}
+            className="inline-flex items-center rounded-lg border border-grey-300 bg-white px-3 py-2 text-sm font-medium text-brand no-underline hover:bg-brand-tint"
+          >
+            Exporter les données (JSON)
+          </a>
+          {isDirection && <EraseLearner learnerId={params.id} />}
+        </div>
+
+        <div className="mt-4">
+          <h4 className="mb-2 text-xs font-semibold uppercase tracking-wide text-grey-600">Journal d&apos;accès</h4>
+          {audit.length === 0 ? (
+            <span className="text-grey-600">Aucun accès tracé.</span>
+          ) : (
+            <ul className="space-y-1 text-sm">
+              {audit.map((a, i) => (
+                <li key={i} className="flex flex-wrap items-center gap-2 text-grey-600">
+                  <span className="tabular-nums">{a.at.slice(0, 16).replace("T", " ")}</span>
+                  <Badge tone="neutral">{a.action}</Badge>
+                  {a.actorEmail && <span className="text-ink">{a.actorEmail}</span>}
+                  {a.detail && <span>· {a.detail}</span>}
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
       </Section>
     </div>
   );

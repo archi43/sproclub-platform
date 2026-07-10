@@ -13,6 +13,7 @@ import { buildEnrollment, buildLearner, normalizeEmail, SRC, type SourceRecord }
 export interface SyncStats {
   source: number;
   skippedNoEmail: number;
+  skippedErased: number;
   learners: number;
   enrollments: number;
 }
@@ -30,13 +31,22 @@ export async function syncCommandes(
   source: SourceRecord[]
 ): Promise<SyncStats> {
   const now = new Date().toISOString();
-  const stats: SyncStats = { source: source.length, skippedNoEmail: 0, learners: 0, enrollments: 0 };
+  const stats: SyncStats = { source: source.length, skippedNoEmail: 0, skippedErased: 0, learners: 0, enrollments: 0 };
+
+  // Right-to-erasure suppression list (INC-11): never re-import a learner whose
+  // PII was erased — otherwise the sync would undo the anonymization.
+  const { data: erasures } = await admin.from("data_erasures").select("learner_email").eq("org_id", orgId);
+  const erased = new Set((erasures ?? []).map((r) => (r as { learner_email: string }).learner_email));
 
   // --- Pass 1: learners, deduplicated by e-mail (last record wins) ----------
   const byEmail = new Map<string, ReturnType<typeof buildLearner>>();
   for (const rec of source) {
     const learner = buildLearner(rec);
     if (!learner) continue;
+    if (erased.has(learner.email)) {
+      stats.skippedErased++;
+      continue; // suppressed person: leave the anonymized row untouched
+    }
     byEmail.set(learner.email, learner);
   }
   const learnerRows = [...byEmail.values()].map((l) => ({ ...l!, org_id: orgId, synced_at: now }));

@@ -9,7 +9,7 @@
     "start": "next start",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
-    "test": "node --env-file-if-exists=.env.local --test tests/*.mts",
+    "test": "node --env-file-if-exists=.env.local --test-concurrency=1 --test tests/*.mts",
     "test:isolation": "node --env-file-if-exists=.env.local --test tests/isolation.integration.test.mts",
     "test:booking": "node --env-file-if-exists=.env.local --test tests/booking.integration.test.mts",
     "test:sync": "node --env-file-if-exists=.env.local --test tests/sync.integration.test.mts",
@@ -20,7 +20,8 @@
     "test:compliance": "node --test tests/compliance.unit.test.mts",
     "test:reporting": "node --test tests/reporting.unit.test.mts",
     "test:storage": "node --env-file-if-exists=.env.local --test tests/storage.integration.test.mts",
-    "test:documents": "node --env-file-if-exists=.env.local --test tests/documents.unit.test.mts tests/documents.integration.test.mts"
+    "test:documents": "node --env-file-if-exists=.env.local --test tests/documents.unit.test.mts tests/documents.integration.test.mts",
+    "test:rgpd": "node --env-file-if-exists=.env.local --test tests/rgpd.unit.test.mts tests/rgpd.integration.test.mts"
   },
   "dependencies": {
     "@supabase/ssr": "^0.5.1",
