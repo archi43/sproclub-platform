@@ -8,7 +8,12 @@ lancement** (SproCLUB d'abord).
 
 ## Décisions d'architecture
 - **Socle de vérité du produit : Postgres** (via Supabase, région UE).
-- **Airtable = connecteur propre à SproCLUB** (back office existant), pas le socle.
+- **Airtable = back office SproCLUB, bidirectionnel** (décision INC-14, validée) : lu chaque
+  jour (Commandes → Postgres) et **write-back CREATE-only** des comptes rendus
+  (coaching_reports → « Comptes rendus -header », jamais de modification/suppression).
+  Les soutenances ne sont PAS poussées (la table Airtable est alimentée via Google Agenda,
+  que Cal.eu remplit déjà — éviter les doublons). **Fillout = source d'évaluations connectée**
+  au natif (mêmes tables, `source` tracée). Supabase reste le **socle produit assumé**.
 - **Cloisonnement en pool** : une base partagée, chaque ligne porte `org_id`,
   isolation par Row Level Security (`is_member(org_id)`), option base dédiée plus tard.
 - **Stack** : Next.js (App Router, TypeScript) + Supabase (Auth, Postgres, RLS, Storage)

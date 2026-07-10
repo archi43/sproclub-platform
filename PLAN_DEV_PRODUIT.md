@@ -87,6 +87,13 @@ coordination du jury. Base Supabase UE, Cal.eu branché.
   cron `run-notifications` ; écran `coordination/notifications` ; anti-doublon Airtable (`NOTIF_DISABLED_KINDS`).
   `test:notifications` **8** (5 pur + 3 intégration) → **81/81**. **Pause credential** : `RESEND_API_KEY`/
   `NOTIF_FROM` pour l'envoi réel.
+- ✅ **INC-14** (alignement CDC : Airtable écriture + Fillout) : write-back **CREATE-only** des
+  comptes rendus vers Airtable « Comptes rendus -header » (idempotent, gated
+  `AIRTABLE_WRITEBACK_ENABLED` + token write — **en attente du token**), soutenances non
+  poussées (chaîne Cal.eu→Google Agenda→Airtable, anti-doublon) ; **Fillout connecté** aux
+  tables natives (`coaching_reports.source='fillout'`, upsert par submissionId, formulaires
+  via `FILLOUT_FORM_IDS` — **en attente du choix des formulaires**) ; Supabase assumé socle
+  produit (0022). `tests/inc14` 3/3 ; suite 92/92.
 - ✅ **INC-13** (accessibilité et mobile) : app shell accessible — **lien d'évitement** (skip to content),
   **nav active** (`aria-current` + état visible, composant client `NavTabs`), `main#main-content` focusable,
   **viewport** explicite (zoom autorisé), cibles tactiles ≥44px, `Th scope="col"` ; règle pure d'onglet
