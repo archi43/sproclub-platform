@@ -179,8 +179,8 @@ le claim JWT `app_metadata.org_id` (robuste avec le pooling PostgREST).
 ## État actuel
 Produit **en ligne** (staging) et prouvé en réel. Base Supabase UE (`zbvohktqfgwajjvnpets`,
 `eu-north-1`) ; app déployée sur **Vercel région `fra1`** : **https://sproclub-platform.vercel.app**.
-Migrations **0001→0021** + seed appliqués. Suite de tests **81/81** verte contre la vraie base
-(inclut `test:rgpd` 10, `test:observability` 6, `test:notifications` 8). Exécution **sérialisée**
+Migrations **0001→0021** + seed appliqués. Suite de tests **86/86** verte contre la vraie base
+(inclut `test:rgpd` 10, `test:observability` 6, `test:notifications` 8, `test:nav` 5). Exécution **sérialisée**
 (`npm test` → `--test-concurrency=1`) pour éviter la flakiness de rate-limit auth sous concurrence.
 **5 crons** (sync 05:00, miroir 06:30, export BPF lundi 07:00, purge rétention 03:15, relances 08:00). Note déploiement :
 appliquer chaque migration **avant** le code (0012 : garde de rôle lit `memberships.deactivated_at` ;
@@ -283,6 +283,15 @@ Incréments livrés (voir `PLAN_DEV_PRODUIT.md`) :
   `test:notifications` **8** (5 pur + 3 intégration : idempotence, RLS staff/coach/isolation, opt-out) ;
   **non-régression**. **Pause credential** : `RESEND_API_KEY` + `NOTIF_FROM` pour activer l'envoi réel.
   **Différé** : échéances CPF (champ absent du modèle) ; confirmations événementielles.
+- **INC-13 (accessibilité et mobile)** : app shell accessible — **lien d'évitement** (skip to content) +
+  `main#main-content` focusable, **nav active** (`aria-current` + état visible, composant client
+  `src/components/nav-tabs.tsx`), **viewport** explicite (zoom autorisé, a11y), cibles tactiles ≥44px,
+  `Th scope="col"`. Logique d'onglet actif extraite en **règle pure** `src/lib/nav-active.ts`
+  (`test:nav` 5 : match exact, enfant profond, racine de section, frontière de segment). Tables déjà
+  responsives (primitive `overflow-x-auto`), grilles label/valeur adaptatives, focus-visible global.
+  Vérif : `next lint` (jsx-a11y) vert ; contrôle **axe-core ponctuel** (0 violation WCAG 2 A/AA sur page
+  publique, manuel — non automatisé en CI) ; pas de débordement horizontal ; **non-régression 86/86**.
+  Pas de schéma/RLS (incrément front). Reste : Étape 7 (ouverture à d'autres organismes).
 
 Comptes de test : student (melissa.blld), coach, coordinator, 3 évaluateurs, hôte Cal.eu (voir `SETUP.md`).
 Reste (opérationnel) : **rotation** clé Cal.com + token Airtable (transités par le chat) ;
@@ -302,11 +311,12 @@ avec compensation (annulation) si l'insert échoue ; dégradation propre si Cal.
 Reste : planification cron du miroir, écran d'affectation du jury, mise à jour du jury sur Cal.eu.
 
 ## Backlog immédiat (suite du `PLAN_DEV_PRODUIT.md`)
-Séquence recommandée : **INC-13** (accessibilité/mobile) en finition, avant l'ouverture à d'autres
-organismes (Étape 7). (INC-2→INC-12, INC-10 : ✅ livrés.
+**Tous les incréments INC-0 → INC-13 sont livrés.** Prochaine grande étape : **Étape 7** —
+ouverture à d'autres organismes (onboarding par paramétrage, image de marque et domaine par organisme,
+audit de sécurité externe). Le socle multi-locataire est déjà en place : c'est une extension, pas une refonte.
 Restes différés : INC-3 serveurs SAP + planning S1.2 ; INC-4 remontée Airtable des CR [token write] +
 dispos multi-coach ; INC-12 exécution réelle du test de restauration en staging ; INC-7 credential
-Resend (`RESEND_API_KEY`/`NOTIF_FROM`) pour l'envoi réel + échéances CPF — en attente d'extension sync / credential.)
+Resend (`RESEND_API_KEY`/`NOTIF_FROM`) pour l'envoi réel + échéances CPF — en attente d'extension sync / credential.
 
 ## Documents de référence (dossier parent SPROPULSE)
 Cahier de conception, cahier des charges écran par écran, dictionnaire de données,

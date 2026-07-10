@@ -22,8 +22,8 @@ export function Tr({ className, ...props }: HTMLAttributes<HTMLTableRowElement>)
   return <tr className={cn("hover:bg-brand-tint/40", className)} {...props} />;
 }
 
-export function Th({ className, ...props }: ThHTMLAttributes<HTMLTableCellElement>) {
-  return <th className={cn("px-4 py-2.5 font-semibold", className)} {...props} />;
+export function Th({ scope = "col", className, ...props }: ThHTMLAttributes<HTMLTableCellElement>) {
+  return <th scope={scope} className={cn("px-4 py-2.5 font-semibold", className)} {...props} />;
 }
 
 export function Td({ className, ...props }: TdHTMLAttributes<HTMLTableCellElement>) {

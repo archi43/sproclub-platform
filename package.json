@@ -23,7 +23,8 @@
     "test:documents": "node --env-file-if-exists=.env.local --test tests/documents.unit.test.mts tests/documents.integration.test.mts",
     "test:rgpd": "node --env-file-if-exists=.env.local --test tests/rgpd.unit.test.mts tests/rgpd.integration.test.mts",
     "test:observability": "node --env-file-if-exists=.env.local --test tests/ratelimit.unit.test.mts tests/observability.integration.test.mts",
-    "test:notifications": "node --env-file-if-exists=.env.local --test tests/notifications.unit.test.mts tests/notifications.integration.test.mts"
+    "test:notifications": "node --env-file-if-exists=.env.local --test tests/notifications.unit.test.mts tests/notifications.integration.test.mts",
+    "test:nav": "node --test tests/nav.unit.test.mts"
   },
   "dependencies": {
     "@supabase/ssr": "^0.5.1",
