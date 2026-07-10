@@ -127,11 +127,19 @@ vers ces jetons et primitives, sans changer la logique.
 - `src/lib/documents/*` (contenu pur + rendu **pdf-lib**) + `src/lib/data/documents-admin.ts`
   (génération service-role derrière garde staff) ; journal `document_emissions` (`0016`) ; UI de
   génération sur la fiche apprenant (Module INC-9).
-- `supabase/migrations/0001` → `0014` ; seed `supabase/seed/sproclub_bootstrap.sql`.
+- `src/lib/data/rgpd.ts` (INC-11) : audit (`audit_log` + `log_access` definer, `0017`), export des
+  données personnelles, effacement (anonymisation en place + `data_erasures` consultée par la sync).
+  `src/lib/rgpd-rules.ts` : règle pure `decideAccountErasure` (ne jamais supprimer un compte
+  référencé ailleurs → cascade), testée hors DB. `0018`/`0019` verrouillent `is_erased`
+  (service-role only ; `0019` révoque le grant par défaut Supabase à anon/authenticated).
+  `RETENTION.md` documente durées + droits. Section RGPD sur la fiche apprenant (clients injectables
+  pour prouver l'effacement en test ; journal ignoré sur préfetch Next).
+- `supabase/migrations/0001` → `0019` ; seed `supabase/seed/sproclub_bootstrap.sql`.
   (`0004` invariants réservation, `0005` normalisation e-mails minuscules à l'écriture,
   `0012` gestion utilisateurs/rôles : désactivation qui coupe l'accès + policies de gestion,
   `0013` `enrollments_ro.pending_reports` pour la file d'opérations, `0014` portail coach :
-  périmètre coach resserré (RLS) + table `coaching_reports`.)
+  périmètre coach resserré (RLS) + table `coaching_reports`, `0016` `document_emissions`,
+  `0017` RGPD (`audit_log`/`log_access`, `data_erasures`/`is_erased`), `0018`/`0019` lockdown `is_erased`.)
 
 ## Modèle de rôles (décision)
 Les rôles sont **par organisme**, portés par `memberships` (org_id, profile_id, role) —
@@ -156,12 +164,13 @@ le claim JWT `app_metadata.org_id` (robuste avec le pooling PostgREST).
 ## État actuel
 Produit **en ligne** (staging) et prouvé en réel. Base Supabase UE (`zbvohktqfgwajjvnpets`,
 `eu-north-1`) ; app déployée sur **Vercel région `fra1`** : **https://sproclub-platform.vercel.app**.
-Migrations **0001→0016** + seed appliqués. Suite de tests **57/57** verte contre la vraie base
-(non-régression 14 + roles 6 + operations 5 + coach 5 + compliance 6 + reporting 7 [pures] +
-storage 5 + `test:documents` 9). **3 crons** (sync 05:00, miroir 06:30, export BPF lundi 07:00).
-Note déploiement :
+Migrations **0001→0019** + seed appliqués. Suite de tests **67/67** verte contre la vraie base
+(inclut `test:rgpd` 10 : 5 pur + 5 intégration). Exécution **sérialisée** (`npm test` →
+`--test-concurrency=1`) pour éviter la flakiness de rate-limit auth sous concurrence.
+**3 crons** (sync 05:00, miroir 06:30, export BPF lundi 07:00). Note déploiement :
 appliquer chaque migration **avant** le code (0012 : garde de rôle lit `memberships.deactivated_at` ;
-0013 : sync écrit `enrollments_ro.pending_reports` ; 0014 : portail coach lit `coaching_reports`).
+0013 : sync écrit `enrollments_ro.pending_reports` ; 0014 : portail coach lit `coaching_reports` ;
+0017→0019 : audit + effacement RGPD, `is_erased` réservé au service-role).
 
 Incréments livrés (voir `PLAN_DEV_PRODUIT.md`) :
 - **Fondations + pilote (Étapes 1-2)** : multi-locataire (RLS), auth lien e-mail (callback
@@ -222,6 +231,17 @@ Incréments livrés (voir `PLAN_DEV_PRODUIT.md`) :
   propre). `test:coach` **5/5** (périmètre étanche, écriture scoped, auteur=appelant, visibilité admin) ;
   **non-régression**. **Différé + credential** : remontée Airtable des CR (token **write**, actuellement
   read-only) et publication multi-coach des disponibilités (config Cal.eu par coach).
+- **INC-11 (RGPD : audit, export, droit à l'oubli)** : **journal d'audit** (`audit_log` + `log_access`
+  SECURITY DEFINER, `0017`) — un appelant ne trace que pour son org/identité, actions en liste blanche,
+  lecture direction/coordinator ; **export** des données personnelles (route gardée, tracée, bornée RLS) ;
+  **effacement** (direction only, mot de confirmation) : anonymisation **en place** (id/FK conservés),
+  neutralisation des identifiants d'insertion, purge des documents (paginée), suppression du compte
+  **uniquement** s'il n'est pas référencé ailleurs (règle pure `decideAccountErasure` — pas de
+  cascade-delete de tiers), et **liste de suppression** (`data_erasures`) que la sync consulte pour ne
+  jamais réimporter. `is_erased` verrouillé service-role (`0018`/`0019`, corrige une fuite inter-locataire).
+  `test:rgpd` **10** (5 pur + 5 intégration : attribution, journal staff-only, registre org-scoped +
+  écriture refusée, anonymisation à FK intacte, skip-list de sync) ; **non-régression**. `RETENTION.md`
+  documente durées + droits. **Différé** : purge automatique (cron) → INC-12.
 
 Comptes de test : student (melissa.blld), coach, coordinator, 3 évaluateurs, hôte Cal.eu (voir `SETUP.md`).
 Reste (opérationnel) : **rotation** clé Cal.com + token Airtable (transités par le chat) ;

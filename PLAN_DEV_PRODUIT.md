@@ -63,7 +63,17 @@ coordination du jury. Base Supabase UE, Cal.eu branché.
   (`0016`, qui/quand/où). Génération service-role derrière garde direction/coordinator ; l'apprenant
   retrouve ses documents (Mon dossier). Contenu en fonctions pures (`test:documents` unit 5) +
   intégration RLS/archivage (4). Non-régression 57/57.
-- ⏭️ **Prochain : INC-11/12** (RGPD/journal d'audit + exploitation) ou INC-7 (notifications) / INC-13 (mobile/a11y).
+- ✅ **INC-11** (RGPD et journal d'audit) : **traçabilité** des accès aux dossiers (`audit_log` +
+  fonction `log_access` SECURITY DEFINER non-forgeable, lecture direction/coordinator ; vue/export/
+  effacement tracés, journal ignoré sur préfetch) ; **export** des données personnelles (JSON, route
+  gardée, bornée RLS) ; **droit à l'oubli** (direction only, confirmation) : anonymisation **en place**
+  de `learners_ro` (id + FK conservés → intégrité), suppression compte **seulement si non référencé
+  ailleurs** (règle pure `decideAccountErasure`, pas de cascade-delete de tiers) + documents Storage
+  (purge paginée), **liste de suppression** `data_erasures` consultée par la sync (pas de réimport).
+  Revue sécurité : `is_erased` verrouillé service-role (`0018`/`0019`) — corrige une fuite inter-locataire.
+  `0017`→`0019` + `RETENTION.md`. `test:rgpd` **10** (5 pur + 5 intégration). Suite serialisée
+  (`--test-concurrency=1`) → **67/67** déterministe.
+- ⏭️ **Prochain : INC-12** (exploitation/observabilité) ou INC-7 (notifications) / INC-13 (mobile/a11y).
 
 Suite `main` : **branche → PR → CI verte → merge → déploiement** (previews Vercel actifs).
 
@@ -292,7 +302,7 @@ DoD : invitation/désactivation fonctionnelles, périmètres respectés (test RL
 utilisable par la coordination, tests verts, non-régression.
 ```
 
-## INC-11 — RGPD et journal d'audit
+## INC-11 — RGPD et journal d'audit ✅ livré (audit des accès + export + droit à l'oubli avec anti-réimport)
 **Objectif** : tenir les obligations légales sur les données personnelles des étudiants.
 **Périmètre** : journal d'audit des accès aux dossiers apprenants, export des données
 personnelles d'une personne, effacement (droit à l'oubli) avec anonymisation maîtrisée,
@@ -300,6 +310,9 @@ politique de rétention documentée.
 **Dépendances** : INC-2. **Critères** : chaque accès à un dossier est tracé ; une demande
 d'export produit les données de la personne ; un effacement est possible sans casser
 l'intégrité référentielle.
+**Livré** : `0017` (audit_log/log_access, data_erasures/is_erased) + `0018`/`0019` (lockdown
+service-role de is_erased), `src/lib/data/rgpd.ts`, `src/lib/rgpd-rules.ts` (règle pure
+`decideAccountErasure`), section RGPD sur la fiche apprenant, `RETENTION.md`, `test:rgpd` 10/10.
 
 ### Brief à coller
 ```
