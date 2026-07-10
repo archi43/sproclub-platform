@@ -43,6 +43,7 @@ Guide d'exploitation de la plateforme en production (INC-12). Complète `RETENTI
   4. Vérifier l'intégrité : lancer la suite d'intégration contre ce projet
      (`.env.local` pointant dessus) — `npm test` doit être vert (RLS + invariants).
   5. Journaliser la vérification (date, point restauré, résultat) ci-dessous.
+- **Checklist prête à dérouler** : voir `RESTORE_DRILL.md` (étape par étape, sans risque pour staging).
 - **Dernière vérification de restauration** : _à renseigner lors de la première exécution_
   (date · point restauré · `npm test` vert O/N).
 - **Restauration en prod** : uniquement après validation sur le projet de test, et après
