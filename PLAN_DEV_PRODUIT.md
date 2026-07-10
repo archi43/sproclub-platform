@@ -87,7 +87,13 @@ coordination du jury. Base Supabase UE, Cal.eu branché.
   cron `run-notifications` ; écran `coordination/notifications` ; anti-doublon Airtable (`NOTIF_DISABLED_KINDS`).
   `test:notifications` **8** (5 pur + 3 intégration) → **81/81**. **Pause credential** : `RESEND_API_KEY`/
   `NOTIF_FROM` pour l'envoi réel.
-- ⏭️ **Prochain : INC-13** (accessibilité/mobile).
+- ✅ **INC-13** (accessibilité et mobile) : app shell accessible — **lien d'évitement** (skip to content),
+  **nav active** (`aria-current` + état visible, composant client `NavTabs`), `main#main-content` focusable,
+  **viewport** explicite (zoom autorisé), cibles tactiles ≥44px, `Th scope="col"` ; règle pure d'onglet
+  actif `nav-active.ts` (`test:nav` 5). Tables déjà responsives (primitive `overflow-x-auto`), grilles
+  label/valeur adaptatives. Vérif : `next lint` (jsx-a11y) vert, contrôle axe-core ponctuel (0 violation
+  WCAG 2 A/AA, manuel — non en CI), pas de débordement horizontal ; non-régression **86/86**.
+  **Prochaine étape : Étape 7** (ouverture à d'autres organismes).
 
 Suite `main` : **branche → PR → CI verte → merge → déploiement** (previews Vercel actifs).
 
@@ -366,12 +372,17 @@ des secrets (Cal.com), runbook d'incident.
 DoD : erreurs remontées, abus login freiné, restauration prouvée, rotation documentée.
 ```
 
-## INC-13 — Accessibilité et mobile
+## INC-13 — Accessibilité et mobile ✅ livré (app shell accessible + responsive + a11y de base vert)
 **Objectif** : des portails utilisables au téléphone et accessibles.
 **Périmètre** : mise en responsive des portails apprenant et coach, passe d'accessibilité
 (contrastes, navigation clavier, libellés), vérification sur mobile.
 **Dépendances** : INC-4, INC-8. **Critères** : les parcours clés sont utilisables sur
 mobile ; les vérifications d'accessibilité de base passent.
+**Livré** : lien d'évitement + `main#main-content` focusable, `NavTabs` (client, `aria-current` +
+état actif visible), viewport explicite (zoom autorisé), cibles ≥44px, `Th scope="col"` ; tables
+responsives (primitive) et grilles adaptatives déjà en place. Règle pure `nav-active.ts` (`test:nav` 5).
+Vérif : `next lint` (jsx-a11y) vert, contrôle axe-core ponctuel (0 violation WCAG 2 A/AA, manuel — non en
+CI), pas de débordement horizontal, non-régression **86/86**.
 
 ### Brief à coller
 ```

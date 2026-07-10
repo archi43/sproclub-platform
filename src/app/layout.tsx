@@ -20,6 +20,13 @@ export const metadata = {
   description: "Plateforme pédagogique multi-locataire",
 };
 
+/** Mobile-first: fit the device width, allow user zoom (never disable it — a11y). */
+export const viewport = {
+  width: "device-width",
+  initialScale: 1,
+  themeColor: "#24365E",
+};
+
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="fr" className={`${heading.variable} ${body.variable}`}>
