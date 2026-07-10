@@ -57,7 +57,13 @@ coordination du jury. Base Supabase UE, Cal.eu branché.
   par apprenant : chemin `{org_id}/{email}/{fichier}`, `0015`) avec URLs signées courtes. Écritures
   service-role uniquement. `test:storage` (5) prouve l'isolation (apprenant ne lit que ses fichiers,
   cross-org refusé). Non-régression 48/48.
-- ⏭️ **Prochain : INC-9** (génération de documents — attestations/conventions dans Storage) ou INC-11/12.
+- ✅ **INC-9** (génération de documents) : génération **PDF** (pdf-lib) des attestations d'entrée/fin,
+  convention et convocation de soutenance, avec **mentions obligatoires** et données du dossier ;
+  archivage dans le bucket `learner-docs` (INC-8) + **journal d'émission** `document_emissions`
+  (`0016`, qui/quand/où). Génération service-role derrière garde direction/coordinator ; l'apprenant
+  retrouve ses documents (Mon dossier). Contenu en fonctions pures (`test:documents` unit 5) +
+  intégration RLS/archivage (4). Non-régression 57/57.
+- ⏭️ **Prochain : INC-11/12** (RGPD/journal d'audit + exploitation) ou INC-7 (notifications) / INC-13 (mobile/a11y).
 
 Suite `main` : **branche → PR → CI verte → merge → déploiement** (previews Vercel actifs).
 
@@ -251,7 +257,7 @@ DoD : documents/résultats visibles pour le seul intéressé, Storage isolé (te
 verts, non-régression isolation/réservation.
 ```
 
-## INC-9 — Génération de documents
+## INC-9 — Génération de documents ✅ livré (PDF attestations/convention/convocation + journal d'émission + archivage Storage)
 **Objectif** : produire les documents Qualiopi par apprenant, aujourd'hui dans Airtable.
 **Périmètre** : gabarits et génération PDF des attestations d'entrée et de fin, de la
 convention, de la convocation de soutenance ; stockage dans Storage ; horodatage et

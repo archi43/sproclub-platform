@@ -19,13 +19,15 @@
     "test:coach": "node --env-file-if-exists=.env.local --test tests/coach.integration.test.mts",
     "test:compliance": "node --test tests/compliance.unit.test.mts",
     "test:reporting": "node --test tests/reporting.unit.test.mts",
-    "test:storage": "node --env-file-if-exists=.env.local --test tests/storage.integration.test.mts"
+    "test:storage": "node --env-file-if-exists=.env.local --test tests/storage.integration.test.mts",
+    "test:documents": "node --env-file-if-exists=.env.local --test tests/documents.unit.test.mts tests/documents.integration.test.mts"
   },
   "dependencies": {
     "@supabase/ssr": "^0.5.1",
     "@supabase/supabase-js": "^2.45.0",
     "clsx": "^2.1.1",
     "next": "^14.2.5",
+    "pdf-lib": "^1.17.1",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "tailwind-merge": "^3.6.0"
