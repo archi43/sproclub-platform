@@ -131,7 +131,10 @@ coordination du jury. Base Supabase UE, Cal.eu branché.
   changement d'e-mail côté Airtable (15/07) faisait échouer toute la sync quotidienne (violation
   d'unicité `airtable_record_id`) — désormais mis à jour **en place** (`emailUpdated`/`emailConflicts`
   tracés, conflit jamais fatal), prouvé par test contre la vraie `syncCommandes`.
-  `tests/inc14` **7** (3 nouveaux) + `test:sync` **3** → **110/110**.
+  `tests/inc14` **7** (3 nouveaux) + `test:sync` **3** → **110/110**. **Actif en production** :
+  2 139/2 222 soumissions historiques rattachées (610 en direct, 1 529 via Soutenances),
+  1 449 notées (moyenne des étoiles), 278 dossiers apprenants alimentés ; 83 écartées-comptées
+  (chaînes onboarding/certification différées).
   **Prochaine étape : Étape 7** (ouverture à d'autres organismes).
 
 Suite `main` : **branche → PR → CI verte → merge → déploiement** (previews Vercel actifs).
