@@ -5,14 +5,17 @@ import type { FilloutSubmission } from "@/lib/sync/fillout-source";
 /**
  * Fillout → coaching_reports (INC-14, jointure INC-16). Idempotent: upsert on
  * fillout_submission_id, so re-running never duplicates. A submission is
- * attached to its exact enrollment via the Airtable recordID of the
- * « Etudiant(s) » RecordPicker (Commandes Formation), with an e-mail fallback
- * (most recent enrollment). Unmatched submissions are counted, not lost.
+ * attached to its exact enrollment via the Airtable recordIDs of its
+ * RecordPickers : match direct sur la Commande (« Etudiant(s) »,
+ * « Sales Orders-header »), sinon via la map Soutenance → Commande (injectée,
+ * formulaires d'évaluation/soutenance), sinon repli e-mail (dossier le plus
+ * récent). Unmatched submissions are counted, not lost.
  */
 export interface FilloutSyncStats {
   source: number;
   inserted: number;
-  matchedByRecordId: number;
+  matchedByRecordId: number; // RecordPicker → Commande, direct
+  matchedViaSoutenance: number; // RecordPicker Soutenance → Commande (map Airtable)
   skippedNoEmail: number; // aucun identifiant exploitable (ni recordID ni e-mail)
   skippedUnknownEmail: number; // identifiant présent mais inconnu de la base
 }
@@ -20,20 +23,31 @@ export interface FilloutSyncStats {
 export async function syncFillout(
   admin: SupabaseClient,
   orgId: string,
-  submissions: FilloutSubmission[]
+  submissions: FilloutSubmission[],
+  soutenanceToCommande: Map<string, string> = new Map()
 ): Promise<FilloutSyncStats> {
-  const stats: FilloutSyncStats = { source: submissions.length, inserted: 0, matchedByRecordId: 0, skippedNoEmail: 0, skippedUnknownEmail: 0 };
+  const stats: FilloutSyncStats = { source: submissions.length, inserted: 0, matchedByRecordId: 0, matchedViaSoutenance: 0, skippedNoEmail: 0, skippedUnknownEmail: 0 };
   if (submissions.length === 0) return stats;
 
-  // Résolution prioritaire : recordID Airtable de la Commande → dossier exact.
-  const recordIds = [...new Set(submissions.map((s) => s.enrollmentRecordId).filter(Boolean))] as string[];
+  // Résolution prioritaire : recordIDs Airtable candidats → dossier exact.
+  // On tente chaque candidat directement (Commande) ET via la map
+  // Soutenance → Commande ; une seule requête pour tous les ids possibles.
+  const candidateIds = new Set<string>();
+  for (const s of submissions) {
+    for (const rec of s.candidateRecordIds ?? []) {
+      candidateIds.add(rec);
+      const viaSoutenance = soutenanceToCommande.get(rec);
+      if (viaSoutenance) candidateIds.add(viaSoutenance);
+    }
+  }
   const enrollmentByRecordId = new Map<string, string>();
-  if (recordIds.length > 0) {
+  const idList = [...candidateIds];
+  for (let i = 0; i < idList.length; i += 500) {
     const { data: exact, error: xe } = await admin
       .from("enrollments_ro")
       .select("id, airtable_record_id")
       .eq("org_id", orgId)
-      .in("airtable_record_id", recordIds);
+      .in("airtable_record_id", idList.slice(i, i + 500));
     if (xe) throw new Error(`fillout enrollments by record: ${xe.message}`);
     for (const e of exact ?? []) enrollmentByRecordId.set(e.airtable_record_id as string, e.id as string);
   }
@@ -66,15 +80,28 @@ export async function syncFillout(
 
   const rows: Record<string, unknown>[] = [];
   for (const s of submissions) {
-    if (!s.enrollmentRecordId && !s.email) {
+    const candidates = s.candidateRecordIds ?? [];
+    if (candidates.length === 0 && !s.email) {
       stats.skippedNoEmail++;
       continue;
     }
-    // RecordID exact d'abord ; sinon e-mail → dossier le plus récent.
-    let enrollmentId = s.enrollmentRecordId ? enrollmentByRecordId.get(s.enrollmentRecordId) : undefined;
-    if (enrollmentId) {
-      stats.matchedByRecordId++;
-    } else if (s.email) {
+    // 1) candidat = Commande directe ; 2) candidat = Soutenance → Commande ;
+    // 3) repli e-mail → dossier le plus récent.
+    let enrollmentId: string | undefined;
+    for (const rec of candidates) {
+      enrollmentId = enrollmentByRecordId.get(rec);
+      if (enrollmentId) {
+        stats.matchedByRecordId++;
+        break;
+      }
+      const commande = soutenanceToCommande.get(rec);
+      enrollmentId = commande ? enrollmentByRecordId.get(commande) : undefined;
+      if (enrollmentId) {
+        stats.matchedViaSoutenance++;
+        break;
+      }
+    }
+    if (!enrollmentId && s.email) {
       const learnerId = learnerByEmail.get(s.email);
       enrollmentId = learnerId ? enrollmentByLearner.get(learnerId) : undefined;
     }

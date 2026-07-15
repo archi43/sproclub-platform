@@ -119,8 +119,10 @@ coordination du jury. Base Supabase UE, Cal.eu branché.
   (`FILLOUT_FORM_IDS` : 5 comptes rendus — coaching/onboarding/certification —, 11 évaluations
   projet, 6 soutenances projet, 4 grilles d'évaluation numérique, suivi étudiant). Découverte
   structurante : les formulaires SproCLUB sont **adossés à Airtable** (RecordPicker, pas d'e-mail) —
-  la jointure passe par le **recordID de la Commande** (`enrollments_ro.airtable_record_id`,
-  dossier exact, prime sur l'heuristique e-mail→dossier récent, conservée en repli). Normalisation
+  la jointure passe par les **recordIDs candidats** : Commande directe (« Etudiant(s) »,
+  « Sales Orders-header » — CR coaching, suivi étudiant) ou **via la table Soutenances**
+  (évaluations/soutenances projet : map recordID soutenance → Commande lue en lecture seule),
+  repli e-mail conservé. Différé : chaînes « Session Onboarding »/« Examen » (~220 soumissions). Normalisation
   enrichie : date de session (DatePicker), note = moyenne des **StarRating** (grilles jury),
   RecordPicker/FileUpload lisibles dans le corps. **Bug latent corrigé** : le write-back Airtable
   excluait pas les CR `source='fillout'` — or les formulaires Fillout créent déjà leur record dans
@@ -129,7 +131,7 @@ coordination du jury. Base Supabase UE, Cal.eu branché.
   changement d'e-mail côté Airtable (15/07) faisait échouer toute la sync quotidienne (violation
   d'unicité `airtable_record_id`) — désormais mis à jour **en place** (`emailUpdated`/`emailConflicts`
   tracés, conflit jamais fatal), prouvé par test contre la vraie `syncCommandes`.
-  `tests/inc14` **6** (3 nouveaux) + `test:sync` **3** → **109/109**.
+  `tests/inc14` **7** (3 nouveaux) + `test:sync` **3** → **110/110**.
   **Prochaine étape : Étape 7** (ouverture à d'autres organismes).
 
 Suite `main` : **branche → PR → CI verte → merge → déploiement** (previews Vercel actifs).
