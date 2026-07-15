@@ -8,9 +8,11 @@
  * Absent/empty env → returns [] so the daily sync degrades gracefully.
  *
  * Normalization heuristics (form-agnostic on purpose):
- *   - dossier         = first RecordPicker « Etudiant(s) » → recordID Airtable
- *                       de la Commande (les formulaires SproCLUB sont adossés à
- *                       Airtable : c'est l'identifiant exact du dossier) ;
+ *   - dossier         = recordIDs Airtable de TOUS les RecordPickers, ordonnés
+ *                       (pickers « Etudiant… »/« Sales Orders… » d'abord). Les
+ *                       formulaires SproCLUB sont adossés à Airtable : selon le
+ *                       formulaire, le picker vise la Commande (dossier exact)
+ *                       ou une Soutenance (résolue en Commande par la sync) ;
  *   - learner e-mail  = first answer of type EmailInput / matching an e-mail;
  *   - session date    = first DatePicker whose label mentions « date » ;
  *   - grade           = first numeric answer whose label mentions note/score,
@@ -21,8 +23,8 @@ export interface FilloutSubmission {
   submissionId: string;
   submittedAt: string; // ISO
   email?: string;
-  /** recordID Airtable « Commandes Formation » = enrollments_ro.airtable_record_id. */
-  enrollmentRecordId?: string;
+  /** recordIDs Airtable candidats (RecordPickers), dossier probable en tête. */
+  candidateRecordIds?: string[];
   sessionDate?: string; // YYYY-MM-DD
   grade?: number;
   body: string;
@@ -62,17 +64,21 @@ function scalar(v: unknown): string | undefined {
 export function normalizeSubmission(raw: RawSubmission): FilloutSubmission {
   const questions = raw.questions ?? [];
   let email: string | undefined;
-  let enrollmentRecordId: string | undefined;
   let sessionDate: string | undefined;
   let grade: number | undefined;
   const starRatings: number[] = [];
+  const primaryRecordIds: string[] = []; // pickers désignant le dossier lui-même
+  const otherRecordIds: string[] = []; // pickers indirects (Soutenance, …)
   const lines: string[] = [];
 
   for (const q of questions) {
     const label = (q.name ?? "").trim();
-    if (!enrollmentRecordId && q.type === "RecordPicker" && /^[ée]tudiant/i.test(label) && Array.isArray(q.value)) {
-      const rec = (q.value[0] as { recordID?: unknown } | undefined)?.recordID;
-      if (typeof rec === "string" && rec) enrollmentRecordId = rec;
+    if (q.type === "RecordPicker" && Array.isArray(q.value)) {
+      const isPrimary = /^[ée]tudiant|^sales orders/i.test(label);
+      for (const item of q.value) {
+        const rec = (item as { recordID?: unknown } | undefined)?.recordID;
+        if (typeof rec === "string" && rec) (isPrimary ? primaryRecordIds : otherRecordIds).push(rec);
+      }
     }
     const value = scalar(q.value);
     if (!value) continue;
@@ -102,7 +108,7 @@ export function normalizeSubmission(raw: RawSubmission): FilloutSubmission {
     submissionId: raw.submissionId,
     submittedAt: raw.submissionTime,
     email,
-    enrollmentRecordId,
+    candidateRecordIds: [...primaryRecordIds, ...otherRecordIds],
     sessionDate,
     grade,
     body: lines.join("\n"),

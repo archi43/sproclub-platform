@@ -136,7 +136,11 @@ test("normalizeSubmission extrait le dossier (RecordPicker), la date et la moyen
       { name: "Livrable de l'étudiant", type: "FileUpload", value: [{ url: "https://files.example/livrable.pdf" }] },
     ],
   });
-  assert.equal(s.enrollmentRecordId, "recs4zqSwwJazihGI", "le picker Etudiant(s) donne le dossier, pas celui du coach");
+  assert.deepEqual(
+    s.candidateRecordIds,
+    ["recs4zqSwwJazihGI", "recCoach00000001"],
+    "le picker Etudiant(s) passe en tête des candidats, devant celui du coach"
+  );
   assert.equal(s.sessionDate, "2026-07-11");
   assert.equal(s.email, undefined, "aucun e-mail dans ces formulaires");
   assert.equal(s.grade, 3.5, "moyenne des StarRating quand aucune « note »");
@@ -149,7 +153,7 @@ test("syncFillout rattache par recordID au dossier EXACT (prime sur le plus réc
     {
       submissionId: `${runId}-s4`,
       submittedAt: "2026-07-12T15:00:00.000Z",
-      enrollmentRecordId: `${runId}-old`, // dossier ANCIEN visé explicitement
+      candidateRecordIds: [`${runId}-old`], // dossier ANCIEN visé explicitement
       sessionDate: "2026-07-11",
       grade: 3.5,
       body: "Évaluation jury via RecordPicker",
@@ -167,6 +171,31 @@ test("syncFillout rattache par recordID au dossier EXACT (prime sur le plus réc
     .single();
   assert.equal(row!.enrollment_id, oldestEnrollmentId, "recordID exact > heuristique du dossier le plus récent");
   assert.equal(row!.session_date, "2026-07-11", "la date du formulaire prime sur la date de soumission");
+});
+
+test("syncFillout résout un picker Soutenance via la map Soutenance→Commande", { skip }, async () => {
+  const soutenanceMap = new Map([["rec-soutenance-x", `${runId}-new`]]);
+  const submissions = [
+    {
+      submissionId: `${runId}-s5`,
+      submittedAt: "2026-07-13T09:00:00.000Z",
+      // Le formulaire d'évaluation ne connaît que la soutenance et l'évaluateur.
+      candidateRecordIds: ["rec-soutenance-x", "rec-evaluateur-y"],
+      grade: 4,
+      body: "Évaluation de soutenance",
+    },
+  ];
+  const stats = await syncFillout(admin, orgId, submissions, soutenanceMap);
+  assert.equal(stats.matchedViaSoutenance, 1, "résolu via la table Soutenances");
+  assert.equal(stats.inserted, 1);
+
+  const { data: row } = await admin
+    .from("coaching_reports")
+    .select("enrollment_id")
+    .eq("org_id", orgId)
+    .eq("fillout_submission_id", `${runId}-s5`)
+    .single();
+  assert.equal(row!.enrollment_id, newestEnrollmentId, "rattachée au dossier pointé par la soutenance");
 });
 
 test("le write-back exclut les CR d'origine Fillout (déjà créés dans Airtable par le formulaire)", { skip }, async () => {

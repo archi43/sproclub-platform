@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { timingSafeEqual } from "node:crypto";
 import { adminClient } from "@/lib/supabase/admin";
-import { fetchCommandes, AirtableNotConfiguredError } from "@/lib/sync/airtable-source";
+import { fetchCommandes, fetchSoutenanceCommandeMap, AirtableNotConfiguredError } from "@/lib/sync/airtable-source";
 import { syncCommandes } from "@/lib/sync/run";
 import { fetchFilloutSubmissions } from "@/lib/sync/fillout-source";
 import { syncFillout } from "@/lib/sync/fillout";
@@ -53,7 +53,18 @@ async function runSync(request: NextRequest) {
     let fillout: unknown = { skipped: "non configuré" };
     try {
       const submissions = await fetchFilloutSubmissions();
-      if (submissions.length > 0) fillout = await syncFillout(admin, org.id as string, submissions);
+      if (submissions.length > 0) {
+        // Map Soutenance → Commande (best-effort) : résout les formulaires
+        // d'évaluation/soutenance dont le picker vise la table Soutenances.
+        let soutenanceMap = new Map<string, string>();
+        try {
+          soutenanceMap = await fetchSoutenanceCommandeMap();
+        } catch (err) {
+          const message = err instanceof Error ? err.message : "soutenance map failed";
+          await logOpsEvent({ orgId: org.id as string, level: "warn", source: "cron.sync", message: "Map Soutenance→Commande indisponible (jointure partielle)", detail: message });
+        }
+        fillout = await syncFillout(admin, org.id as string, submissions, soutenanceMap);
+      }
     } catch (err) {
       const message = err instanceof Error ? err.message : "fillout sync failed";
       fillout = { error: message };

@@ -131,9 +131,11 @@ Déclenchement manuel : `curl -H "x-cron-secret: <CRON_SECRET>" https://<host>/a
   proprement (0 soumission). Ingestion quotidienne via le cron `sync-airtable` (05:00 UTC).
 - **Ajouter/retirer un formulaire** : modifier `FILLOUT_FORM_IDS` dans Vercel → redeploy.
   Idempotent (upsert par `fillout_submission_id`) : élargir la liste n'a jamais d'effet double.
-- **Jointure** : recordID Airtable du RecordPicker « Etudiant(s) » (= Commande exacte),
-  repli e-mail → dossier le plus récent. Les soumissions non rattachées sont comptées dans
-  `sync_log` (`skippedUnknownEmail`), jamais perdues en silence.
+- **Jointure** : recordIDs Airtable des RecordPickers — Commande directe (« Etudiant(s) »,
+  « Sales Orders-header ») ou via la table Soutenances (`AIRTABLE_SOUTENANCES_TABLE_ID`,
+  défaut `tblWV8UbwgJ5NgnuW`, champ « Sales Orders-header ») ; repli e-mail → dossier le
+  plus récent. Les soumissions non rattachées sont comptées dans `sync_log`
+  (`skippedUnknownEmail`/`skippedNoEmail`), jamais perdues en silence.
 - **Anti-doublon** : les CR `source='fillout'` ne repartent JAMAIS vers Airtable via le
   write-back (les formulaires Fillout créent déjà leur record côté Airtable).
 

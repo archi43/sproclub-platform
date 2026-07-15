@@ -46,3 +46,34 @@ export async function fetchCommandes(): Promise<SourceRecord[]> {
 
   return out;
 }
+
+/**
+ * Soutenances formation → Commande (INC-16). Les formulaires Fillout
+ * d'évaluation/soutenance désignent l'apprenant via un RecordPicker
+ * « Soutenance » : cette map (recordID soutenance → recordID Commande, champ
+ * « Sales Orders-header ») permet à la sync Fillout de résoudre le dossier.
+ * Lecture seule, paginée, un seul champ demandé.
+ */
+export async function fetchSoutenanceCommandeMap(): Promise<Map<string, string>> {
+  const apiKey = process.env.AIRTABLE_API_KEY;
+  const baseId = process.env.AIRTABLE_BASE_ID;
+  if (!apiKey || !baseId) throw new AirtableNotConfiguredError();
+  const tableId = process.env.AIRTABLE_SOUTENANCES_TABLE_ID ?? "tblWV8UbwgJ5NgnuW";
+  const field = "Sales Orders-header";
+
+  const base = `https://api.airtable.com/v0/${baseId}/${encodeURIComponent(tableId)}`;
+  const map = new Map<string, string>();
+  let offset: string | undefined;
+  do {
+    const url = `${base}?pageSize=100&fields%5B%5D=${encodeURIComponent(field)}${offset ? `&offset=${encodeURIComponent(offset)}` : ""}`;
+    const res = await fetch(url, { headers: { Authorization: `Bearer ${apiKey}` } });
+    if (!res.ok) throw new Error(`Airtable soutenances fetch failed: ${res.status}`);
+    const page = (await res.json()) as AirtablePage;
+    for (const r of page.records) {
+      const linked = r.fields[field];
+      if (Array.isArray(linked) && typeof linked[0] === "string") map.set(r.id, linked[0]);
+    }
+    offset = page.offset;
+  } while (offset);
+  return map;
+}

@@ -189,7 +189,7 @@ le claim JWT `app_metadata.org_id` (robuste avec le pooling PostgREST).
 ## État actuel
 Produit **en ligne** (staging) et prouvé en réel. Base Supabase UE (`zbvohktqfgwajjvnpets`,
 `eu-north-1`) ; app déployée sur **Vercel région `fra1`** : **https://sproclub-platform.vercel.app**.
-Migrations **0001→0023** + seed appliqués. Suite de tests **109/109** verte contre la vraie base
+Migrations **0001→0023** + seed appliqués. Suite de tests **110/110** verte contre la vraie base
 (inclut `test:rgpd` 10, `test:observability` 6, `test:notifications` 8, `test:nav` 5, `test:members` 3,
 `test:l360` 13, `tests/inc14` 6). Exécution **sérialisée**
 (`npm test` → `--test-concurrency=1`) pour éviter la flakiness de rate-limit auth sous concurrence.
@@ -332,12 +332,14 @@ Incréments livrés (voir `PLAN_DEV_PRODUIT.md`) :
 - **INC-16 (activation Fillout, tout le périmètre évaluatif)** : `FILLOUT_FORM_IDS` = **27
   formulaires** (5 comptes rendus, 11 évaluations projet, 6 soutenances projet, 4 grilles
   d'évaluation, suivi étudiant). Les formulaires SproCLUB sont **adossés à Airtable** : pas
-  d'e-mail, l'apprenant est un RecordPicker → jointure par **recordID de la Commande**
-  (= `enrollments_ro.airtable_record_id`, dossier exact ; repli e-mail conservé,
-  `matchedByRecordId` tracé). Normalisation : date de session (DatePicker), note = moyenne des
+  d'e-mail, l'apprenant est un RecordPicker → jointure par **recordID** : Commande directe
+  (« Etudiant(s) », « Sales Orders-header ») ou **via la table Soutenances** (map
+  recordID soutenance → Commande, `fetchSoutenanceCommandeMap`, injectée dans `syncFillout`) ;
+  repli e-mail conservé ; `matchedByRecordId`/`matchedViaSoutenance` tracés. Différé :
+  chaînes « Session Onboarding »/« Examen » (~220 soumissions, tables intermédiaires). Normalisation : date de session (DatePicker), note = moyenne des
   **StarRating**, RecordPicker/FileUpload lisibles. **Anti-doublon write-back** : les CR
   `source='fillout'` sont exclus du write-back Airtable (les formulaires y créent déjà leur
-  record) — `listPendingWritebackReports` filtré, prouvé par test. `tests/inc14` **6**.
+  record) — `listPendingWritebackReports` filtré, prouvé par test. `tests/inc14` **7**.
   Reste : Étape 7 (ouverture à d'autres organismes).
 
 Comptes de test : student (melissa.blld), coach, coordinator, 3 évaluateurs, hôte Cal.eu (voir `SETUP.md`).
