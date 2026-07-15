@@ -52,9 +52,12 @@ async function runSync(request: NextRequest) {
     const stats = await syncL360(admin, orgId, l360Client());
     await logOpsEvent({
       orgId,
-      level: "info",
+      level: stats.fetchErrors > 0 ? "warn" : "info",
       source: "cron.l360",
-      message: "Synchronisation 360Learning (livrables) exécutée",
+      message:
+        stats.fetchErrors > 0
+          ? `Synchronisation 360Learning partielle (${stats.fetchErrors} appel(s) 360L en échec)`
+          : "Synchronisation 360Learning (livrables) exécutée",
       detail: JSON.stringify(stats),
     });
     return NextResponse.json({ ok: true, org: slug, stats });

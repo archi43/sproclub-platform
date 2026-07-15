@@ -112,8 +112,9 @@ coordination du jury. Base Supabase UE, Cal.eu branché.
   inconnus comptés (pas de perte silencieuse), jamais de downgrade. Port/adaptateur
   `src/lib/l360/*` (OAuth2 API v2, lecture seule, dégradation propre sans credential), règles pures
   `l360-rules.ts` (validées sur les données réelles : `onTime` plafonne à 97 %, `successful` = 100).
-  Badges « Validé par le jury » (portail apprenant + dossier coach). `test:l360` **12** (8 pur + 4 intégration RLS/idempotence/RGPD/anti-réécriture) → **104/104**. **Reste** : `L360_CLIENT_ID`/`L360_CLIENT_SECRET`
-  sur Vercel (activation du cron).
+  Badges « Validé par le jury » (portail apprenant + dossier coach). `test:l360` **13** (8 pur + 5 intégration RLS/idempotence/RGPD/anti-réécriture/tolérance aux
+  pannes 360L) → **105/105**. **Actif en production** (credentials posés, secret GitHub posé,
+  premier run réel vérifié : 61 mappings, 1 789 livrables dont 1 421 validés jury, idempotent).
   **Prochaine étape : Étape 7** (ouverture à d'autres organismes).
 
 Suite `main` : **branche → PR → CI verte → merge → déploiement** (previews Vercel actifs).
