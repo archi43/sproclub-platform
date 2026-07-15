@@ -1,13 +1,15 @@
 // NB: pas de "server-only" ici — importé par les tests Node (client 360L factice
 // injecté). Ne jamais importer depuis un composant client.
 import type { SupabaseClient } from "@supabase/supabase-js";
+// Imports relatifs (pas d'alias @/) : ce module est chargé par les tests Node,
+// qui ne résolvent pas les paths TypeScript.
 import {
   decideDeliverableState,
   extractProjectNumber,
   latestStatPerUser,
   pickDepositCourseId,
-} from "@/lib/l360-rules";
-import type { L360Client } from "@/lib/l360/client";
+} from "../l360-rules.ts";
+import type { L360Client } from "./client.ts";
 
 /**
  * 360Learning → Postgres (INC-15). Reflète l'état des livrables de projet :

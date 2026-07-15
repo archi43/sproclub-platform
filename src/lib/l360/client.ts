@@ -1,7 +1,7 @@
 // NB: pas de "server-only" ici — le PORT (interface) est importé par les tests
 // Node qui injectent un client factice. Ne jamais importer depuis un composant
 // client ; l'implémentation réelle n'est instanciée que par la route cron.
-import type { L360PathStep } from "@/lib/l360-rules";
+import type { L360PathStep } from "../l360-rules.ts";
 
 /**
  * Port + adaptateur 360Learning (INC-15). API v2, OAuth2 client credentials.
