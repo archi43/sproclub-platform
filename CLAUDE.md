@@ -189,9 +189,9 @@ le claim JWT `app_metadata.org_id` (robuste avec le pooling PostgREST).
 ## État actuel
 Produit **en ligne** (staging) et prouvé en réel. Base Supabase UE (`zbvohktqfgwajjvnpets`,
 `eu-north-1`) ; app déployée sur **Vercel région `fra1`** : **https://sproclub-platform.vercel.app**.
-Migrations **0001→0023** + seed appliqués. Suite de tests **105/105** verte contre la vraie base
+Migrations **0001→0023** + seed appliqués. Suite de tests **108/108** verte contre la vraie base
 (inclut `test:rgpd` 10, `test:observability` 6, `test:notifications` 8, `test:nav` 5, `test:members` 3,
-`test:l360` 13). Exécution **sérialisée**
+`test:l360` 13, `tests/inc14` 6). Exécution **sérialisée**
 (`npm test` → `--test-concurrency=1`) pour éviter la flakiness de rate-limit auth sous concurrence.
 **6 crons Vercel** (sync 05:00, sync 360L filet quotidien 05:45, miroir 06:30, export BPF lundi 07:00,
 purge rétention 03:15, relances 08:00) + **workflow GitHub Actions horaire** `sync-l360-hourly`
@@ -329,6 +329,15 @@ Incréments livrés (voir `PLAN_DEV_PRODUIT.md`) :
   pannes de l'API 360L : un parcours en échec est sauté et compté (`fetchErrors`), jamais fatal).
   **Actif en production** : credentials Vercel + secret GitHub posés ; premier run réel vérifié
   (61 mappings auto-découverts, 1 789 livrables reflétés dont 1 421 validés jury, re-run idempotent).
+- **INC-16 (activation Fillout, tout le périmètre évaluatif)** : `FILLOUT_FORM_IDS` = **27
+  formulaires** (5 comptes rendus, 11 évaluations projet, 6 soutenances projet, 4 grilles
+  d'évaluation, suivi étudiant). Les formulaires SproCLUB sont **adossés à Airtable** : pas
+  d'e-mail, l'apprenant est un RecordPicker → jointure par **recordID de la Commande**
+  (= `enrollments_ro.airtable_record_id`, dossier exact ; repli e-mail conservé,
+  `matchedByRecordId` tracé). Normalisation : date de session (DatePicker), note = moyenne des
+  **StarRating**, RecordPicker/FileUpload lisibles. **Anti-doublon write-back** : les CR
+  `source='fillout'` sont exclus du write-back Airtable (les formulaires y créent déjà leur
+  record) — `listPendingWritebackReports` filtré, prouvé par test. `tests/inc14` **6**.
   Reste : Étape 7 (ouverture à d'autres organismes).
 
 Comptes de test : student (melissa.blld), coach, coordinator, 3 évaluateurs, hôte Cal.eu (voir `SETUP.md`).

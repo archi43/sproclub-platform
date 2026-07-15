@@ -92,7 +92,7 @@ coordination du jury. Base Supabase UE, Cal.eu branché.
   `AIRTABLE_WRITEBACK_ENABLED` + token write — **en attente du token**), soutenances non
   poussées (chaîne Cal.eu→Google Agenda→Airtable, anti-doublon) ; **Fillout connecté** aux
   tables natives (`coaching_reports.source='fillout'`, upsert par submissionId, formulaires
-  via `FILLOUT_FORM_IDS` — **en attente du choix des formulaires**) ; Supabase assumé socle
+  via `FILLOUT_FORM_IDS` — choix des formulaires livré en INC-16) ; Supabase assumé socle
   produit (0022). `tests/inc14` 3/3 ; suite 92/92.
 - ✅ **INC-13** (accessibilité et mobile) : app shell accessible — **lien d'évitement** (skip to content),
   **nav active** (`aria-current` + état visible, composant client `NavTabs`), `main#main-content` focusable,
@@ -115,6 +115,17 @@ coordination du jury. Base Supabase UE, Cal.eu branché.
   Badges « Validé par le jury » (portail apprenant + dossier coach). `test:l360` **13** (8 pur + 5 intégration RLS/idempotence/RGPD/anti-réécriture/tolérance aux
   pannes 360L) → **105/105**. **Actif en production** (credentials posés, secret GitHub posé,
   premier run réel vérifié : 61 mappings, 1 789 livrables dont 1 421 validés jury, idempotent).
+- ✅ **INC-16** (activation Fillout : tout le périmètre évaluatif) : **27 formulaires connectés**
+  (`FILLOUT_FORM_IDS` : 5 comptes rendus — coaching/onboarding/certification —, 11 évaluations
+  projet, 6 soutenances projet, 4 grilles d'évaluation numérique, suivi étudiant). Découverte
+  structurante : les formulaires SproCLUB sont **adossés à Airtable** (RecordPicker, pas d'e-mail) —
+  la jointure passe par le **recordID de la Commande** (`enrollments_ro.airtable_record_id`,
+  dossier exact, prime sur l'heuristique e-mail→dossier récent, conservée en repli). Normalisation
+  enrichie : date de session (DatePicker), note = moyenne des **StarRating** (grilles jury),
+  RecordPicker/FileUpload lisibles dans le corps. **Bug latent corrigé** : le write-back Airtable
+  excluait pas les CR `source='fillout'` — or les formulaires Fillout créent déjà leur record dans
+  Airtable → doublon assuré à l'activation du token write ; désormais filtré
+  (`listPendingWritebackReports`, prouvé par test). `tests/inc14` **6** (3 nouveaux) → **108/108**.
   **Prochaine étape : Étape 7** (ouverture à d'autres organismes).
 
 Suite `main` : **branche → PR → CI verte → merge → déploiement** (previews Vercel actifs).

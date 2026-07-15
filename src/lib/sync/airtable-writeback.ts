@@ -49,6 +49,24 @@ export function buildCrFields(
 const AIRTABLE_REC_RE = /^rec[A-Za-z0-9]{14}$/;
 const BATCH = 10;
 
+/**
+ * CR en attente de write-back : UNIQUEMENT les natifs (source = 'platform').
+ * Les formulaires Fillout sont adossés à Airtable et y créent DÉJÀ leur record
+ * à la soumission — pousser les CR `source='fillout'` doublonnerait chaque
+ * évaluation dans « Comptes rendus -header ». Exporté pour être prouvé par test.
+ */
+export async function listPendingWritebackReports(admin: SupabaseClient, orgId: string): Promise<ReportRow[]> {
+  const { data, error } = await admin
+    .from("coaching_reports")
+    .select("id, enrollment_id, session_date, created_at, body, grade, source")
+    .eq("org_id", orgId)
+    .eq("airtable_synced", false)
+    .eq("source", "platform")
+    .limit(200);
+  if (error) throw new Error(`writeback reports: ${error.message}`);
+  return (data ?? []) as ReportRow[];
+}
+
 export async function pushCoachingReports(admin: SupabaseClient, orgId: string): Promise<WritebackStats> {
   const stats: WritebackStats = { enabled: false, pending: 0, pushed: 0, skippedNoCommande: 0 };
   const apiKey = process.env.AIRTABLE_API_KEY;
@@ -57,14 +75,7 @@ export async function pushCoachingReports(admin: SupabaseClient, orgId: string):
   if (process.env.AIRTABLE_WRITEBACK_ENABLED !== "true" || !apiKey || !baseId) return stats;
   stats.enabled = true;
 
-  const { data: reports, error: re } = await admin
-    .from("coaching_reports")
-    .select("id, enrollment_id, session_date, created_at, body, grade, source")
-    .eq("org_id", orgId)
-    .eq("airtable_synced", false)
-    .limit(200);
-  if (re) throw new Error(`writeback reports: ${re.message}`);
-  const pending = (reports ?? []) as ReportRow[];
+  const pending = await listPendingWritebackReports(admin, orgId);
   stats.pending = pending.length;
   if (pending.length === 0) return stats;
 
