@@ -125,6 +125,18 @@ Déclenchement manuel : `curl -H "x-cron-secret: <CRON_SECRET>" https://<host>/a
 - **Suivi** : chaque exécution loggue ses compteurs dans `sync_log` (`l360_projects`) et
   `ops_events` (`cron.l360`) — écran `coordination/exploitation`.
 
+## 7quater. Fillout (évaluations, INC-14/16)
+- **Config** : `FILLOUT_API_KEY` + `FILLOUT_FORM_IDS` (Vercel env, liste d'ids séparés par
+  virgules — 27 formulaires du périmètre évaluatif). Sans eux, le pull Fillout se dégrade
+  proprement (0 soumission). Ingestion quotidienne via le cron `sync-airtable` (05:00 UTC).
+- **Ajouter/retirer un formulaire** : modifier `FILLOUT_FORM_IDS` dans Vercel → redeploy.
+  Idempotent (upsert par `fillout_submission_id`) : élargir la liste n'a jamais d'effet double.
+- **Jointure** : recordID Airtable du RecordPicker « Etudiant(s) » (= Commande exacte),
+  repli e-mail → dossier le plus récent. Les soumissions non rattachées sont comptées dans
+  `sync_log` (`skippedUnknownEmail`), jamais perdues en silence.
+- **Anti-doublon** : les CR `source='fillout'` ne repartent JAMAIS vers Airtable via le
+  write-back (les formulaires Fillout créent déjà leur record côté Airtable).
+
 ## 7. Déploiement (rappel)
 Appliquer chaque **migration avant le code** (`supabase db push`). La CI exécute la vraie
 suite d'intégration contre un Supabase local jetable ; le merge sur `main` est bloqué tant

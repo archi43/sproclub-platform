@@ -3,16 +3,18 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type { FilloutSubmission } from "@/lib/sync/fillout-source";
 
 /**
- * Fillout → coaching_reports (INC-14). Idempotent: upsert on
+ * Fillout → coaching_reports (INC-14, jointure INC-16). Idempotent: upsert on
  * fillout_submission_id, so re-running never duplicates. A submission is
- * attached to the learner matched by e-mail (normalized) and their most recent
- * enrollment; submissions without a matching learner are counted, not lost.
+ * attached to its exact enrollment via the Airtable recordID of the
+ * « Etudiant(s) » RecordPicker (Commandes Formation), with an e-mail fallback
+ * (most recent enrollment). Unmatched submissions are counted, not lost.
  */
 export interface FilloutSyncStats {
   source: number;
   inserted: number;
-  skippedNoEmail: number;
-  skippedUnknownEmail: number;
+  matchedByRecordId: number;
+  skippedNoEmail: number; // aucun identifiant exploitable (ni recordID ni e-mail)
+  skippedUnknownEmail: number; // identifiant présent mais inconnu de la base
 }
 
 export async function syncFillout(
@@ -20,10 +22,23 @@ export async function syncFillout(
   orgId: string,
   submissions: FilloutSubmission[]
 ): Promise<FilloutSyncStats> {
-  const stats: FilloutSyncStats = { source: submissions.length, inserted: 0, skippedNoEmail: 0, skippedUnknownEmail: 0 };
+  const stats: FilloutSyncStats = { source: submissions.length, inserted: 0, matchedByRecordId: 0, skippedNoEmail: 0, skippedUnknownEmail: 0 };
   if (submissions.length === 0) return stats;
 
-  // Résoudre e-mail -> (learner, dossier le plus récent) en 2 requêtes.
+  // Résolution prioritaire : recordID Airtable de la Commande → dossier exact.
+  const recordIds = [...new Set(submissions.map((s) => s.enrollmentRecordId).filter(Boolean))] as string[];
+  const enrollmentByRecordId = new Map<string, string>();
+  if (recordIds.length > 0) {
+    const { data: exact, error: xe } = await admin
+      .from("enrollments_ro")
+      .select("id, airtable_record_id")
+      .eq("org_id", orgId)
+      .in("airtable_record_id", recordIds);
+    if (xe) throw new Error(`fillout enrollments by record: ${xe.message}`);
+    for (const e of exact ?? []) enrollmentByRecordId.set(e.airtable_record_id as string, e.id as string);
+  }
+
+  // Repli : e-mail -> (learner, dossier le plus récent) en 2 requêtes.
   const emails = [...new Set(submissions.map((s) => s.email).filter(Boolean))] as string[];
   const { data: learners, error: le } = await admin
     .from("learners_ro")
@@ -51,12 +66,18 @@ export async function syncFillout(
 
   const rows: Record<string, unknown>[] = [];
   for (const s of submissions) {
-    if (!s.email) {
+    if (!s.enrollmentRecordId && !s.email) {
       stats.skippedNoEmail++;
       continue;
     }
-    const learnerId = learnerByEmail.get(s.email);
-    const enrollmentId = learnerId ? enrollmentByLearner.get(learnerId) : undefined;
+    // RecordID exact d'abord ; sinon e-mail → dossier le plus récent.
+    let enrollmentId = s.enrollmentRecordId ? enrollmentByRecordId.get(s.enrollmentRecordId) : undefined;
+    if (enrollmentId) {
+      stats.matchedByRecordId++;
+    } else if (s.email) {
+      const learnerId = learnerByEmail.get(s.email);
+      enrollmentId = learnerId ? enrollmentByLearner.get(learnerId) : undefined;
+    }
     if (!enrollmentId) {
       stats.skippedUnknownEmail++;
       continue;
@@ -66,7 +87,7 @@ export async function syncFillout(
       enrollment_id: enrollmentId,
       source: "fillout",
       fillout_submission_id: s.submissionId,
-      session_date: s.submittedAt?.slice(0, 10) || null,
+      session_date: s.sessionDate ?? (s.submittedAt?.slice(0, 10) || null),
       body: s.body || "(soumission vide)",
       grade: s.grade ?? null,
       author_id: null,
