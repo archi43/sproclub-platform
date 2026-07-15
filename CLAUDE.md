@@ -189,9 +189,9 @@ le claim JWT `app_metadata.org_id` (robuste avec le pooling PostgREST).
 ## État actuel
 Produit **en ligne** (staging) et prouvé en réel. Base Supabase UE (`zbvohktqfgwajjvnpets`,
 `eu-north-1`) ; app déployée sur **Vercel région `fra1`** : **https://sproclub-platform.vercel.app**.
-Migrations **0001→0023** + seed appliqués. Suite de tests **104/104** verte contre la vraie base
+Migrations **0001→0023** + seed appliqués. Suite de tests **105/105** verte contre la vraie base
 (inclut `test:rgpd` 10, `test:observability` 6, `test:notifications` 8, `test:nav` 5, `test:members` 3,
-`test:l360` 12). Exécution **sérialisée**
+`test:l360` 13). Exécution **sérialisée**
 (`npm test` → `--test-concurrency=1`) pour éviter la flakiness de rate-limit auth sous concurrence.
 **6 crons Vercel** (sync 05:00, sync 360L filet quotidien 05:45, miroir 06:30, export BPF lundi 07:00,
 purge rétention 03:15, relances 08:00) + **workflow GitHub Actions horaire** `sync-l360-hourly`
@@ -324,9 +324,11 @@ Incréments livrés (voir `PLAN_DEV_PRODUIT.md`) :
   dépôts avérés ; `source` tracée `platform`/`l360`). Port/adaptateur `src/lib/l360/client.ts`
   (OAuth2 client credentials, token caché, pagination Link, dégradation propre) ; règles pures
   `src/lib/l360-rules.ts`. Badges « Validé par le jury » (portail apprenant + dossier coach).
-  `test:l360` **12** (8 pur + 4 intégration : reflet + RGPD, idempotence, RLS, garde-fou
-  anti-réécriture d'un livrable validé — trigger `protect_l360_deliverable`). **Pause
-  credential** : `L360_CLIENT_ID`/`L360_CLIENT_SECRET` sur Vercel pour activer le cron.
+  `test:l360` **13** (8 pur + 5 intégration : reflet + RGPD, idempotence, RLS, garde-fou
+  anti-réécriture d'un livrable validé — trigger `protect_l360_deliverable` ; tolérance aux
+  pannes de l'API 360L : un parcours en échec est sauté et compté (`fetchErrors`), jamais fatal).
+  **Actif en production** : credentials Vercel + secret GitHub posés ; premier run réel vérifié
+  (61 mappings auto-découverts, 1 789 livrables reflétés dont 1 421 validés jury, re-run idempotent).
   Reste : Étape 7 (ouverture à d'autres organismes).
 
 Comptes de test : student (melissa.blld), coach, coordinator, 3 évaluateurs, hôte Cal.eu (voir `SETUP.md`).
@@ -352,8 +354,7 @@ ouverture à d'autres organismes (onboarding par paramétrage, image de marque e
 audit de sécurité externe). Le socle multi-locataire est déjà en place : c'est une extension, pas une refonte.
 Restes différés : INC-3 serveurs SAP + planning S1.2 ; INC-4 remontée Airtable des CR [token write] +
 dispos multi-coach ; INC-12 exécution réelle du test de restauration en staging ; INC-7 credential
-Resend (`RESEND_API_KEY`/`NOTIF_FROM`) pour l'envoi réel + échéances CPF — en attente d'extension sync / credential ;
-INC-15 : poser `L360_CLIENT_ID`/`L360_CLIENT_SECRET` sur Vercel pour activer le cron `sync-l360`.
+Resend (`RESEND_API_KEY`/`NOTIF_FROM`) pour l'envoi réel + échéances CPF — en attente d'extension sync / credential.
 
 ## Documents de référence (dossier parent SPROPULSE)
 Cahier de conception, cahier des charges écran par écran, dictionnaire de données,

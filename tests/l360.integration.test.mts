@@ -48,6 +48,16 @@ const fake: L360Client = {
     ];
   },
   async listPathStats(pathId) {
+    if (pathId === "p-flaky") {
+      // Parcours dont l'API 360L est en panne (mapping inséré par le test de
+      // tolérance) : la sync doit le sauter et continuer.
+      throw new Error("360L fetch /paths/stats failed: 502 Bad Gateway");
+    }
+    if (pathId === "p9") {
+      return [
+        { userId: "u-alice", pathId, statusType: "successful", progress: 100, score: 75, enrolledAt: "2026-06-01T00:00:00Z", completedAt: "2026-06-20T10:00:00Z" },
+      ];
+    }
     if (pathId !== "p3") return [];
     return [
       // alice : validée par le jury (parcours successful).
@@ -63,6 +73,10 @@ const fake: L360Client = {
     ];
   },
   async listCourseStats(courseId) {
+    if (courseId === "c-err") {
+      // Cours de rendu injoignable : le signal de validation doit suffire.
+      throw new Error("360L fetch /courses/stats failed: 502 Bad Gateway");
+    }
     if (courseId !== "c2") return [];
     return [
       { userId: "u-alice", courseId, completedAt: "2026-05-20T09:00:00Z" },
@@ -209,4 +223,30 @@ test("garde-fou 0023 : l'étudiant ne peut pas réécrire un livrable validé pa
     .single();
   assert.equal(row!.deliverable_url, null, "l'URL n'a pas été altérée");
   assert.equal(row!.l360_score, 92, "le score jury est intact");
+});
+
+test("tolérance aux pannes 360L : un parcours en échec est sauté, les autres passent", { skip }, async () => {
+  // Deux mappings supplémentaires : p-flaky (stats de parcours en panne) et
+  // p9 (parcours OK mais cours de rendu injoignable → validation seule).
+  const { error: ins } = await admin.from("l360_path_mappings").insert([
+    { org_id: orgId, l360_path_id: "p-flaky", project_number: 8, deposit_course_id: null, path_name: "Projet n°8 (API en panne)" },
+    { org_id: orgId, l360_path_id: "p9", project_number: 9, deposit_course_id: "c-err", path_name: "Projet n°9 (rendu injoignable)" },
+  ]);
+  assert.ok(!ins, `insert mappings: ${ins?.message}`);
+
+  const stats = await syncL360(admin, orgId, fake);
+  assert.equal(stats.fetchErrors, 2, "les deux pannes sont comptées (parcours sauté + cours de rendu)");
+  assert.equal(stats.mappingsActive, 3, "les trois mappings restent actifs");
+
+  const { data: p9 } = await admin
+    .from("project_deliverables")
+    .select("deliverable_submitted, validated_at, l360_score")
+    .eq("org_id", orgId)
+    .eq("enrollment_id", enrollmentByEmail.get(EMAILS.alice)!)
+    .eq("project_number", 9)
+    .single();
+  assert.ok(p9, "le projet 9 est écrit malgré la panne du parcours voisin");
+  assert.equal(p9!.deliverable_submitted, true);
+  assert.equal(p9!.validated_at, "2026-06-20T10:00:00+00:00", "la validation jury suffit sans signal de dépôt");
+  assert.equal(p9!.l360_score, 75);
 });

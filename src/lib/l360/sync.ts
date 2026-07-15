@@ -29,6 +29,9 @@ export interface L360SyncStats {
   skippedErased: number;
   submitted: number;
   validated: number;
+  /** Appels 360L en échec (API externe instable) : parcours sautés ou signal de
+   *  dépôt indisponible ce tour-ci — jamais fatal, le prochain run rattrape. */
+  fetchErrors: number;
 }
 
 const CHUNK = 500;
@@ -65,6 +68,7 @@ export async function syncL360(admin: SupabaseClient, orgId: string, l360: L360C
     skippedErased: 0,
     submitted: 0,
     validated: 0,
+    fetchErrors: 0,
   };
 
   // --- Pass 1 : auto-découverte des parcours « Projet n°X » -------------------
@@ -115,16 +119,30 @@ export async function syncL360(admin: SupabaseClient, orgId: string, l360: L360C
   const submittedCandidates: Candidate[] = [];
 
   for (const mapping of mappings) {
-    const pathStats = latestStatPerUser(await l360.listPathStats(mapping.l360_path_id));
+    // Tolérance aux pannes de l'API 360L (cron horaire) : un parcours en échec
+    // est sauté et compté, les autres continuent ; le prochain run rattrape.
+    let pathStats;
+    try {
+      pathStats = latestStatPerUser(await l360.listPathStats(mapping.l360_path_id));
+    } catch {
+      stats.fetchErrors++;
+      continue;
+    }
     stats.statRecords += pathStats.length;
 
     // Dépôt : première tentative clôturée sur le cours de rendu, par apprenant.
     const depositByUser = new Map<string, string>();
     if (mapping.deposit_course_id) {
-      for (const attempt of await l360.listCourseStats(mapping.deposit_course_id)) {
-        if (!attempt.completedAt) continue;
-        const current = depositByUser.get(attempt.userId);
-        if (!current || attempt.completedAt < current) depositByUser.set(attempt.userId, attempt.completedAt);
+      try {
+        for (const attempt of await l360.listCourseStats(mapping.deposit_course_id)) {
+          if (!attempt.completedAt) continue;
+          const current = depositByUser.get(attempt.userId);
+          if (!current || attempt.completedAt < current) depositByUser.set(attempt.userId, attempt.completedAt);
+        }
+      } catch {
+        // Signal de dépôt indisponible ce tour-ci : on garde au moins le signal
+        // de validation (`successful`) — jamais de downgrade de toute façon.
+        stats.fetchErrors++;
       }
     }
 
