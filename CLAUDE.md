@@ -340,6 +340,8 @@ Incréments livrés (voir `PLAN_DEV_PRODUIT.md`) :
   **StarRating**, RecordPicker/FileUpload lisibles. **Anti-doublon write-back** : les CR
   `source='fillout'` sont exclus du write-back Airtable (les formulaires y créent déjà leur
   record) — `listPendingWritebackReports` filtré, prouvé par test. `tests/inc14` **7**.
+  **Actif en production** : 2 139/2 222 soumissions historiques rattachées (610 direct,
+  1 529 via Soutenances), 1 449 notées, 278 dossiers alimentés.
   Reste : Étape 7 (ouverture à d'autres organismes).
 
 Comptes de test : student (melissa.blld), coach, coordinator, 3 évaluateurs, hôte Cal.eu (voir `SETUP.md`).
