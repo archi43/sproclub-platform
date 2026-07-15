@@ -32,6 +32,9 @@ export interface ProjectDeliverable {
   deliverable_submitted: boolean;
   deliverable_url: string | null;
   submitted_at: string | null;
+  source: "platform" | "l360";
+  validated_at: string | null; // validation par le jury (parcours 360L "successful")
+  l360_score: number | null;
 }
 
 export type BookingKind = "coaching" | "defense";

@@ -14,9 +14,12 @@ if echo "$staged" | grep -qE '(^|/)\.env($|\.)' ; then
   exit 2
 fi
 
-# 2) Scan staged content for common secret shapes.
+# 2) Scan staged content for common secret shapes. We flag secret VALUES, not
+#    bare identifiers: env-var names (CRON_SECRET, …) legitimately appear in
+#    routes, docs and the runbook — what must never land is a name ASSIGNED a
+#    literal value, a private key, a JWT or a provider-prefixed key.
 diff=$(git diff --cached 2>/dev/null || true)
-if echo "$diff" | grep -qE '(SERVICE_ROLE|service_role|AIRTABLE_API_KEY|CALCOM_API_KEY|CRON_SECRET|sk_(live|prod)_[A-Za-z0-9]|-----BEGIN [A-Z ]*PRIVATE KEY-----|eyJ[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{20,}\.)' ; then
+if echo "$diff" | grep -qE "(SERVICE_ROLE_KEY|AIRTABLE_API_KEY|AIRTABLE_TOKEN|CALCOM_API_KEY|CRON_SECRET|L360_CLIENT_SECRET|RESEND_API_KEY|FILLOUT_API_KEY)['\"]?[[:space:]]*[:=][[:space:]]*['\"]?[A-Za-z0-9+/_-]{16,}|sk_(live|prod)_[A-Za-z0-9]|-----BEGIN [A-Z ]*PRIVATE KEY-----|eyJ[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{20,}\." ; then
   echo "BLOCKED: staged changes appear to contain a secret or token. Move it to .env.local / the secret manager." >&2
   exit 2
 fi

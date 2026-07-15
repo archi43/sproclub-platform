@@ -60,6 +60,7 @@ Rotation recommandée : périodique + immédiate en cas de fuite (cf.
 | `AIRTABLE_TOKEN` | Airtable → Developer hub → Personal access tokens | Vercel env → redeploy |
 | `SUPABASE_SERVICE_ROLE_KEY` | Supabase → Project → API → *rotate* | Vercel env → redeploy |
 | `CRON_SECRET` | générer une valeur aléatoire (≥ 32 o) | Vercel env → redeploy |
+| `L360_CLIENT_ID` / `L360_CLIENT_SECRET` | 360Learning → paramètres API (OAuth2 v2) | Vercel env → redeploy |
 
 Procédure générique : générer la nouvelle clé → mettre à jour la variable Vercel (tous
 environnements concernés) → **redéployer** → vérifier (login, un cron manuel) → révoquer
@@ -73,6 +74,8 @@ manuel pour confirmer (`curl -H "x-cron-secret: <CRON_SECRET>" .../api/admin/syn
 | `/api/admin/mirror-availabilities` | `30 6 * * *` | Miroir des créneaux Cal.eu |
 | `/api/admin/export-bpf` | `0 7 * * 1` (lundi) | Export réglementaire (Module 5) |
 | `/api/admin/purge-retention` | `15 3 * * *` | Purge de rétention (RGPD/observabilité) |
+| `/api/admin/run-notifications` | `0 8 * * *` | Relances e-mail (INC-7) |
+| `/api/admin/sync-l360` | `30 * * * *` (horaire) | Pont 360Learning : livrables/validation jury (INC-15) |
 
 Déclenchement manuel : `curl -H "x-cron-secret: <CRON_SECRET>" https://<host>/api/admin/<route>`.
 
@@ -103,6 +106,20 @@ Déclenchement manuel : `curl -H "x-cron-secret: <CRON_SECRET>" https://<host>/a
   3. vérifier le journal `coordination/notifications` après chaque bascule.
 - **Fréquence** : cron `run-notifications` quotidien (08:00 UTC). Idempotent (clé
   `org_id,dedupe_key`) : une ré-exécution ne renvoie jamais un doublon.
+
+## 7ter. Pont 360Learning (INC-15)
+- **Activation** : `L360_CLIENT_ID` + `L360_CLIENT_SECRET` (Vercel env). Sans eux, le cron
+  répond 503 (dégradation propre), rien n'est écrit.
+- **Mapping** : les parcours 360L « Projet n°X » sont auto-découverts dans
+  `l360_path_mappings` (insert-only : un mapping existant n'est jamais réécrit). En cas de
+  faux positif ou de cours de rendu mal détecté, corriger en **service-role** (SQL Editor
+  Supabase) : `update l360_path_mappings set active = false where l360_path_id = '…';`
+  (ou ajuster `project_number` / `deposit_course_id`). Lecture staff via RLS.
+- **Sémantique** : dépôt = tentative clôturée sur le cours de rendu (dernier cours du
+  parcours) → débloque la soutenance ; validation **jury** = parcours `successful` →
+  `validated_at` + score. Jamais de downgrade ; skip-list RGPD respectée.
+- **Suivi** : chaque exécution loggue ses compteurs dans `sync_log` (`l360_projects`) et
+  `ops_events` (`cron.l360`) — écran `coordination/exploitation`.
 
 ## 7. Déploiement (rappel)
 Appliquer chaque **migration avant le code** (`supabase db push`). La CI exécute la vraie

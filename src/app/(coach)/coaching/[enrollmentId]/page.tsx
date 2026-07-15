@@ -86,13 +86,14 @@ export default async function CoachDossierPage({ params }: { params: { enrollmen
         ) : (
           <Table>
             <THead>
-              <Tr><Th>Projet</Th><Th>Déposé</Th><Th>Document</Th></Tr>
+              <Tr><Th>Projet</Th><Th>Déposé</Th><Th>Validé (jury)</Th><Th>Document</Th></Tr>
             </THead>
             <TBody>
               {deliverables.map((d) => (
                 <Tr key={d.id}>
                   <Td>Projet {d.projectNumber}</Td>
                   <Td><Badge tone={d.submitted ? "success" : "warning"}>{d.submitted ? "Oui" : "Non"}</Badge></Td>
+                  <Td><Badge tone={d.validatedAt ? "success" : "warning"}>{d.validatedAt ? "Oui" : "En attente"}</Badge></Td>
                   <Td>
                     {d.url ? (
                       <a href={d.url} target="_blank" rel="noopener noreferrer" className="text-brand hover:underline">Ouvrir</a>

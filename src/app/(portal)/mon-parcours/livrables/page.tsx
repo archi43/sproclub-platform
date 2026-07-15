@@ -27,7 +27,10 @@ export default async function DeliverablesPage() {
               <Card>
                 <div className="flex items-center justify-between gap-3">
                   <p className="font-heading font-semibold text-brand">Projet {d.project_number}</p>
-                  {d.deliverable_submitted && <Badge tone="success">Déposé</Badge>}
+                  <div className="flex items-center gap-2">
+                    {d.deliverable_submitted && <Badge tone="success">Déposé</Badge>}
+                    {d.validated_at && <Badge tone="success">Validé par le jury</Badge>}
+                  </div>
                 </div>
                 {d.deliverable_submitted ? (
                   <p className="mt-2 text-sm text-grey-600">
@@ -35,6 +38,8 @@ export default async function DeliverablesPage() {
                       <a href={d.deliverable_url} target="_blank" rel="noreferrer">
                         Voir le livrable
                       </a>
+                    ) : d.source === "l360" ? (
+                      "Livrable déposé sur 360Learning."
                     ) : (
                       "Livrable déposé."
                     )}

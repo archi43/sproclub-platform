@@ -152,7 +152,12 @@ vers ces jetons et primitives, sans changer la logique.
   configuré). Tables `notifications` (journal, unique `org_id,dedupe_key`) + `notification_prefs` (opt-out)
   (`0021`, RLS staff). Cron `api/admin/run-notifications` (rappels soutenance/fin d'accès/CR) ; écran
   `coordination/notifications` (journal). Anti-doublon Airtable via `NOTIF_DISABLED_KINDS`.
-- `supabase/migrations/0001` → `0021` ; seed `supabase/seed/sproclub_bootstrap.sql`.
+- `src/lib/l360-rules.ts` (INC-15, pur : n° de projet depuis le nom de parcours, cours de rendu =
+  dernier cours, décision dépôt/validation) + `src/lib/l360/client.ts` (port + adaptateur API v2
+  360Learning, OAuth2, lecture seule, dégradation propre) + `src/lib/l360/sync.ts` (auto-découverte
+  `l360_path_mappings`, reflet dépôt/validation JURY dans `project_deliverables`, jointure e-mail,
+  skip-list RGPD, idempotent). Route cron horaire `api/admin/sync-l360` (`0023`).
+- `supabase/migrations/0001` → `0023` ; seed `supabase/seed/sproclub_bootstrap.sql`.
   (`0004` invariants réservation, `0005` normalisation e-mails minuscules à l'écriture,
   `0012` gestion utilisateurs/rôles : désactivation qui coupe l'accès + policies de gestion,
   `0013` `enrollments_ro.pending_reports` pour la file d'opérations, `0014` portail coach :
@@ -184,16 +189,19 @@ le claim JWT `app_metadata.org_id` (robuste avec le pooling PostgREST).
 ## État actuel
 Produit **en ligne** (staging) et prouvé en réel. Base Supabase UE (`zbvohktqfgwajjvnpets`,
 `eu-north-1`) ; app déployée sur **Vercel région `fra1`** : **https://sproclub-platform.vercel.app**.
-Migrations **0001→0021** + seed appliqués. Suite de tests **89/89** verte contre la vraie base
-(inclut `test:rgpd` 10, `test:observability` 6, `test:notifications` 8, `test:nav` 5, `test:members` 3).
-Exécution **sérialisée**
+Migrations **0001→0023** + seed appliqués. Suite de tests **104/104** verte contre la vraie base
+(inclut `test:rgpd` 10, `test:observability` 6, `test:notifications` 8, `test:nav` 5, `test:members` 3,
+`test:l360` 12). Exécution **sérialisée**
 (`npm test` → `--test-concurrency=1`) pour éviter la flakiness de rate-limit auth sous concurrence.
-**5 crons** (sync 05:00, miroir 06:30, export BPF lundi 07:00, purge rétention 03:15, relances 08:00). Note déploiement :
+**6 crons** (sync 05:00, sync 360L toutes les heures à :30, miroir 06:30, export BPF lundi 07:00,
+purge rétention 03:15, relances 08:00). Note déploiement :
 appliquer chaque migration **avant** le code (0012 : garde de rôle lit `memberships.deactivated_at` ;
 0013 : sync écrit `enrollments_ro.pending_reports` ; 0014 : portail coach lit `coaching_reports` ;
 0017→0019 : audit + effacement RGPD, `is_erased` réservé au service-role ;
 0020 : exploitation, `ops_events` lu par l'écran + routes/crons y écrivent, `rate_limit_touch` réservé au service-role ;
-0021 : notifications, cron `run-notifications` écrit `notifications`, écran + prefs lus par le staff).
+0021 : notifications, cron `run-notifications` écrit `notifications`, écran + prefs lus par le staff ;
+0023 : pont 360L, cron `sync-l360` écrit `l360_path_mappings` + `project_deliverables`, UI lit
+`validated_at`/`source`).
 
 Incréments livrés (voir `PLAN_DEV_PRODUIT.md`) :
 - **Fondations + pilote (Étapes 1-2)** : multi-locataire (RLS), auth lien e-mail (callback
@@ -300,7 +308,24 @@ Incréments livrés (voir `PLAN_DEV_PRODUIT.md`) :
   responsives (primitive `overflow-x-auto`), grilles label/valeur adaptatives, focus-visible global.
   Vérif : `next lint` (jsx-a11y) vert ; contrôle **axe-core ponctuel** (0 violation WCAG 2 A/AA sur page
   publique, manuel — non automatisé en CI) ; pas de débordement horizontal ; **non-régression 86/86**.
-  Pas de schéma/RLS (incrément front). Reste : Étape 7 (ouverture à d'autres organismes).
+  Pas de schéma/RLS (incrément front).
+- **INC-15 (pont 360Learning : livrables de projet)** : contrainte métier — les apprenants déposent
+  sur 360L et le **JURY** évalue/valide (déblocage du projet suivant natif 360L, non pilotable par
+  API : la v2 n'expose ni fichiers ni écriture, vérifié en réel). Sync **lecture seule, horaire**
+  (`api/admin/sync-l360`, CRON_SECRET) : auto-découverte des parcours « Projet n°X » →
+  `l360_path_mappings` (insert-only, ajustements manuels autoritaires, RLS staff-read, `0023`) ;
+  **dépôt** = tentative clôturée sur le cours de rendu (dernier cours du parcours) →
+  `deliverable_submitted` + `submitted_at` (débloque la soutenance, trigger `0004`) ; **validation
+  jury** = parcours `successful` → `validated_at` + `l360_score` (sémantique validée sur données
+  réelles : `onTime` plafonne à 97 %, `successful` = 100). Jointure par e-mail normalisé, skip-list
+  RGPD (`data_erasures`), e-mails inconnus comptés, **jamais de downgrade** (on n'écrit que des
+  dépôts avérés ; `source` tracée `platform`/`l360`). Port/adaptateur `src/lib/l360/client.ts`
+  (OAuth2 client credentials, token caché, pagination Link, dégradation propre) ; règles pures
+  `src/lib/l360-rules.ts`. Badges « Validé par le jury » (portail apprenant + dossier coach).
+  `test:l360` **12** (8 pur + 4 intégration : reflet + RGPD, idempotence, RLS, garde-fou
+  anti-réécriture d'un livrable validé — trigger `protect_l360_deliverable`). **Pause
+  credential** : `L360_CLIENT_ID`/`L360_CLIENT_SECRET` sur Vercel pour activer le cron.
+  Reste : Étape 7 (ouverture à d'autres organismes).
 
 Comptes de test : student (melissa.blld), coach, coordinator, 3 évaluateurs, hôte Cal.eu (voir `SETUP.md`).
 Reste (opérationnel) : **rotation** clé Cal.com + token Airtable (transités par le chat) ;
@@ -320,12 +345,13 @@ avec compensation (annulation) si l'insert échoue ; dégradation propre si Cal.
 Reste : planification cron du miroir, écran d'affectation du jury, mise à jour du jury sur Cal.eu.
 
 ## Backlog immédiat (suite du `PLAN_DEV_PRODUIT.md`)
-**Tous les incréments INC-0 → INC-13 sont livrés.** Prochaine grande étape : **Étape 7** —
+**Tous les incréments INC-0 → INC-15 sont livrés.** Prochaine grande étape : **Étape 7** —
 ouverture à d'autres organismes (onboarding par paramétrage, image de marque et domaine par organisme,
 audit de sécurité externe). Le socle multi-locataire est déjà en place : c'est une extension, pas une refonte.
 Restes différés : INC-3 serveurs SAP + planning S1.2 ; INC-4 remontée Airtable des CR [token write] +
 dispos multi-coach ; INC-12 exécution réelle du test de restauration en staging ; INC-7 credential
-Resend (`RESEND_API_KEY`/`NOTIF_FROM`) pour l'envoi réel + échéances CPF — en attente d'extension sync / credential.
+Resend (`RESEND_API_KEY`/`NOTIF_FROM`) pour l'envoi réel + échéances CPF — en attente d'extension sync / credential ;
+INC-15 : poser `L360_CLIENT_ID`/`L360_CLIENT_SECRET` sur Vercel pour activer le cron `sync-l360`.
 
 ## Documents de référence (dossier parent SPROPULSE)
 Cahier de conception, cahier des charges écran par écran, dictionnaire de données,
