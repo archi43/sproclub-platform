@@ -83,6 +83,7 @@ export interface CoachDeliverable {
   submitted: boolean;
   url: string | null;
   submittedAt: string | null;
+  validatedAt: string | null; // validation par le jury (reflet 360Learning)
 }
 
 export interface CoachingReport {
@@ -125,7 +126,7 @@ export async function getCoachDossier(orgId: string, enrollmentId: string): Prom
       .eq("org_id", orgId).eq("enrollment_id", enrollmentId)
       .order("starts_at", { ascending: false }),
     supabase.from("project_deliverables")
-      .select("id, project_number, deliverable_submitted, deliverable_url, submitted_at")
+      .select("id, project_number, deliverable_submitted, deliverable_url, submitted_at, validated_at")
       .eq("org_id", orgId).eq("enrollment_id", enrollmentId)
       .order("project_number", { ascending: true }),
     supabase.from("coaching_reports")
@@ -160,6 +161,7 @@ export async function getCoachDossier(orgId: string, enrollmentId: string): Prom
     deliverables: (deliv.data ?? []).map((d) => ({
       id: d.id as string, projectNumber: d.project_number as number, submitted: d.deliverable_submitted as boolean,
       url: d.deliverable_url as string | null, submittedAt: d.submitted_at as string | null,
+      validatedAt: d.validated_at as string | null,
     })),
     reports: (reps.data ?? []).map((r) => ({
       id: r.id as string, sessionDate: r.session_date as string | null, body: r.body as string,

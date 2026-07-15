@@ -13,7 +13,7 @@ export async function getDeliverables(orgId: string): Promise<ProjectDeliverable
   const supabase = createClient();
   const { data, error } = await supabase
     .from("project_deliverables")
-    .select("id, org_id, enrollment_id, project_number, deliverable_submitted, deliverable_url, submitted_at")
+    .select("id, org_id, enrollment_id, project_number, deliverable_submitted, deliverable_url, submitted_at, source, validated_at, l360_score")
     .eq("org_id", orgId)
     .order("project_number", { ascending: true });
   if (error) throw new Error(`Failed to load deliverables: ${error.message}`);
@@ -40,8 +40,17 @@ export async function submitDeliverable(
     })
     .eq("id", deliverableId)
     .eq("org_id", orgId)
-    .select("id, org_id, enrollment_id, project_number, deliverable_submitted, deliverable_url, submitted_at")
+    // Un livrable géré par 360Learning ou déjà déposé ne se réécrit pas ici
+    // (garde-fou serveur : trigger project_deliverables_protect_l360, 0023).
+    .eq("deliverable_submitted", false)
+    .eq("source", "platform")
+    .select("id, org_id, enrollment_id, project_number, deliverable_submitted, deliverable_url, submitted_at, source, validated_at, l360_score")
     .single();
-  if (error) throw new Error(`Failed to submit deliverable: ${error.message}`);
+  if (error) {
+    if (error.code === "PGRST116") {
+      throw new Error("Ce livrable est déjà déposé ou géré via 360Learning.");
+    }
+    throw new Error(`Failed to submit deliverable: ${error.message}`);
+  }
   return data as ProjectDeliverable;
 }

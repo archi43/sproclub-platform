@@ -100,6 +100,19 @@ coordination du jury. Base Supabase UE, Cal.eu branché.
   actif `nav-active.ts` (`test:nav` 5). Tables déjà responsives (primitive `overflow-x-auto`), grilles
   label/valeur adaptatives. Vérif : `next lint` (jsx-a11y) vert, contrôle axe-core ponctuel (0 violation
   WCAG 2 A/AA, manuel — non en CI), pas de débordement horizontal ; non-régression **86/86**.
+- ✅ **INC-15** (pont 360Learning : livrables de projet) : le dépôt et la validation restent DANS
+  360L — l'apprenant dépose, le **jury** évalue et valide, le déblocage du projet suivant est natif
+  360L (l'API v2 n'expose ni les fichiers ni d'écriture, vérifié). La plateforme se synchronise en
+  lecture (cron **horaire** `sync-l360`) : auto-découverte des parcours « Projet n°X »
+  (`l360_path_mappings`, RLS staff-read, `0023`), reflet du **dépôt** (tentative clôturée sur le
+  cours de rendu — dernier cours du parcours → `deliverable_submitted`, ce qui débloque la
+  réservation de soutenance, trigger `0004`) et de la **validation jury** (parcours `successful` →
+  `validated_at` + `l360_score`), jointure par e-mail normalisé, skip-list RGPD respectée, e-mails
+  inconnus comptés (pas de perte silencieuse), jamais de downgrade. Port/adaptateur
+  `src/lib/l360/*` (OAuth2 API v2, lecture seule, dégradation propre sans credential), règles pures
+  `l360-rules.ts` (validées sur les données réelles : `onTime` plafonne à 97 %, `successful` = 100).
+  Badges « Validé par le jury » (portail apprenant + dossier coach). `test:l360` **12** (8 pur + 4 intégration RLS/idempotence/RGPD/anti-réécriture) → **104/104**. **Reste** : `L360_CLIENT_ID`/`L360_CLIENT_SECRET`
+  sur Vercel (activation du cron).
   **Prochaine étape : Étape 7** (ouverture à d'autres organismes).
 
 Suite `main` : **branche → PR → CI verte → merge → déploiement** (previews Vercel actifs).
@@ -398,6 +411,20 @@ passe d'accessibilité (contrastes, navigation clavier, libellés ARIA), vérifi
 parcours clés sur mobile.
 DoD : parcours clés utilisables sur mobile, checks d'accessibilité de base au vert.
 ```
+
+---
+
+## INC-15 — Pont 360Learning (livrables de projet) ✅ livré (activation en attente des env Vercel)
+Contrainte métier : les apprenants déposent leurs livrables sur 360Learning et le **jury**
+évalue/valide ; la validation débloque le projet suivant (mécanique native des parcours
+360L, non pilotable par API — vérifié : l'API v2 n'expose ni les fichiers soumis ni
+d'écriture de validation). La plateforme se synchronise donc en LECTURE, toutes les heures :
+mapping parcours « Projet n°X » → n° de projet (auto-découverte + ajustable), dépôt détecté
+par la clôture de la tentative sur le cours de rendu (débloque la soutenance côté
+plateforme), validation jury détectée par le statut `successful` du parcours (`validated_at`
++ score). Jointure par e-mail, skip-list RGPD, idempotent, comptage explicite des écartés.
+DoD : tests pur + intégration verts (RLS, idempotence, RGPD), migration 0023 appliquée,
+cron horaire actif, badges jury sur portail et dossier coach.
 
 ---
 
