@@ -189,7 +189,7 @@ le claim JWT `app_metadata.org_id` (robuste avec le pooling PostgREST).
 ## État actuel
 Produit **en ligne** (staging) et prouvé en réel. Base Supabase UE (`zbvohktqfgwajjvnpets`,
 `eu-north-1`) ; app déployée sur **Vercel région `fra1`** : **https://sproclub-platform.vercel.app**.
-Migrations **0001→0023** + seed appliqués. Suite de tests **108/108** verte contre la vraie base
+Migrations **0001→0023** + seed appliqués. Suite de tests **109/109** verte contre la vraie base
 (inclut `test:rgpd` 10, `test:observability` 6, `test:notifications` 8, `test:nav` 5, `test:members` 3,
 `test:l360` 13, `tests/inc14` 6). Exécution **sérialisée**
 (`npm test` → `--test-concurrency=1`) pour éviter la flakiness de rate-limit auth sous concurrence.

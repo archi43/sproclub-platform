@@ -125,7 +125,11 @@ coordination du jury. Base Supabase UE, Cal.eu branché.
   RecordPicker/FileUpload lisibles dans le corps. **Bug latent corrigé** : le write-back Airtable
   excluait pas les CR `source='fillout'` — or les formulaires Fillout créent déjà leur record dans
   Airtable → doublon assuré à l'activation du token write ; désormais filtré
-  (`listPendingWritebackReports`, prouvé par test). `tests/inc14` **6** (3 nouveaux) → **108/108**.
+  (`listPendingWritebackReports`, prouvé par test). **Incident sync corrigé au passage** : un
+  changement d'e-mail côté Airtable (15/07) faisait échouer toute la sync quotidienne (violation
+  d'unicité `airtable_record_id`) — désormais mis à jour **en place** (`emailUpdated`/`emailConflicts`
+  tracés, conflit jamais fatal), prouvé par test contre la vraie `syncCommandes`.
+  `tests/inc14` **6** (3 nouveaux) + `test:sync` **3** → **109/109**.
   **Prochaine étape : Étape 7** (ouverture à d'autres organismes).
 
 Suite `main` : **branche → PR → CI verte → merge → déploiement** (previews Vercel actifs).
