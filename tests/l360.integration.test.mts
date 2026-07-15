@@ -103,7 +103,11 @@ before(async () => {
 
   // Apprenants + dossiers (sauf ghost, volontairement inconnu de la plateforme).
   for (const [tag, email] of Object.entries(EMAILS)) {
-    const { data: learner } = await admin.from("learners_ro").insert({ org_id: orgId, email }).select("id").single();
+    const { data: learner } = await admin
+      .from("learners_ro")
+      .insert({ org_id: orgId, email, airtable_record_id: `${runId}-etu-${tag}`, unique_learner_id: `${runId}-${tag}` })
+      .select("id")
+      .single();
     const { data: enr } = await admin
       .from("enrollments_ro")
       .insert({ org_id: orgId, learner_id: learner!.id as string, airtable_record_id: `${runId}-${tag}`, program: "Consultant SAP", status: "En cours", start_date: "2026-04-01" })
