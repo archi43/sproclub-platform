@@ -1,0 +1,30 @@
+# Sync 360Learning horaire (INC-15). Le plan Vercel Hobby n'autorise que des
+# crons quotidiens : l'horaire passe donc par GitHub Actions (gratuit), avec un
+# filet quotidien côté Vercel (05:45 UTC, vercel.json). Skip propre tant que le
+# secret CRON_SECRET n'est pas posé dans GitHub (Settings → Secrets → Actions).
+name: sync-l360-hourly
+
+on:
+  schedule:
+    - cron: "30 * * * *"
+  workflow_dispatch:
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Appeler la route de sync (CRON_SECRET)
+        env:
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+          SYNC_URL: https://sproclub-platform.vercel.app/api/admin/sync-l360
+        run: |
+          if [ -z "$CRON_SECRET" ]; then
+            echo "CRON_SECRET absent — job ignoré (poser le secret GitHub pour activer l'horaire)."
+            exit 0
+          fi
+          code=$(curl -s -o resp.json -w '%{http_code}' -H "x-cron-secret: $CRON_SECRET" "$SYNC_URL")
+          cat resp.json; echo
+          if [ "$code" != "200" ]; then
+            echo "::error::sync-l360 a répondu HTTP $code"
+            exit 1
+          fi

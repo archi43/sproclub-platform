@@ -103,7 +103,8 @@ coordination du jury. Base Supabase UE, Cal.eu branché.
 - ✅ **INC-15** (pont 360Learning : livrables de projet) : le dépôt et la validation restent DANS
   360L — l'apprenant dépose, le **jury** évalue et valide, le déblocage du projet suivant est natif
   360L (l'API v2 n'expose ni les fichiers ni d'écriture, vérifié). La plateforme se synchronise en
-  lecture (cron **horaire** `sync-l360`) : auto-découverte des parcours « Projet n°X »
+  lecture, **toutes les heures** (workflow GitHub Actions `sync-l360-hourly` — Vercel Hobby ne
+  permet que du quotidien — + filet Vercel 05:45) : auto-découverte des parcours « Projet n°X »
   (`l360_path_mappings`, RLS staff-read, `0023`), reflet du **dépôt** (tentative clôturée sur le
   cours de rendu — dernier cours du parcours → `deliverable_submitted`, ce qui débloque la
   réservation de soutenance, trigger `0004`) et de la **validation jury** (parcours `successful` →
