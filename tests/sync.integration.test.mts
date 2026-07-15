@@ -15,6 +15,7 @@ import { test, before, after } from "node:test";
 import assert from "node:assert/strict";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { buildLearner, buildEnrollment, normalizeEmail, SRC, type SourceRecord } from "../src/lib/sync/mapping.ts";
+import { syncCommandes } from "../src/lib/sync/run.ts";
 
 const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -122,4 +123,30 @@ test("second sync is idempotent (no duplicates)", { skip }, async () => {
   const c = await counts();
   assert.equal(c.learners, 2, "still two learners after re-run");
   assert.equal(c.enrollments, 3, "still three enrollments after re-run");
+});
+
+test("changement d'e-mail dans Airtable : mise à jour en place, pas de doublon ni d'échec", { skip }, async () => {
+  // Incident du 15/07/2026 : un apprenant change d'e-mail côté Airtable → la
+  // sync tentait d'insérer une seconde ligne avec le même airtable_record_id
+  // (unique) et échouait entièrement. Prouve la vraie syncCommandes (run.ts).
+  const changed = fixture().map((rec) =>
+    rec.id === `${runId}-c3`
+      ? { ...rec, fields: { ...rec.fields, [SRC.email]: [`${runId}-bob-NOUVEAU@exemple.fr`] } }
+      : rec
+  );
+  const stats = await syncCommandes(admin, orgId, changed);
+  assert.equal(stats.emailUpdated, 1, "l'e-mail modifié est mis à jour en place");
+  assert.equal(stats.emailConflicts, 0);
+
+  const c = await counts();
+  assert.equal(c.learners, 2, "toujours deux apprenants (même personne = même ligne)");
+  assert.equal(c.enrollments, 3, "les dossiers restent rattachés");
+
+  const bob = await admin
+    .from("learners_ro")
+    .select("email")
+    .eq("org_id", orgId)
+    .eq("airtable_record_id", `${runId}-e2`)
+    .single();
+  assert.equal(bob.data!.email, `${runId}-bob-nouveau@exemple.fr`, "e-mail rafraîchi (et normalisé en minuscules)");
 });

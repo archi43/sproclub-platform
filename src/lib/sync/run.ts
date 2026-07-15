@@ -1,6 +1,7 @@
-import "server-only";
+// NB: pas de "server-only" ici — importé par les tests Node (même convention que
+// fillout.ts). Ne jamais importer depuis un composant client.
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { buildEnrollment, buildLearner, normalizeEmail, SRC, type SourceRecord } from "@/lib/sync/mapping";
+import { buildEnrollment, buildLearner, normalizeEmail, SRC, type SourceRecord } from "./mapping.ts";
 
 /**
  * Airtable → Postgres sync engine (INC-1). Idempotent and org-scoped:
@@ -16,6 +17,10 @@ export interface SyncStats {
   skippedErased: number;
   learners: number;
   enrollments: number;
+  /** E-mails modifiés dans Airtable, mis à jour en place (même personne). */
+  emailUpdated: number;
+  /** Nouvel e-mail déjà pris par un autre apprenant : record écarté, pas d'échec global. */
+  emailConflicts: number;
 }
 
 const CHUNK = 500;
@@ -31,7 +36,7 @@ export async function syncCommandes(
   source: SourceRecord[]
 ): Promise<SyncStats> {
   const now = new Date().toISOString();
-  const stats: SyncStats = { source: source.length, skippedNoEmail: 0, skippedErased: 0, learners: 0, enrollments: 0 };
+  const stats: SyncStats = { source: source.length, skippedNoEmail: 0, skippedErased: 0, learners: 0, enrollments: 0, emailUpdated: 0, emailConflicts: 0 };
 
   // Right-to-erasure suppression list (INC-11): never re-import a learner whose
   // PII was erased — otherwise the sync would undo the anonymization.
@@ -49,6 +54,41 @@ export async function syncCommandes(
     }
     byEmail.set(learner.email, learner);
   }
+  // --- Pass 1b : e-mails modifiés dans Airtable ------------------------------
+  // L'upsert ci-dessous est clé sur (org_id, email) : un e-mail changé côté
+  // Airtable tenterait d'INSÉRER une seconde ligne avec le même
+  // airtable_record_id (unique) et ferait échouer toute la sync (incident du
+  // 15/07/2026). Même personne = même ligne : on met l'e-mail à jour en place,
+  // puis l'upsert retombe sur la ligne rafraîchie. Si le nouvel e-mail est déjà
+  // pris par un AUTRE apprenant, on écarte ce record (compté, pas fatal).
+  const candidates = [...byEmail.values()] as NonNullable<ReturnType<typeof buildLearner>>[];
+  const existingByRecord = new Map<string, string>();
+  for (const group of chunk(candidates.map((l) => l.airtable_record_id), CHUNK)) {
+    const { data: existing, error } = await admin
+      .from("learners_ro")
+      .select("airtable_record_id, email")
+      .eq("org_id", orgId)
+      .in("airtable_record_id", group);
+    if (error) throw new Error(`sync learners lookup: ${error.message}`);
+    for (const row of existing ?? []) existingByRecord.set(row.airtable_record_id as string, row.email as string);
+  }
+  for (const l of candidates) {
+    const knownEmail = existingByRecord.get(l.airtable_record_id);
+    if (!knownEmail || knownEmail === l.email) continue;
+    const { error } = await admin
+      .from("learners_ro")
+      .update({ email: l.email, synced_at: now })
+      .eq("org_id", orgId)
+      .eq("airtable_record_id", l.airtable_record_id);
+    if (error) {
+      stats.emailConflicts++;
+      byEmail.delete(l.email); // ne pas retenter l'insert : il violerait l'unicité du record id
+      console.warn(`[sync] e-mail conflict on ${l.airtable_record_id}: ${error.message}`);
+    } else {
+      stats.emailUpdated++;
+    }
+  }
+
   const learnerRows = [...byEmail.values()].map((l) => ({ ...l!, org_id: orgId, synced_at: now }));
 
   const emailToId = new Map<string, string>();
