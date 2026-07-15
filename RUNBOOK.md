@@ -75,7 +75,7 @@ manuel pour confirmer (`curl -H "x-cron-secret: <CRON_SECRET>" .../api/admin/syn
 | `/api/admin/export-bpf` | `0 7 * * 1` (lundi) | Export réglementaire (Module 5) |
 | `/api/admin/purge-retention` | `15 3 * * *` | Purge de rétention (RGPD/observabilité) |
 | `/api/admin/run-notifications` | `0 8 * * *` | Relances e-mail (INC-7) |
-| `/api/admin/sync-l360` | `30 * * * *` (horaire) | Pont 360Learning : livrables/validation jury (INC-15) |
+| `/api/admin/sync-l360` | `45 5 * * *` (filet) + horaire `:30` via GitHub Actions `sync-l360-hourly` | Pont 360Learning : livrables/validation jury (INC-15) |
 
 Déclenchement manuel : `curl -H "x-cron-secret: <CRON_SECRET>" https://<host>/api/admin/<route>`.
 
@@ -110,6 +110,10 @@ Déclenchement manuel : `curl -H "x-cron-secret: <CRON_SECRET>" https://<host>/a
 ## 7ter. Pont 360Learning (INC-15)
 - **Activation** : `L360_CLIENT_ID` + `L360_CLIENT_SECRET` (Vercel env). Sans eux, le cron
   répond 503 (dégradation propre), rien n'est écrit.
+- **Cadence horaire** : le plan Vercel Hobby n'autorise que des crons quotidiens → l'horaire
+  est porté par le workflow GitHub Actions `sync-l360-hourly` (`.github/workflows/sync-l360.yml`),
+  qui skip proprement tant que le secret `CRON_SECRET` n'est pas posé dans GitHub
+  (Settings → Secrets and variables → Actions). Le cron Vercel 05:45 sert de filet quotidien.
 - **Mapping** : les parcours 360L « Projet n°X » sont auto-découverts dans
   `l360_path_mappings` (insert-only : un mapping existant n'est jamais réécrit). En cas de
   faux positif ou de cours de rendu mal détecté, corriger en **service-role** (SQL Editor

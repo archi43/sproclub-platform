@@ -193,8 +193,10 @@ Migrations **0001→0023** + seed appliqués. Suite de tests **104/104** verte c
 (inclut `test:rgpd` 10, `test:observability` 6, `test:notifications` 8, `test:nav` 5, `test:members` 3,
 `test:l360` 12). Exécution **sérialisée**
 (`npm test` → `--test-concurrency=1`) pour éviter la flakiness de rate-limit auth sous concurrence.
-**6 crons** (sync 05:00, sync 360L toutes les heures à :30, miroir 06:30, export BPF lundi 07:00,
-purge rétention 03:15, relances 08:00). Note déploiement :
+**6 crons Vercel** (sync 05:00, sync 360L filet quotidien 05:45, miroir 06:30, export BPF lundi 07:00,
+purge rétention 03:15, relances 08:00) + **workflow GitHub Actions horaire** `sync-l360-hourly`
+(le plan Vercel Hobby n'autorise que des crons quotidiens ; l'horaire passe par Actions,
+activé en posant le secret `CRON_SECRET` dans GitHub). Note déploiement :
 appliquer chaque migration **avant** le code (0012 : garde de rôle lit `memberships.deactivated_at` ;
 0013 : sync écrit `enrollments_ro.pending_reports` ; 0014 : portail coach lit `coaching_reports` ;
 0017→0019 : audit + effacement RGPD, `is_erased` réservé au service-role ;
