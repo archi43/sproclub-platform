@@ -36,6 +36,11 @@ create table if not exists partner_companies (
 );
 create index if not exists partner_companies_org_idx on partner_companies (org_id, active);
 
+-- Rattachement des comptes partenaires (déclaré AVANT les policies qui le
+-- référencent — l'ordre compte dans une même migration).
+alter table memberships
+  add column if not exists partner_company_id uuid references partner_companies (id) on delete set null;
+
 alter table partner_companies enable row level security;
 
 drop policy if exists partner_companies_staff_manage on partner_companies;
@@ -63,11 +68,8 @@ create policy partner_companies_partner_read on partner_companies
   );
 
 -- -----------------------------------------------------------------------------
--- 2) Rattachement des comptes partenaires à leur société
+-- 2) Cohérence du rattachement des comptes partenaires
 -- -----------------------------------------------------------------------------
-alter table memberships
-  add column if not exists partner_company_id uuid references partner_companies (id) on delete set null;
-
 -- Cohérence de tenant au niveau base (revue sécurité INC-17) : une société de
 -- rattachement doit appartenir au MÊME organisme que le membership, et n'a de
 -- sens que sur un rôle partner — même patron que enforce_reservation_org (0004).
