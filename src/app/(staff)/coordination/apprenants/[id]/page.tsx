@@ -3,6 +3,8 @@ import Link from "next/link";
 import { headers } from "next/headers";
 import { getOrgContext } from "@/lib/tenant";
 import { getLearnerSheet } from "@/lib/data/admin-learners";
+import { getTalentProfileForLearner } from "@/lib/data/talent";
+import { TalentStatusForm } from "./talent-ui";
 import { listReportsForLearner } from "@/lib/data/coaching";
 import { listEmissions, type Emission } from "@/lib/data/documents-admin";
 import { learnerAuditTrail, logDossierAccess } from "@/lib/data/rgpd";
@@ -61,7 +63,11 @@ export default async function FicheApprenant({ params }: { params: { id: string 
   // and would pollute the journal's probative value.
   const isPrefetch = headers().get("next-router-prefetch") === "1";
   if (!isPrefetch) await logDossierAccess("dossier.view", params.id);
-  const [audit, roles] = await Promise.all([learnerAuditTrail(org.id, params.id), getRolesForOrg(org.id)]);
+  const [audit, roles, talent] = await Promise.all([
+    learnerAuditTrail(org.id, params.id),
+    getRolesForOrg(org.id),
+    getTalentProfileForLearner(org.id, params.id),
+  ]);
   const isDirection = roles.includes("direction");
 
   return (
@@ -163,6 +169,22 @@ export default async function FicheApprenant({ params }: { params: { id: string 
             ))}
           </ul>
         )}
+      </Section>
+
+      <Section title="Vivier de talents (entreprises partenaires)">
+        <div className="mb-3 flex flex-wrap items-center gap-2 text-sm">
+          <span className="text-grey-600">Consentement :</span>
+          {talent?.consentedAt && !talent.revokedAt ? (
+            <Badge tone="success">Visible des partenaires (consenti le {val(talent.consentedAt.slice(0, 10))})</Badge>
+          ) : talent?.revokedAt ? (
+            <Badge tone="warning">Consentement révoqué</Badge>
+          ) : (
+            <Badge tone="neutral">Jamais consenti</Badge>
+          )}
+          {talent?.availableFrom && <span className="text-grey-600">· dispo déclarée : {val(talent.availableFrom)}</span>}
+          {talent?.contractSought && <span className="text-grey-600">· {talent.contractSought}</span>}
+        </div>
+        <TalentStatusForm learnerId={params.id} current={talent?.staffStatus ?? null} />
       </Section>
 
       <Section title="RGPD">

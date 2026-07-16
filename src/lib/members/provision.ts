@@ -22,6 +22,8 @@ export interface InviteInput {
   fullName?: string | null;
   role: AppRole;
   invitedBy: string;
+  /** Requis pour le rôle `partner` : société de rattachement (INC-17). */
+  partnerCompanyId?: string | null;
 }
 
 export interface InviteResult {
@@ -35,6 +37,21 @@ export async function inviteMember(input: InviteInput): Promise<InviteResult> {
   const email = input.email.trim().toLowerCase();
   if (!email || !email.includes("@")) {
     throw new MemberError("Adresse e-mail invalide.");
+  }
+  if (input.role === "partner") {
+    if (!input.partnerCompanyId) {
+      throw new MemberError("Un compte partenaire doit être rattaché à une entreprise.");
+    }
+    // Anti-IDOR : la société doit appartenir à l'organisme appelant (le client
+    // service-role bypasse la RLS, donc on vérifie explicitement ; le trigger
+    // memberships_partner_company_org (0025) reste le garde-fou base).
+    const { data: company } = await admin
+      .from("partner_companies")
+      .select("id")
+      .eq("id", input.partnerCompanyId)
+      .eq("org_id", input.orgId)
+      .maybeSingle();
+    if (!company) throw new MemberError("Entreprise partenaire introuvable dans cet organisme.");
   }
 
   // 1) Resolve the person. profiles mirrors auth.users 1:1, so an existing
@@ -95,6 +112,7 @@ export async function inviteMember(input: InviteInput): Promise<InviteResult> {
     profile_id: profileId,
     role: input.role,
     invited_by: input.invitedBy,
+    partner_company_id: input.role === "partner" ? input.partnerCompanyId : null,
   });
   if (memErr) {
     if (memErr.code === "23505") {

@@ -2,6 +2,7 @@ import { getOrgContext } from "@/lib/tenant";
 import { getRolesForOrg } from "@/lib/auth";
 import { listMembers } from "@/lib/data/members";
 import { listEvaluatorPool, listEvaluatorCandidates } from "@/lib/data/evaluators";
+import { listPartnerCompanies } from "@/lib/data/talent";
 import { listPrograms } from "@/lib/data/programs";
 import { PageHeader, EmptyState } from "@/components/ui/page-header";
 import { Card, CardTitle } from "@/components/ui/card";
@@ -16,6 +17,7 @@ import {
   AccountToggle,
   AddPoolForm,
   RemovePoolButton,
+  PartnerCompanyForm,
 } from "./admin-ui";
 
 /**
@@ -27,12 +29,13 @@ export default async function AdministrationPage() {
   const org = await getOrgContext();
   if (!org) return <p className="text-grey-600">Organisme introuvable.</p>;
 
-  const [members, pool, candidates, programs, roles] = await Promise.all([
+  const [members, pool, candidates, programs, roles, partnerCompanies] = await Promise.all([
     listMembers(org.id),
     listEvaluatorPool(org.id),
     listEvaluatorCandidates(org.id),
     listPrograms(org.id),
     getRolesForOrg(org.id),
+    listPartnerCompanies(org.id),
   ]);
   const isDirection = roles.includes("direction");
   const programNames = programs.map((p) => p.name);
@@ -50,7 +53,7 @@ export default async function AdministrationPage() {
           <p className="mb-3 text-sm text-grey-600">
             Un compte est créé et la personne se connecte via le lien e-mail. Le rôle définit son périmètre d'accès.
           </p>
-          <InviteForm canCreateDirection={isDirection} />
+          <InviteForm canCreateDirection={isDirection} partnerCompanies={partnerCompanies.filter((c) => c.active)} />
         </Card>
 
         {members.length === 0 ? (
@@ -68,7 +71,9 @@ export default async function AdministrationPage() {
             <TBody>
               {members.map((m) => {
                 const available: AppRole[] = ROLE_ORDER.filter(
-                  (r) => !m.roles.includes(r) && (isDirection || r !== "direction")
+                  // partner : jamais via l'ajout de rôle générique — uniquement
+                  // l'invitation dédiée avec entreprise (revérifié côté action).
+                  (r) => !m.roles.includes(r) && (isDirection || r !== "direction") && r !== "partner"
                 );
                 return (
                   <Tr key={m.profileId} className={m.active ? undefined : "opacity-70"}>
@@ -148,6 +153,39 @@ export default async function AdministrationPage() {
                       <RemovePoolButton program={e.program} evaluatorId={e.evaluatorId} />
                     </div>
                   </Td>
+                </Tr>
+              ))}
+            </TBody>
+          </Table>
+        )}
+      </div>
+
+      <div className="space-y-6">
+        <PageHeader
+          title="Entreprises partenaires"
+          description="Les entreprises partenaires accèdent au vivier de talents (candidats consentants, synthèse chiffrée en temps réel). Créez l'entreprise puis invitez ses comptes avec le rôle « Entreprise partenaire »."
+        />
+        <Card>
+          <CardTitle>Créer une entreprise partenaire</CardTitle>
+          <PartnerCompanyForm />
+        </Card>
+        {partnerCompanies.length === 0 ? (
+          <EmptyState title="Aucune entreprise partenaire" description="Créez la première entreprise ci-dessus." />
+        ) : (
+          <Table>
+            <THead>
+              <Tr>
+                <Th>Entreprise</Th>
+                <Th>Statut</Th>
+                <Th>Depuis</Th>
+              </Tr>
+            </THead>
+            <TBody>
+              {partnerCompanies.map((c) => (
+                <Tr key={c.id}>
+                  <Td className="font-medium text-ink">{c.name}</Td>
+                  <Td><Badge tone={c.active ? "success" : "neutral"}>{c.active ? "Active" : "Inactive"}</Badge></Td>
+                  <Td>{new Date(c.createdAt).toLocaleDateString("fr-FR")}</Td>
                 </Tr>
               ))}
             </TBody>
