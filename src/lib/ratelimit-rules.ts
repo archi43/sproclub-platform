@@ -21,6 +21,15 @@ export const LOGIN_LIMIT: RateLimit = { bucket: "login", windowSeconds: 15 * 60,
  *  IP-based bucket alone would not stop that. Defense in depth. */
 export const LOGIN_EMAIL_LIMIT: RateLimit = { bucket: "login-email", windowSeconds: 15 * 60, max: 5 };
 
+/** OTP verification, per client IP: 10 code entries per 15 min — a genuine user
+ *  mistypes once or twice; anything more from one source is probing. */
+export const OTP_VERIFY_LIMIT: RateLimit = { bucket: "otp-verify", windowSeconds: 15 * 60, max: 10 };
+
+/** OTP verification, per TARGET e-mail: 5 per 15 min. The code has 10^6
+ *  combinations; capping attempts per target keeps brute force infeasible even
+ *  when the attacker rotates source IPs. Separate budget from sending. */
+export const OTP_VERIFY_EMAIL_LIMIT: RateLimit = { bucket: "otp-verify-email", windowSeconds: 15 * 60, max: 5 };
+
 /**
  * Derive a stable client identifier from proxy-aware headers. On Vercel the real
  * client IP is exposed via `x-real-ip` (set by the platform, not the caller), so

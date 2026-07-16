@@ -39,6 +39,22 @@ APP_BASE_DOMAIN=localhost:3000
 > `.env.local` est ignoré par Git. Ne jamais committer de clé réelle. En production,
 > utiliser le gestionnaire de secrets de l'hébergeur, pas un fichier.
 
+### 3 bis. Template e-mail de connexion (code OTP)
+
+La page de connexion envoie un **code à 6 chiffres** ; le lien magique reste en
+secours dans le même e-mail. Le template par défaut de Supabase n'affiche pas le
+code : dans _Authentication → Email Templates → Magic Link_, inclure les deux :
+
+```html
+<h2>Connexion</h2>
+<p>Votre code de connexion : <strong>{{ .Token }}</strong></p>
+<p>Ou cliquez sur ce lien (depuis le navigateur où vous avez demandé le code) :
+  <a href="{{ .ConfirmationURL }}">se connecter</a></p>
+```
+
+Sans cette modification, l'e-mail ne contient que le lien et la saisie du code
+reste impossible.
+
 ## 4. Appliquer les migrations (dans l'ordre)
 
 Dans le **SQL Editor** de Supabase, exécuter successivement le contenu de :
