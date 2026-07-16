@@ -155,6 +155,26 @@ coordination du jury. Base Supabase UE, Cal.eu branché.
   dans `audit_log` (`talent_pool.view`). `test:talent` **12** (4 pur + 8 intégration :
   consentement/révocation, synthèse exacte, isolation inter-org et tables sous-jacentes, aucune
   écriture partenaire, trigger statut, annuaire verrouillé, audit, exclusion effacés) → **122/122**.
+- ✅ **INC-18** (jobboard + besoins de formation) : ferme la boucle B2B ouverte par INC-17.
+  **Offres d'emploi** : l'entreprise partenaire publie des offres → **modération par la
+  coordination** (statut `pending`→`published`/`rejected`, machine à états `job-rules.ts` +
+  trigger `protect_job_offer_moderation` — le partenaire ne se publie jamais lui-même) →
+  visibles des apprenants. **Candidature en un clic** : l'apprenant marque son intérêt ; le
+  partenaire voit les candidats via la vue `job_offer_candidates` = intersection intérêt ×
+  consentement vivier (mêmes garanties qu'INC-17 : synthèse chiffrée, jamais e-mail/
+  commentaires, effacés RGPD exclus, société propriétaire de l'offre). **Besoins de formation** :
+  l'entreprise exprime les compétences/profils recherchés (`partner_training_needs`) — signal
+  B2B remonté à la coordination pour orienter l'ingénierie pédagogique, jamais exposé aux
+  apprenants (statut de suivi verrouillé par trigger). Écrans : `(partner)/offres` (+ détail
+  candidats), `(partner)/besoins`, `mon-parcours/offres` (apprenant), `coordination/recrutement`
+  (modération + suivi des besoins). Migration `0026` (RLS par rôle/société, 2 vues owner, 3
+  triggers). **Revue sécurité (1 bloquant + 2 élevés corrigés et prouvés)** : éditer une offre
+  publiée la refait passer en modération (le contenu validé n'est jamais substitué en douce) ;
+  DELETE retiré au partenaire (pas de purge cascade des intérêts — retrait via `archived`) ;
+  consultations candidats **journalisées** (`job_offer_candidates.view`) ; + cohérence de tenant
+  (trigger), `security_barrier` sur les vues, bornes de longueur. `test:jobs` **11** (5 pur +
+  6 intégration : modération + re-modération, isolation société/org, intérêt scoped, vue
+  candidats consentants, DELETE refusé, audit, besoins verrouillés).
   **Prochaine étape : Étape 7** (ouverture à d'autres organismes).
 
 Suite `main` : **branche → PR → CI verte → merge → déploiement** (previews Vercel actifs).

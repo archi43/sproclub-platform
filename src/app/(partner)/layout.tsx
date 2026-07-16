@@ -5,6 +5,8 @@ import { AppHeader, PageContainer, type NavItem } from "@/components/app-shell";
 
 const nav: NavItem[] = [
   { href: "/vivier", label: "Vivier de talents" },
+  { href: "/offres", label: "Mes offres" },
+  { href: "/besoins", label: "Besoins de formation" },
 ];
 
 /**

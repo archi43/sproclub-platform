@@ -9,6 +9,7 @@ const nav: NavItem[] = [
   { href: "/mon-parcours/livrables", label: "Mes livrables" },
   { href: "/mon-parcours/reservation", label: "Coaching" },
   { href: "/mon-parcours/soutenance", label: "Soutenance" },
+  { href: "/mon-parcours/offres", label: "Offres d'emploi" },
   { href: "/mon-parcours/visibilite", label: "Visibilité entreprises" },
 ];
 
