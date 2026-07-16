@@ -11,6 +11,7 @@ const nav: NavItem[] = [
   { href: "/coordination/conformite", label: "Conformité" },
   { href: "/coordination/reporting", label: "Reporting" },
   { href: "/coordination/programmes", label: "Programmes" },
+  { href: "/coordination/recrutement", label: "Recrutement" },
   { href: "/coordination/administration", label: "Administration" },
   { href: "/coordination/notifications", label: "Notifications" },
   { href: "/coordination/exploitation", label: "Exploitation" },

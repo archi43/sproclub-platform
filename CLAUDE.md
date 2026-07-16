@@ -164,7 +164,13 @@ vers ces jetons et primitives, sans changer la logique.
   `memberships.partner_company_id`) ; écran apprenant `mon-parcours/visibilite` (consentement
   explicite révocable + dispo déclarative) ; administration (entreprises + invitation partner) ;
   fiche apprenant (statut vivier). Migrations `0024` (enum) + `0025` (schéma + vue + trigger).
-- `supabase/migrations/0001` → `0025` ; seed `supabase/seed/sproclub_bootstrap.sql`.
+- `src/lib/job-rules.ts` (INC-18, pur : machine à états de modération des offres) +
+  `src/lib/data/jobs.ts` (offres, intérêts, candidats via vue `job_offer_candidates`, besoins de
+  formation). Écrans `(partner)/offres` (+ `/[id]` candidats) et `(partner)/besoins`,
+  `mon-parcours/offres` (apprenant, intérêt un clic), `coordination/recrutement` (modération +
+  suivi des besoins). Migration `0026` : `job_offers` (modération par trigger), `job_interests`,
+  `partner_training_needs`, vue `job_offer_candidates` (consentants au vivier), `my_partner_company()`.
+- `supabase/migrations/0001` → `0026` ; seed `supabase/seed/sproclub_bootstrap.sql`.
   (`0004` invariants réservation, `0005` normalisation e-mails minuscules à l'écriture,
   `0012` gestion utilisateurs/rôles : désactivation qui coupe l'accès + policies de gestion,
   `0013` `enrollments_ro.pending_reports` pour la file d'opérations, `0014` portail coach :
@@ -196,9 +202,9 @@ le claim JWT `app_metadata.org_id` (robuste avec le pooling PostgREST).
 ## État actuel
 Produit **en ligne** (staging) et prouvé en réel. Base Supabase UE (`zbvohktqfgwajjvnpets`,
 `eu-north-1`) ; app déployée sur **Vercel région `fra1`** : **https://sproclub-platform.vercel.app**.
-Migrations **0001→0025** + seed appliqués. Suite de tests **122/122** verte contre la vraie base
+Migrations **0001→0026** + seed appliqués. Suite de tests **133/133** verte contre la vraie base
 (inclut `test:rgpd` 10, `test:observability` 6, `test:notifications` 8, `test:nav` 5, `test:members` 3,
-`test:l360` 13, `tests/inc14` 7, `test:talent` 12). Exécution **sérialisée**
+`test:l360` 13, `tests/inc14` 7, `test:talent` 12, `test:jobs` 11). Exécution **sérialisée**
 (`npm test` → `--test-concurrency=1`) pour éviter la flakiness de rate-limit auth sous concurrence.
 **6 crons Vercel** (sync 05:00, sync 360L filet quotidien 05:45, miroir 06:30, export BPF lundi 07:00,
 purge rétention 03:15, relances 08:00) + **workflow GitHub Actions horaire** `sync-l360-hourly`
@@ -366,6 +372,15 @@ Incréments livrés (voir `PLAN_DEV_PRODUIT.md`) :
   **journalisées** (`log_access` étendu à `talent_pool.view`, y compris pour le rôle partner).
   `test:talent` **12** (4 pur + 8 intégration RLS/consentement/isolation/trigger/effacés/
   annuaire verrouillé/audit).
+- **INC-18 (jobboard + besoins de formation)** : les entreprises partenaires publient des
+  **offres** (modérées par la coordination avant d'être visibles des apprenants — machine à
+  états `job-rules.ts` + trigger `protect_job_offer_moderation`) ; l'apprenant marque son
+  **intérêt en un clic** ; le partenaire voit les candidats intéressés via la vue
+  `job_offer_candidates` (intersection intérêt × consentement vivier — synthèse chiffrée,
+  société propriétaire, effacés RGPD exclus). Les entreprises expriment aussi leurs **besoins
+  de formation** (`partner_training_needs`, signal B2B vers la coordination, jamais exposé aux
+  apprenants, statut verrouillé). `my_partner_company()` (SECURITY DEFINER) résout la société
+  du partenaire. `test:jobs` **11** (5 pur + 6 intégration RLS).
   Reste : Étape 7 (ouverture à d'autres organismes).
 
 Comptes de test : student (melissa.blld), coach, coordinator, 3 évaluateurs, hôte Cal.eu (voir `SETUP.md`).
