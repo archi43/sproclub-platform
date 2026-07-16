@@ -1,7 +1,6 @@
-import Link from "next/link";
 import { getOrgContext } from "@/lib/tenant";
 import { getCurrentUser } from "@/lib/auth";
-import { Button } from "@/components/ui/button";
+import { ButtonLink } from "@/components/ui/button";
 import { BrandMark } from "@/components/ui/brand-mark";
 import { SignOutButton } from "@/components/sign-out-button";
 
@@ -26,15 +25,11 @@ export default async function Home() {
       <div className="mt-8 flex items-center gap-3">
         {user ? (
           <>
-            <Link href="/mon-parcours">
-              <Button>Accéder à mon parcours</Button>
-            </Link>
+            <ButtonLink href="/mon-parcours">Accéder à mon parcours</ButtonLink>
             <SignOutButton />
           </>
         ) : (
-          <Link href="/login">
-            <Button>Se connecter</Button>
-          </Link>
+          <ButtonLink href="/login">Se connecter</ButtonLink>
         )}
       </div>
     </main>

@@ -12,6 +12,7 @@ import { getRolesForOrg } from "@/lib/auth";
 import { PageHeader } from "@/components/ui/page-header";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { buttonClasses } from "@/components/ui/button";
 import { GenerateDocuments } from "./documents-ui";
 import { EraseLearner } from "./rgpd-ui";
 
@@ -191,7 +192,7 @@ export default async function FicheApprenant({ params }: { params: { id: string 
         <div className="flex flex-wrap items-center gap-3">
           <a
             href={`/coordination/apprenants/${params.id}/rgpd/export`}
-            className="inline-flex items-center rounded-lg border border-grey-300 bg-white px-3 py-2 text-sm font-medium text-brand no-underline hover:bg-brand-tint"
+            className={buttonClasses({ variant: "secondary" })}
           >
             Exporter les données (JSON)
           </a>

@@ -1,5 +1,4 @@
-import Link from "next/link";
-import { Button } from "@/components/ui/button";
+import { ButtonLink } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 
 export default function ForbiddenPage() {
@@ -11,9 +10,9 @@ export default function ForbiddenPage() {
           Votre compte n&apos;a pas les droits nécessaires pour accéder à cet espace.
         </p>
         <div className="mt-4">
-          <Link href="/login">
-            <Button variant="secondary">Se connecter avec un autre compte</Button>
-          </Link>
+          <ButtonLink variant="secondary" href="/login">
+            Se connecter avec un autre compte
+          </ButtonLink>
         </div>
       </Card>
     </main>
