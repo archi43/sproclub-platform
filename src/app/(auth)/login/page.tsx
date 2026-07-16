@@ -3,6 +3,7 @@
 import { useFormState, useFormStatus } from "react-dom";
 import { requestMagicLink, type LoginState } from "./actions";
 import { Button } from "@/components/ui/button";
+import { BrandMark } from "@/components/ui/brand-mark";
 import { Card } from "@/components/ui/card";
 import { Field, Input } from "@/components/ui/form";
 import { Alert } from "@/components/ui/alert";
@@ -24,9 +25,7 @@ export default function LoginPage() {
   return (
     <main className="mx-auto flex min-h-screen max-w-md flex-col justify-center px-6 py-16">
       <div className="mb-6 flex items-center gap-3">
-        <span aria-hidden className="grid h-9 w-9 place-items-center rounded-lg bg-brand text-sm font-bold text-white">
-          SC
-        </span>
+        <BrandMark size="md" />
         <h1 className="text-2xl font-bold text-brand">Connexion</h1>
       </div>
 
