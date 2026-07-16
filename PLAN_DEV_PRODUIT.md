@@ -135,6 +135,26 @@ coordination du jury. Base Supabase UE, Cal.eu branché.
   2 139/2 222 soumissions historiques rattachées (610 en direct, 1 529 via Soutenances),
   1 449 notées (moyenne des étoiles), 278 dossiers apprenants alimentés ; 83 écartées-comptées
   (chaînes onboarding/certification différées).
+- ✅ **INC-17** (vivier de talents — accès entreprises partenaires) : conviction produit
+  « distanciel > présentiel grâce à la donnée » — les partenaires voient EN TEMPS RÉEL la
+  progression, les évaluations (synthèse) et la disponibilité des candidats. Décisions :
+  **nominatif avec consentement explicite** (tracé, révocable, écran apprenant « Visibilité
+  entreprises ») ; **synthèse chiffrée seulement** (progression %, projets validés, note moyenne
+  jury 360L, assiduité — jamais les commentaires internes) ; **dispo double** (statut coordination
+  prioritaire + déclaratif apprenant : date, contrat, mobilité — règle pure `talent-rules.ts`).
+  Schéma `0024` (enum `partner`) + `0025` : `partner_companies`, `memberships.partner_company_id`,
+  `talent_profiles` (l'apprenant gère SA ligne par RLS ; `staff_status` verrouillé par trigger),
+  vue **`talent_pool`** = seule surface partenaire (consentants, org courante, effacés RGPD exclus,
+  colonnes vérifiées, grants stricts). Portail `(partner)/vivier` (tuiles, filtres, tableau) ;
+  administration : création d'entreprises + invitation de comptes partner (rattachement société
+  obligatoire) ; fiche apprenant : consentement + statut vivier. Effacement RGPD purge le profil
+  vivier (+ ceinture `data_erasures` dans la vue). **Revue sécurité (3 bloquants corrigés et
+  prouvés)** : annuaire `profiles` et créneaux `availabilities` fermés au rôle partner ; partner
+  sans société de rattachement = aucun accès (action générique bloquée + vue exigeante + trigger
+  de cohérence de tenant) ; **accountability RGPD** — chaque consultation du vivier est tracée
+  dans `audit_log` (`talent_pool.view`). `test:talent` **12** (4 pur + 8 intégration :
+  consentement/révocation, synthèse exacte, isolation inter-org et tables sous-jacentes, aucune
+  écriture partenaire, trigger statut, annuaire verrouillé, audit, exclusion effacés) → **122/122**.
   **Prochaine étape : Étape 7** (ouverture à d'autres organismes).
 
 Suite `main` : **branche → PR → CI verte → merge → déploiement** (previews Vercel actifs).

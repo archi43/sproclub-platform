@@ -1,4 +1,4 @@
-export type AppRole = "direction" | "coordinator" | "coach" | "evaluator" | "student";
+export type AppRole = "direction" | "coordinator" | "coach" | "evaluator" | "student" | "partner";
 
 export interface Organization {
   id: string;

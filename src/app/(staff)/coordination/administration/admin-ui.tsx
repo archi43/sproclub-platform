@@ -9,6 +9,7 @@ import {
   reactivateMemberAction,
   addPoolAction,
   removePoolAction,
+  createPartnerCompanyAction,
   type ActionState,
 } from "./actions";
 import { Button } from "@/components/ui/button";
@@ -45,7 +46,13 @@ function Msg({ state }: { state: ActionState }) {
 
 /** Invite / provision a user with an initial role. `canCreateDirection` hides the
  *  direction option for a coordinator (also enforced server-side + by RLS). */
-export function InviteForm({ canCreateDirection }: { canCreateDirection: boolean }) {
+export function InviteForm({
+  canCreateDirection,
+  partnerCompanies,
+}: {
+  canCreateDirection: boolean;
+  partnerCompanies: { id: string; name: string }[];
+}) {
   const [state, action] = useFormState(inviteMemberAction, initial);
   const roles = ROLE_ORDER.filter((r) => canCreateDirection || r !== "direction");
   return (
@@ -63,10 +70,32 @@ export function InviteForm({ canCreateDirection }: { canCreateDirection: boolean
           ))}
         </Select>
       </Field>
+      <Field label="Entreprise (rôle partenaire uniquement)" htmlFor="invite-company">
+        <Select id="invite-company" name="partnerCompanyId" defaultValue="">
+          <option value="">—</option>
+          {partnerCompanies.map((c) => (
+            <option key={c.id} value={c.id}>{c.name}</option>
+          ))}
+        </Select>
+      </Field>
       <div className="flex items-center gap-3 sm:col-span-2">
         <Submit idle="Inviter" busy="Invitation…" />
         <Msg state={state} />
       </div>
+    </form>
+  );
+}
+
+/** INC-17 : créer une entreprise partenaire (donne accès au vivier de talents). */
+export function PartnerCompanyForm() {
+  const [state, action] = useFormState(createPartnerCompanyAction, initial);
+  return (
+    <form action={action} className="flex flex-wrap items-end gap-3">
+      <Field label="Nom de l'entreprise" htmlFor="company-name">
+        <Input id="company-name" name="name" required placeholder="ex. Capgemini" autoComplete="off" className="min-w-64" />
+      </Field>
+      <Submit idle="Créer l'entreprise" busy="Création…" />
+      <Msg state={state} />
     </form>
   );
 }

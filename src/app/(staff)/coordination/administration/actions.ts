@@ -11,13 +11,14 @@ import {
   reactivateMember,
 } from "@/lib/data/members";
 import { addToPool, removeFromPool } from "@/lib/data/evaluators";
+import { createPartnerCompany } from "@/lib/data/talent";
 import { inviteMember } from "@/lib/members/provision";
 import type { AppRole } from "@/lib/types";
 
 export type ActionState = { ok: boolean; message: string };
 
 const PATH = "/coordination/administration";
-const ROLES: AppRole[] = ["direction", "coordinator", "coach", "evaluator", "student"];
+const ROLES: AppRole[] = ["direction", "coordinator", "coach", "evaluator", "student", "partner"];
 
 /**
  * Resolve org + acting user + whether they hold direction, AND authorize.
@@ -61,11 +62,15 @@ export async function inviteMemberAction(_prev: ActionState, formData: FormData)
   const email = String(formData.get("email") ?? "").trim();
   const fullName = String(formData.get("fullName") ?? "").trim() || null;
   const role = parseRole(formData.get("role"));
+  const partnerCompanyId = String(formData.get("partnerCompanyId") ?? "").trim() || null;
   if (!email) return { ok: false, message: "L'adresse e-mail est requise." };
   if (!role) return { ok: false, message: "Rôle invalide." };
   // Only a director may create another director.
   if (role === "direction" && !ctx.isDirection) {
     return { ok: false, message: "Seule la direction peut créer un compte de direction." };
+  }
+  if (role === "partner" && !partnerCompanyId) {
+    return { ok: false, message: "Choisissez l'entreprise de rattachement du compte partenaire." };
   }
 
   let created: boolean;
@@ -76,6 +81,7 @@ export async function inviteMemberAction(_prev: ActionState, formData: FormData)
       fullName,
       role,
       invitedBy: ctx.userId,
+      partnerCompanyId,
     }));
   } catch (err) {
     return fail(err);
@@ -92,6 +98,12 @@ export async function inviteMemberAction(_prev: ActionState, formData: FormData)
 export async function grantRoleAction(_prev: ActionState, formData: FormData): Promise<ActionState> {
   const ctx = await staffContext();
   if (!ctx.ok) return ctx.state;
+  // Le rôle partner exige un rattachement société + le vetting « entreprise » :
+  // il ne passe QUE par l'invitation dédiée, jamais par l'ajout de rôle générique
+  // (sinon un compte interne existant — coach, apprenant — verrait le vivier).
+  if (String(formData.get("role") ?? "") === "partner") {
+    return { ok: false, message: "Le rôle partenaire s'attribue via l'invitation, avec une entreprise de rattachement." };
+  }
   const profileId = String(formData.get("profileId") ?? "");
   const role = parseRole(formData.get("role"));
   if (!profileId) return { ok: false, message: "Membre introuvable." };
@@ -180,4 +192,22 @@ export async function removePoolAction(_prev: ActionState, formData: FormData): 
   }
   revalidatePath(PATH);
   return { ok: true, message: "Évaluateur retiré du vivier." };
+}
+
+/** INC-17 : créer une entreprise partenaire (RLS partner_companies_staff_manage). */
+export async function createPartnerCompanyAction(_prev: ActionState, formData: FormData): Promise<ActionState> {
+  const ctx = await staffContext();
+  if (!ctx.ok) return ctx.state;
+  const name = String(formData.get("name") ?? "").trim();
+  if (!name) return { ok: false, message: "Le nom de l'entreprise est requis." };
+  try {
+    await createPartnerCompany(ctx.orgId, name);
+  } catch (err) {
+    if (err instanceof Error && /duplicate|23505/.test(err.message)) {
+      return { ok: false, message: "Cette entreprise existe déjà." };
+    }
+    return fail(err);
+  }
+  revalidatePath(PATH);
+  return { ok: true, message: "Entreprise partenaire créée. Vous pouvez maintenant inviter ses comptes." };
 }

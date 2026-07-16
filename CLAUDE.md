@@ -157,7 +157,14 @@ vers ces jetons et primitives, sans changer la logique.
   360Learning, OAuth2, lecture seule, dégradation propre) + `src/lib/l360/sync.ts` (auto-découverte
   `l360_path_mappings`, reflet dépôt/validation JURY dans `project_deliverables`, jointure e-mail,
   skip-list RGPD, idempotent). Route cron horaire `api/admin/sync-l360` (`0023`).
-- `supabase/migrations/0001` → `0023` ; seed `supabase/seed/sproclub_bootstrap.sql`.
+- `src/lib/talent-rules.ts` (INC-17, pur : disponibilité — statut coordination > déclaratif
+  apprenant > état de formation) + `src/lib/data/talent.ts` (vivier RLS : vue `talent_pool` pour
+  les partenaires, consentement apprenant, statut staff, entreprises). Portail
+  `src/app/(partner)/vivier` (rôle `partner`, rattaché à une `partner_companies` via
+  `memberships.partner_company_id`) ; écran apprenant `mon-parcours/visibilite` (consentement
+  explicite révocable + dispo déclarative) ; administration (entreprises + invitation partner) ;
+  fiche apprenant (statut vivier). Migrations `0024` (enum) + `0025` (schéma + vue + trigger).
+- `supabase/migrations/0001` → `0025` ; seed `supabase/seed/sproclub_bootstrap.sql`.
   (`0004` invariants réservation, `0005` normalisation e-mails minuscules à l'écriture,
   `0012` gestion utilisateurs/rôles : désactivation qui coupe l'accès + policies de gestion,
   `0013` `enrollments_ro.pending_reports` pour la file d'opérations, `0014` portail coach :
@@ -189,9 +196,9 @@ le claim JWT `app_metadata.org_id` (robuste avec le pooling PostgREST).
 ## État actuel
 Produit **en ligne** (staging) et prouvé en réel. Base Supabase UE (`zbvohktqfgwajjvnpets`,
 `eu-north-1`) ; app déployée sur **Vercel région `fra1`** : **https://sproclub-platform.vercel.app**.
-Migrations **0001→0023** + seed appliqués. Suite de tests **110/110** verte contre la vraie base
+Migrations **0001→0025** + seed appliqués. Suite de tests **122/122** verte contre la vraie base
 (inclut `test:rgpd` 10, `test:observability` 6, `test:notifications` 8, `test:nav` 5, `test:members` 3,
-`test:l360` 13, `tests/inc14` 6). Exécution **sérialisée**
+`test:l360` 13, `tests/inc14` 7, `test:talent` 12). Exécution **sérialisée**
 (`npm test` → `--test-concurrency=1`) pour éviter la flakiness de rate-limit auth sous concurrence.
 **6 crons Vercel** (sync 05:00, sync 360L filet quotidien 05:45, miroir 06:30, export BPF lundi 07:00,
 purge rétention 03:15, relances 08:00) + **workflow GitHub Actions horaire** `sync-l360-hourly`
@@ -203,7 +210,9 @@ appliquer chaque migration **avant** le code (0012 : garde de rôle lit `members
 0020 : exploitation, `ops_events` lu par l'écran + routes/crons y écrivent, `rate_limit_touch` réservé au service-role ;
 0021 : notifications, cron `run-notifications` écrit `notifications`, écran + prefs lus par le staff ;
 0023 : pont 360L, cron `sync-l360` écrit `l360_path_mappings` + `project_deliverables`, UI lit
-`validated_at`/`source`).
+`validated_at`/`source` ;
+0024→0025 : vivier partenaires — 0024 (enum) doit précéder 0025 (policies qui utilisent
+'partner'), les portails lisent la vue `talent_pool` et les écrans staff `partner_companies`).
 
 Incréments livrés (voir `PLAN_DEV_PRODUIT.md`) :
 - **Fondations + pilote (Étapes 1-2)** : multi-locataire (RLS), auth lien e-mail (callback
@@ -342,6 +351,21 @@ Incréments livrés (voir `PLAN_DEV_PRODUIT.md`) :
   record) — `listPendingWritebackReports` filtré, prouvé par test. `tests/inc14` **7**.
   **Actif en production** : 2 139/2 222 soumissions historiques rattachées (610 direct,
   1 529 via Soutenances), 1 449 notées, 278 dossiers alimentés.
+- **INC-17 (vivier de talents — entreprises partenaires)** : rôle `partner` (rattaché à une
+  `partner_companies` via `memberships.partner_company_id`), **nominatif avec consentement
+  explicite** de l'apprenant (tracé, révocable — écran `mon-parcours/visibilite`), **synthèse
+  chiffrée** temps réel (progression, projets validés, note moyenne jury 360L, assiduité,
+  dispo — jamais les commentaires internes), **dispo double** (statut coordination prioritaire,
+  règle pure `talent-rules.ts`). Surface partenaire unique : vue `talent_pool` (0025 —
+  consentants, org courante, effacés RGPD exclus, grants stricts) ; `staff_status` verrouillé
+  par trigger ; effacement RGPD purge le profil. Portail `(partner)/vivier`, administration
+  (entreprises + invitation), fiche apprenant (statut vivier). **Revue sécurité passée avec
+  correctifs prouvés** : `profiles_org_read` et `availabilities_read` resserrées (un partner
+  ne lit ni l'annuaire ni les créneaux), rôle partner impossible sans société (action + vue +
+  trigger de cohérence de tenant `memberships_partner_company_org`), consultations du vivier
+  **journalisées** (`log_access` étendu à `talent_pool.view`, y compris pour le rôle partner).
+  `test:talent` **12** (4 pur + 8 intégration RLS/consentement/isolation/trigger/effacés/
+  annuaire verrouillé/audit).
   Reste : Étape 7 (ouverture à d'autres organismes).
 
 Comptes de test : student (melissa.blld), coach, coordinator, 3 évaluateurs, hôte Cal.eu (voir `SETUP.md`).

@@ -162,6 +162,11 @@ export async function eraseLearner(
   await admin.from("notifications").delete().eq("org_id", orgId).eq("recipient_email", email);
   await admin.from("notification_prefs").delete().eq("org_id", orgId).eq("email", email);
 
+  // 3c) Retirer du vivier de talents (INC-17) : le consentement s'éteint avec
+  //     l'effacement — la ligne disparaît, la vue partenaire ne les liste plus
+  //     (ceinture : la vue exclut aussi tout e-mail présent dans data_erasures).
+  await admin.from("talent_profiles").delete().eq("org_id", orgId).eq("learner_id", learnerId);
+
   // 4) Remove their stored documents (folder keyed by the original e-mail).
   //    Errors must surface — otherwise we'd claim erasure while PII files remain.
   //    Paginate: a single list() caps at 100, so a large folder would leave PII.

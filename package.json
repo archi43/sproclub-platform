@@ -26,7 +26,8 @@
     "test:observability": "node --env-file-if-exists=.env.local --test tests/ratelimit.unit.test.mts tests/observability.integration.test.mts",
     "test:notifications": "node --env-file-if-exists=.env.local --test tests/notifications.unit.test.mts tests/notifications.integration.test.mts",
     "test:nav": "node --test tests/nav.unit.test.mts",
-    "test:l360": "node --env-file-if-exists=.env.local --test tests/l360.unit.test.mts tests/l360.integration.test.mts"
+    "test:l360": "node --env-file-if-exists=.env.local --test tests/l360.unit.test.mts tests/l360.integration.test.mts",
+    "test:talent": "node --env-file-if-exists=.env.local --test tests/talent.unit.test.mts tests/talent.integration.test.mts"
   },
   "dependencies": {
     "@supabase/ssr": "^0.5.1",

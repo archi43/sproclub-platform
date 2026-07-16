@@ -9,6 +9,12 @@ rétention des données personnelles des apprenants et les mécanismes légaux i
   en lecture, synchronisé depuis Airtable (système de gestion).
 - **Dossiers de formation** (`enrollments_ro`) : programme, dates, résultats, insertion.
 - **Réservations, livrables, comptes rendus, documents émis, journal d'accès.**
+- **Profil vivier** (`talent_profiles`, INC-17) : consentement de visibilité aux entreprises
+  partenaires (horodaté, révocable), disponibilité déclarée (date, contrat recherché, mobilité),
+  statut posé par la coordination. **Base légale : consentement explicite** de l'apprenant
+  (art. 6.1.a RGPD) — sans consentement actif, RIEN n'est exposé aux partenaires ; la vue
+  `talent_pool` n'expose qu'une synthèse chiffrée (jamais e-mail, téléphone ni commentaires).
+  Le droit à l'oubli supprime le profil vivier immédiatement.
 
 ## Durées de rétention
 | Donnée | Durée | Base légale |
