@@ -42,8 +42,18 @@ APP_BASE_DOMAIN=localhost:3000
 ### 3 bis. Template e-mail de connexion (code OTP)
 
 La page de connexion envoie un **code à 6 chiffres** ; le lien magique reste en
-secours dans le même e-mail. Le template par défaut de Supabase n'affiche pas le
-code : dans _Authentication → Email Templates → Magic Link_, inclure les deux :
+secours dans le même e-mail.
+
+**Prérequis — SMTP personnalisé** : Supabase verrouille l'édition des templates
+(et limite l'envoi à quelques e-mails/heure) tant qu'aucun SMTP personnalisé
+n'est configuré. Le projet utilisant déjà Resend pour les notifications
+(`RESEND_API_KEY` / `NOTIF_FROM`), réutiliser Resend comme SMTP : créer une clé
+API dédiée (permission « Sending access »), puis dans _Project Settings →
+Authentication → SMTP Settings_ : host `smtp.resend.com`, port `465`, username
+`resend`, password = la clé API, expéditeur sur le domaine vérifié.
+
+Le template par défaut n'affiche pas le code : dans _Authentication → Email
+Templates → Magic Link_, inclure les deux :
 
 ```html
 <h2>Connexion</h2>
