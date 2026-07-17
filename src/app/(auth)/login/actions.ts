@@ -4,7 +4,7 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getOrgContext } from "@/lib/tenant";
-import { checkRateLimit, logOpsEvent } from "@/lib/data/ops";
+import { checkRateLimit, checkRateLimitStrict, logOpsEvent } from "@/lib/data/ops";
 import {
   LOGIN_LIMIT,
   LOGIN_EMAIL_LIMIT,
@@ -12,7 +12,7 @@ import {
   OTP_VERIFY_EMAIL_LIMIT,
   clientIdentifier,
 } from "@/lib/ratelimit-rules";
-import { sanitizeOtpCode, OTP_CODE_LENGTH } from "@/lib/login-rules";
+import { sanitizeOtpCode, isValidEmail, OTP_CODE_LENGTH } from "@/lib/login-rules";
 
 /** `email` is echoed back on a successful code request so the verify step
  *  binds to the address the code was actually sent to. */
@@ -38,7 +38,7 @@ export async function requestLoginCode(
   formData: FormData
 ): Promise<LoginState> {
   const email = String(formData.get("email") ?? "").trim().toLowerCase();
-  if (!email || !email.includes("@")) {
+  if (!isValidEmail(email)) {
     return { ok: false, message: "Veuillez saisir une adresse e-mail valide." };
   }
 
@@ -81,6 +81,16 @@ export async function requestLoginCode(
   });
 
   if (error) {
+    // Unknown account (shouldCreateUser: false → "otp_disabled"/"signups not
+    // allowed"): answer EXACTLY like the success case, otherwise the response
+    // difference lets an attacker enumerate which addresses have an account.
+    if (error.code === "otp_disabled" || /signups? not allowed/i.test(error.message)) {
+      return {
+        ok: true,
+        message: "Si un compte existe pour cette adresse, un code de connexion vient d'être envoyé.",
+        email,
+      };
+    }
     // Supabase's built-in email service is rate-limited; surface it plainly so
     // it isn't mistaken for a broken form. Configure a custom SMTP to remove it.
     if (error.code === "over_email_send_rate_limit" || error.status === 429) {
@@ -118,18 +128,20 @@ export async function verifyLoginCode(
 ): Promise<LoginState> {
   const email = String(formData.get("email") ?? "").trim().toLowerCase();
   const code = sanitizeOtpCode(String(formData.get("code") ?? ""));
-  if (!email || !email.includes("@")) {
+  if (!isValidEmail(email)) {
     return { ok: false, message: "Session de connexion invalide. Redemandez un code." };
   }
   if (!code) {
     return { ok: false, message: `Le code comporte ${OTP_CODE_LENGTH} chiffres.` };
   }
 
+  // Fail-CLOSED here: this limiter is the only per-target guard against brute
+  // force of a 6-digit code, so a limiter outage must refuse attempts.
   const h = headers();
   const key = clientIdentifier(h.get("x-real-ip"), h.get("x-forwarded-for"));
   const [allowedByIp, allowedByEmail] = await Promise.all([
-    checkRateLimit(OTP_VERIFY_LIMIT, key),
-    checkRateLimit(OTP_VERIFY_EMAIL_LIMIT, email),
+    checkRateLimitStrict(OTP_VERIFY_LIMIT, key),
+    checkRateLimitStrict(OTP_VERIFY_EMAIL_LIMIT, email),
   ]);
   if (!allowedByIp || !allowedByEmail) {
     const org = await getOrgContext();
@@ -148,9 +160,24 @@ export async function verifyLoginCode(
     };
   }
 
+  // Supabase binds the code to the address it was sent to: a code issued for A
+  // never authenticates B, so a tampered hidden `email` field only attacks its
+  // own per-target budget above.
   const supabase = createClient();
   const { error } = await supabase.auth.verifyOtp({ email, token: code, type: "email" });
   if (error) {
+    // Trace sub-threshold failures for anomaly detection (never the code nor
+    // the address — the client identifier is enough to correlate a campaign).
+    const org = await getOrgContext();
+    if (org) {
+      await logOpsEvent({
+        orgId: org.id,
+        level: "warn",
+        source: "login",
+        message: "Échec de vérification de code",
+        detail: `client=${key}`,
+      });
+    }
     // Keep the reason generic: never confirm whether the account exists.
     return { ok: false, message: "Code invalide ou expiré. Vérifiez-le ou redemandez un code." };
   }

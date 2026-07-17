@@ -6,7 +6,7 @@
  */
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { sanitizeOtpCode, OTP_CODE_LENGTH } from "../src/lib/login-rules.ts";
+import { sanitizeOtpCode, isValidEmail, OTP_CODE_LENGTH } from "../src/lib/login-rules.ts";
 import { OTP_VERIFY_LIMIT, OTP_VERIFY_EMAIL_LIMIT, LOGIN_EMAIL_LIMIT } from "../src/lib/ratelimit-rules.ts";
 
 test("sanitizeOtpCode accepts a clean 6-digit code", () => {
@@ -32,6 +32,20 @@ test("sanitizeOtpCode rejects anything that is not exactly 6 digits", () => {
 
 test("OTP length matches the Supabase configuration (otp_length = 6)", () => {
   assert.equal(OTP_CODE_LENGTH, 6);
+});
+
+test("isValidEmail accepts plausible addresses", () => {
+  assert.equal(isValidEmail("vous@exemple.fr"), true);
+  assert.equal(isValidEmail("prenom.nom+tag@sous.domaine.org"), true);
+});
+
+test("isValidEmail rejects malformed input at the boundary", () => {
+  assert.equal(isValidEmail(""), false);
+  assert.equal(isValidEmail("sans-arobase.fr"), false);
+  assert.equal(isValidEmail("deux@@exemple.fr"), false);
+  assert.equal(isValidEmail("espace @exemple.fr"), false);
+  assert.equal(isValidEmail("vous@exemple"), false); // domaine sans point
+  assert.equal(isValidEmail(`${"a".repeat(255)}@x.fr`), false); // au-delà de 254
 });
 
 test("verification attempts are capped per target e-mail, independent of IP", () => {

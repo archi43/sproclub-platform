@@ -48,12 +48,16 @@ code : dans _Authentication → Email Templates → Magic Link_, inclure les deu
 ```html
 <h2>Connexion</h2>
 <p>Votre code de connexion : <strong>{{ .Token }}</strong></p>
+<p>Ce code expire dans 10 minutes. <strong>Ne le communiquez à personne</strong> —
+  aucun membre de l'équipe ne vous le demandera jamais.</p>
 <p>Ou cliquez sur ce lien (depuis le navigateur où vous avez demandé le code) :
   <a href="{{ .ConfirmationURL }}">se connecter</a></p>
 ```
 
 Sans cette modification, l'e-mail ne contient que le lien et la saisie du code
-reste impossible.
+reste impossible. Régler aussi l'expiration de l'OTP e-mail à **600 s** (10 min)
+dans _Authentication → Providers → Email_ — la valeur par défaut (1 h) élargit
+inutilement la fenêtre de brute force / d'interception du code.
 
 ## 4. Appliquer les migrations (dans l'ordre)
 

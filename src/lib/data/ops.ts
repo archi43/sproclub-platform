@@ -127,6 +127,18 @@ export async function opsSummary(orgId: string): Promise<OpsSummary> {
   return { errors24h, warns24h, errors7d, total7d };
 }
 
+async function touchRateLimit(limit: RateLimit, key: string): Promise<boolean> {
+  const admin = adminClient();
+  const { data, error } = await admin.rpc("rate_limit_touch", {
+    p_bucket: limit.bucket,
+    p_key: key,
+    p_window_seconds: limit.windowSeconds,
+    p_max: limit.max,
+  });
+  if (error) throw new Error(error.message);
+  return data === true;
+}
+
 /**
  * Check (and record) a rate-limit hit for a (bucket, key). Returns true when the
  * request is still within budget, false when the limit is exceeded. Fails SAFE:
@@ -135,17 +147,26 @@ export async function opsSummary(orgId: string): Promise<OpsSummary> {
  */
 export async function checkRateLimit(limit: RateLimit, key: string): Promise<boolean> {
   try {
-    const admin = adminClient();
-    const { data, error } = await admin.rpc("rate_limit_touch", {
-      p_bucket: limit.bucket,
-      p_key: key,
-      p_window_seconds: limit.windowSeconds,
-      p_max: limit.max,
-    });
-    if (error) throw new Error(error.message);
-    return data === true;
+    return await touchRateLimit(limit, key);
   } catch (err) {
     console.error(`[ops:ratelimit] limiter unavailable for '${limit.bucket}': ${err instanceof Error ? err.message : err}`);
     return true; // fail-open: never lock legitimate users out on limiter failure
+  }
+}
+
+/**
+ * Fail-CLOSED variant for authentication-critical paths (OTP code verification):
+ * the 6-digit code is brute-forceable and this limiter is its only per-target
+ * guard, so when the limiter itself is down we refuse the attempt rather than
+ * run unprotected. Genuine users retry once the incident is over.
+ */
+export async function checkRateLimitStrict(limit: RateLimit, key: string): Promise<boolean> {
+  try {
+    return await touchRateLimit(limit, key);
+  } catch (err) {
+    console.error(
+      `[ops:ratelimit] limiter unavailable for '${limit.bucket}', refusing attempt (fail-closed): ${err instanceof Error ? err.message : err}`
+    );
+    return false;
   }
 }

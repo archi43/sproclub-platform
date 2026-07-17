@@ -7,6 +7,15 @@
 
 export const OTP_CODE_LENGTH = 6;
 
+/** Pragmatic e-mail shape check at the boundary: one @, non-empty local part,
+ *  dotted domain, no spaces/control characters, RFC length cap. GoTrue
+ *  re-validates server-side; this only rejects obvious garbage early. */
+const EMAIL_SHAPE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+
+export function isValidEmail(raw: string): boolean {
+  return raw.length <= 254 && EMAIL_SHAPE.test(raw);
+}
+
 /** Normalize a user-typed OTP code: keep digits only. Returns the canonical
  *  6-digit string, or null when the input cannot be a valid code. */
 export function sanitizeOtpCode(raw: string): string | null {
