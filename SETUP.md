@@ -39,6 +39,36 @@ APP_BASE_DOMAIN=localhost:3000
 > `.env.local` est ignoré par Git. Ne jamais committer de clé réelle. En production,
 > utiliser le gestionnaire de secrets de l'hébergeur, pas un fichier.
 
+### 3 bis. Template e-mail de connexion (code OTP)
+
+La page de connexion envoie un **code à 6 chiffres** ; le lien magique reste en
+secours dans le même e-mail.
+
+**Prérequis — SMTP personnalisé** : Supabase verrouille l'édition des templates
+(et limite l'envoi à quelques e-mails/heure) tant qu'aucun SMTP personnalisé
+n'est configuré. Le projet utilisant déjà Resend pour les notifications
+(`RESEND_API_KEY` / `NOTIF_FROM`), réutiliser Resend comme SMTP : créer une clé
+API dédiée (permission « Sending access »), puis dans _Project Settings →
+Authentication → SMTP Settings_ : host `smtp.resend.com`, port `465`, username
+`resend`, password = la clé API, expéditeur sur le domaine vérifié.
+
+Le template par défaut n'affiche pas le code : dans _Authentication → Email
+Templates → Magic Link_, inclure les deux :
+
+```html
+<h2>Connexion</h2>
+<p>Votre code de connexion : <strong>{{ .Token }}</strong></p>
+<p>Ce code expire dans 10 minutes. <strong>Ne le communiquez à personne</strong> —
+  aucun membre de l'équipe ne vous le demandera jamais.</p>
+<p>Ou cliquez sur ce lien (depuis le navigateur où vous avez demandé le code) :
+  <a href="{{ .ConfirmationURL }}">se connecter</a></p>
+```
+
+Sans cette modification, l'e-mail ne contient que le lien et la saisie du code
+reste impossible. Régler aussi l'expiration de l'OTP e-mail à **600 s** (10 min)
+dans _Authentication → Providers → Email_ — la valeur par défaut (1 h) élargit
+inutilement la fenêtre de brute force / d'interception du code.
+
 ## 4. Appliquer les migrations (dans l'ordre)
 
 Dans le **SQL Editor** de Supabase, exécuter successivement le contenu de :

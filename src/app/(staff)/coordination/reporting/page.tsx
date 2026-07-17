@@ -4,7 +4,7 @@ import { getReport, type Dimension } from "@/lib/data/reporting";
 import { DIMENSION_LABELS } from "@/lib/reporting-rules";
 import type { Rate } from "@/lib/compliance-rules";
 import { PageHeader, EmptyState } from "@/components/ui/page-header";
-import { Button } from "@/components/ui/button";
+import { Button, buttonClasses } from "@/components/ui/button";
 import { Select } from "@/components/ui/form";
 import { Table, THead, TBody, Tr, Th, Td } from "@/components/ui/table";
 
@@ -47,7 +47,7 @@ export default async function ReportingPage({
         actions={
           <a
             href={`/coordination/reporting/export${exportQuery ? `?${exportQuery}` : ""}`}
-            className="inline-flex items-center rounded-lg border border-grey-300 bg-white px-3 py-2 text-sm font-medium text-brand no-underline hover:bg-brand-tint"
+            className={buttonClasses({ variant: "secondary" })}
           >
             Exporter (CSV)
           </a>

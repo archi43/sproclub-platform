@@ -1,7 +1,7 @@
-import Link from "next/link";
 import { getOrgContext } from "@/lib/tenant";
 import { getCurrentUser } from "@/lib/auth";
-import { Button } from "@/components/ui/button";
+import { ButtonLink } from "@/components/ui/button";
+import { BrandMark } from "@/components/ui/brand-mark";
 import { SignOutButton } from "@/components/sign-out-button";
 
 export default async function Home() {
@@ -10,9 +10,7 @@ export default async function Home() {
   return (
     <main className="mx-auto flex min-h-screen max-w-3xl flex-col justify-center px-6 py-16">
       <div className="flex items-center gap-3">
-        <span aria-hidden className="grid h-10 w-10 place-items-center rounded-lg bg-brand text-sm font-bold text-white">
-          SC
-        </span>
+        <BrandMark size="lg" />
         <h1 className="text-3xl font-bold text-brand">Plateforme pédagogique</h1>
       </div>
 
@@ -27,15 +25,11 @@ export default async function Home() {
       <div className="mt-8 flex items-center gap-3">
         {user ? (
           <>
-            <Link href="/mon-parcours">
-              <Button>Accéder à mon parcours</Button>
-            </Link>
+            <ButtonLink href="/mon-parcours">Accéder à mon parcours</ButtonLink>
             <SignOutButton />
           </>
         ) : (
-          <Link href="/login">
-            <Button>Se connecter</Button>
-          </Link>
+          <ButtonLink href="/login">Se connecter</ButtonLink>
         )}
       </div>
     </main>

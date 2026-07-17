@@ -7,7 +7,7 @@ export default {
   theme: {
     extend: {
       colors: {
-        brand: { DEFAULT: "#24365E", dark: "#1A2947", tint: "#E9EDF5" },
+        brand: { DEFAULT: "#24365E", dark: "#1A2947", mid: "#8FA3C8", tint: "#E9EDF5" },
         accent: { DEFAULT: "#F74335", tint: "#FEE7E5" },
         ink: "#1A1A1A",
         grey: { 600: "#4B4B4B", 300: "#D1D5DB" },
