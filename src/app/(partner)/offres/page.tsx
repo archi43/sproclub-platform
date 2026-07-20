@@ -22,7 +22,7 @@ const STATUS_TONE: Record<JobStatus, "success" | "warning" | "neutral"> = {
  */
 export default async function MesOffresPage() {
   const org = await getOrgContext();
-  if (!org) return <p className="text-grey-600">Organisme introuvable.</p>;
+  if (!org) return <p className="text-muted">Organisme introuvable.</p>;
 
   const offers = await listMyCompanyOffers(org.id);
 
@@ -57,7 +57,7 @@ export default async function MesOffresPage() {
                 <Tr key={o.id}>
                   <Td className="font-medium text-ink">
                     <Link href={`/offres/${o.id}`} className="text-brand hover:underline">{o.title}</Link>
-                    {o.location && <span className="block text-xs text-grey-600">{o.location}{o.remote ? ` · ${o.remote}` : ""}</span>}
+                    {o.location && <span className="block text-xs text-muted">{o.location}{o.remote ? ` · ${o.remote}` : ""}</span>}
                     {o.status === "rejected" && o.moderationNote && (
                       <span className="block text-xs text-error">Motif : {o.moderationNote}</span>
                     )}

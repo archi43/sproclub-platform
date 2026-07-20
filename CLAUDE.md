@@ -72,15 +72,24 @@ livrer un écran aux styles inline par défaut ; tout passe par les jetons et le
 
 **Fondation retenue** (chemin rapide, premium et accessible) :
 - **Tailwind CSS** avec les jetons de marque dans le thème, et **shadcn/ui** (composants
-  Radix, accessibles) comme base de composants.
+  Radix, accessibles) comme base de composants. **`lucide-react`** pour l'iconographie
+  (nav, actions, statuts).
 - **Montserrat** (titres) et **Hind Madurai** (texte) chargées via `next/font`, exposées
   en variables CSS `--font-heading` / `--font-body`.
 - Un seul jeu de **design tokens** (couleurs, typo, espacements) ; aucun style ad hoc.
 
+**Direction visuelle : épuré / minimal** (mêmes couleurs de marque, application modernisée) —
+surfaces plates, **filets fins** (`line`) au lieu de bordures marquées + ombres, plus d'air,
+navy réservé aux accents (texte secondaire en `muted`). L'app shell est une **sidebar claire**
+à gauche (rail de nav vertical avec icônes lucide, item actif surligné `brand-tint`, marque en
+haut, déconnexion en bas), qui se replie en **barre + tiroir** sur mobile.
+
 **Charte** :
 - Couleurs : primaire `#24365E` (`brand`), accent `#F74335` ; + `brand-dark #1A2947`,
-  `brand-tint #E9EDF5`, `accent-tint #FEE7E5`, `ink #1A1A1A`, `grey-600 #4B4B4B`,
-  `grey-300 #D1D5DB`, `surface #F7F8FA`, `success #2E7D32`, `warning #B8860B`, `error #C0392B`.
+  `brand-tint #EEF1F7`, `accent-tint #FEE7E5`, `ink #1A1A1A`, `muted #5B6472` (texte
+  secondaire), `line #E7E8EC` (filet fin), `surface #FAFAFB` (fond quasi blanc),
+  `success #2E7D32`, `warning #B8860B`, `error #C0392B`. (`grey-600`/`grey-300` conservés
+  pour compat mais remplacés par `muted`/`line` dans l'UI.)
 - Typo : titres Montserrat 600/700, texte Hind Madurai 400/500 ; fallbacks `system-ui`.
 - Logo shield `pro/club` dans l'en-tête ; version blanche sur fond bleu, espace de garde.
 - Le rouge sert aux accents, CTA et alertes, **jamais** au petit texte sur blanc (contraste).
@@ -89,10 +98,12 @@ livrer un écran aux styles inline par défaut ; tout passe par les jetons et le
 Button, Input/Select/Textarea, Card, Table, Badge, Alert, Tabs, Dialog, Toast, Skeleton,
 EmptyState, PageHeader.
 
-**App shell et navigation** :
-- En-tête commun : logo, nom de l'organisme, menu utilisateur (déconnexion), nav par rôle.
-- Conteneur de page à largeur max, échelle d'espacement 4/8 px, hiérarchie typo claire,
-  fil d'Ariane sur les vues profondes, état actif visible dans la nav.
+**App shell et navigation** (`src/components/app-shell.tsx` + `src/components/sidebar.tsx`) :
+- **Sidebar claire à gauche** (desktop) : marque + nom de l'organisme en haut, nav verticale
+  par rôle avec icônes lucide (item actif `brand-tint`/`aria-current`), déconnexion épinglée
+  en bas. Sur mobile : barre supérieure + tiroir (`aria-modal`). Skip-link conservé.
+- Le rôle passe ses `NavItem[]` (avec `icon`) au shell ; le contenu occupe la colonne
+  principale (conteneur à largeur max, échelle 4/8 px, hiérarchie typo claire, état actif visible).
 
 **États systématiques sur chaque écran** : chargement (skeleton), vide (message + action),
 erreur (message clair), succès (toast). Formulaires : validation au champ, bouton désactivé

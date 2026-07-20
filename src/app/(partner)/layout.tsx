@@ -1,12 +1,12 @@
 import type { ReactNode } from "react";
 import { getOrgContext } from "@/lib/tenant";
 import { requireOrgRole } from "@/lib/auth";
-import { AppHeader, PageContainer, type NavItem } from "@/components/app-shell";
+import { AppShell, PageContainer, type NavItem } from "@/components/app-shell";
 
 const nav: NavItem[] = [
-  { href: "/vivier", label: "Vivier de talents" },
-  { href: "/offres", label: "Mes offres" },
-  { href: "/besoins", label: "Besoins de formation" },
+  { href: "/vivier", label: "Vivier de talents", icon: "talent" },
+  { href: "/offres", label: "Mes offres", icon: "jobs" },
+  { href: "/besoins", label: "Besoins de formation", icon: "needs" },
 ];
 
 /**
@@ -18,15 +18,14 @@ const nav: NavItem[] = [
 export default async function PartnerLayout({ children }: { children: ReactNode }) {
   const org = await getOrgContext();
   if (!org) {
-    return <PageContainer><p className="text-grey-600">Organisme introuvable pour ce domaine.</p></PageContainer>;
+    return <PageContainer><p className="text-muted">Organisme introuvable pour ce domaine.</p></PageContainer>;
   }
 
   await requireOrgRole(org.id, ["partner"]);
 
   return (
-    <div>
-      <AppHeader orgName={org.name} subtitle="Espace entreprise partenaire" nav={nav} />
-      <PageContainer>{children}</PageContainer>
-    </div>
+    <AppShell orgName={org.name} subtitle="Espace entreprise partenaire" nav={nav}>
+      {children}
+    </AppShell>
   );
 }

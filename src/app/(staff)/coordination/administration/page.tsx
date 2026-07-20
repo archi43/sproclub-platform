@@ -27,7 +27,7 @@ import {
  */
 export default async function AdministrationPage() {
   const org = await getOrgContext();
-  if (!org) return <p className="text-grey-600">Organisme introuvable.</p>;
+  if (!org) return <p className="text-muted">Organisme introuvable.</p>;
 
   const [members, pool, candidates, programs, roles, partnerCompanies] = await Promise.all([
     listMembers(org.id),
@@ -50,7 +50,7 @@ export default async function AdministrationPage() {
 
         <Card>
           <CardTitle>Inviter un utilisateur</CardTitle>
-          <p className="mb-3 text-sm text-grey-600">
+          <p className="mb-3 text-sm text-muted">
             Un compte est créé et la personne se connecte via le lien e-mail. Le rôle définit son périmètre d'accès.
           </p>
           <InviteForm canCreateDirection={isDirection} partnerCompanies={partnerCompanies.filter((c) => c.active)} />
@@ -79,7 +79,7 @@ export default async function AdministrationPage() {
                   <Tr key={m.profileId} className={m.active ? undefined : "opacity-70"}>
                     <Td>
                       <div className="font-medium text-ink">{m.fullName ?? "—"}</div>
-                      <div className="text-xs text-grey-600">{m.email}</div>
+                      <div className="text-xs text-muted">{m.email}</div>
                     </Td>
                     <Td>
                       <div className="flex flex-wrap items-center gap-1.5">
@@ -146,7 +146,7 @@ export default async function AdministrationPage() {
                   <Td className="font-medium">{e.program}</Td>
                   <Td>
                     <div className="text-ink">{e.fullName ?? "—"}</div>
-                    <div className="text-xs text-grey-600">{e.email}</div>
+                    <div className="text-xs text-muted">{e.email}</div>
                   </Td>
                   <Td>
                     <div className="flex justify-end">

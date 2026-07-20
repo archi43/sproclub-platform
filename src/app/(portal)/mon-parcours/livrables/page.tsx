@@ -11,7 +11,7 @@ import { DeliverableForm } from "./deliverable-form";
  */
 export default async function DeliverablesPage() {
   const org = await getOrgContext();
-  if (!org) return <p className="text-grey-600">Organisme introuvable.</p>;
+  if (!org) return <p className="text-muted">Organisme introuvable.</p>;
 
   const deliverables = await getDeliverables(org.id);
 
@@ -33,7 +33,7 @@ export default async function DeliverablesPage() {
                   </div>
                 </div>
                 {d.deliverable_submitted ? (
-                  <p className="mt-2 text-sm text-grey-600">
+                  <p className="mt-2 text-sm text-muted">
                     {d.deliverable_url ? (
                       <a href={d.deliverable_url} target="_blank" rel="noreferrer">
                         Voir le livrable

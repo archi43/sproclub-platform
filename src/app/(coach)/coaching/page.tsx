@@ -7,7 +7,7 @@ import { Table, THead, TBody, Tr, Th, Td } from "@/components/ui/table";
 /** Coach portal home — the coach's own dossiers (RLS-scoped). */
 export default async function CoachingPage() {
   const org = await getOrgContext();
-  if (!org) return <p className="text-grey-600">Organisme introuvable.</p>;
+  if (!org) return <p className="text-muted">Organisme introuvable.</p>;
 
   const learners = await listMyLearners(org.id);
 

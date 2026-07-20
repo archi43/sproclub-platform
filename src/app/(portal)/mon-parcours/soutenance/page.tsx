@@ -20,7 +20,7 @@ const fmt = new Intl.DateTimeFormat("fr-FR", {
 /** Student portal — defense booking. Eligible once the deliverable is submitted. */
 export default async function SoutenancePage() {
   const org = await getOrgContext();
-  if (!org) return <p className="text-grey-600">Organisme introuvable.</p>;
+  if (!org) return <p className="text-muted">Organisme introuvable.</p>;
 
   const supabase = createClient();
   const [deliverables, reservations, slots] = await Promise.all([
@@ -53,7 +53,7 @@ export default async function SoutenancePage() {
             }
           />
         ) : slotOptions.length === 0 ? (
-          <p className="text-sm text-grey-600">Aucun créneau de soutenance proposé pour le moment.</p>
+          <p className="text-sm text-muted">Aucun créneau de soutenance proposé pour le moment.</p>
         ) : (
           <ul className="space-y-4">
             {eligible.map((d) => (
@@ -71,14 +71,14 @@ export default async function SoutenancePage() {
       <div>
         <h2 className="mb-3 text-lg font-semibold text-brand">Mes soutenances</h2>
         {defenses.length === 0 ? (
-          <p className="text-sm text-grey-600">Aucune soutenance réservée.</p>
+          <p className="text-sm text-muted">Aucune soutenance réservée.</p>
         ) : (
           <ul className="space-y-2">
             {defenses.map((r) => (
               <li key={r.id} className="flex items-center gap-3 text-sm">
                 <Badge tone="brand">Projet {r.project_number}</Badge>
                 <span>{fmt.format(new Date(r.starts_at))}</span>
-                <span className="text-grey-600">({r.status})</span>
+                <span className="text-muted">({r.status})</span>
               </li>
             ))}
           </ul>

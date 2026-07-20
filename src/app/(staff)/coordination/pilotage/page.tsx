@@ -24,7 +24,7 @@ export default async function PilotagePage({
   searchParams: Record<string, string | string[] | undefined>;
 }) {
   const org = await getOrgContext();
-  if (!org) return <p className="text-grey-600">Organisme introuvable.</p>;
+  if (!org) return <p className="text-muted">Organisme introuvable.</p>;
 
   const raw = searchParams.program;
   const program = (Array.isArray(raw) ? raw[0] : raw) || undefined;
@@ -44,7 +44,7 @@ export default async function PilotagePage({
           {programs.map((p) => <option key={p} value={p}>{p}</option>)}
         </Select>
         <Button type="submit" size="sm">Filtrer</Button>
-        {program && <Link href="/coordination/pilotage" className="text-sm text-grey-600 no-underline hover:underline">Réinitialiser</Link>}
+        {program && <Link href="/coordination/pilotage" className="text-sm text-muted no-underline hover:underline">Réinitialiser</Link>}
       </form>
 
       {/* Alertes en tête */}
@@ -84,7 +84,7 @@ export default async function PilotagePage({
                   </Td>
                   <Td>{d.program ?? "—"}</Td>
                   <Td><Badge tone="danger">{Math.round(d.score * 100)} %</Badge></Td>
-                  <Td className="text-sm text-grey-600">
+                  <Td className="text-sm text-muted">
                     {d.pieces.filter((p) => !p.present).map((p) => p.label).join(", ")}
                   </Td>
                 </Tr>
@@ -100,7 +100,7 @@ export default async function PilotagePage({
 function Kpi({ label, value, tone }: { label: string; value: string; tone?: "error" }) {
   return (
     <Card>
-      <div className="text-xs text-grey-600">{label}</div>
+      <div className="text-xs text-muted">{label}</div>
       <div className={`mt-1 text-xl font-semibold ${tone === "error" ? "text-error" : "text-brand"}`}>{value}</div>
     </Card>
   );

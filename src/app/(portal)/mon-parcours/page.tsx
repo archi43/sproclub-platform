@@ -11,7 +11,7 @@ import { Badge } from "@/components/ui/badge";
  */
 export default async function MonParcours() {
   const org = await getOrgContext();
-  if (!org) return <p className="text-grey-600">Organisme introuvable.</p>;
+  if (!org) return <p className="text-muted">Organisme introuvable.</p>;
 
   const enrollments = await getEnrollmentsForOrg(org.id);
 
@@ -29,7 +29,7 @@ export default async function MonParcours() {
                   <p className="font-heading font-semibold text-brand">{e.program ?? "Programme"}</p>
                   <Badge tone="brand">{e.status ?? "Statut inconnu"}</Badge>
                 </div>
-                {e.specialty && <p className="mt-1 text-sm text-grey-600">{e.specialty}</p>}
+                {e.specialty && <p className="mt-1 text-sm text-muted">{e.specialty}</p>}
               </Card>
             </li>
           ))}

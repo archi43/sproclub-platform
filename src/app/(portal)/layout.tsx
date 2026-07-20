@@ -1,16 +1,16 @@
 import type { ReactNode } from "react";
 import { getOrgContext } from "@/lib/tenant";
 import { requireOrgRole } from "@/lib/auth";
-import { AppHeader, PageContainer, type NavItem } from "@/components/app-shell";
+import { AppShell, PageContainer, type NavItem } from "@/components/app-shell";
 
 const nav: NavItem[] = [
-  { href: "/mon-parcours", label: "Mon parcours" },
-  { href: "/mon-parcours/dossier", label: "Mon dossier" },
-  { href: "/mon-parcours/livrables", label: "Mes livrables" },
-  { href: "/mon-parcours/reservation", label: "Coaching" },
-  { href: "/mon-parcours/soutenance", label: "Soutenance" },
-  { href: "/mon-parcours/offres", label: "Offres d'emploi" },
-  { href: "/mon-parcours/visibilite", label: "Visibilité entreprises" },
+  { href: "/mon-parcours", label: "Mon parcours", icon: "path" },
+  { href: "/mon-parcours/dossier", label: "Mon dossier", icon: "dossier" },
+  { href: "/mon-parcours/livrables", label: "Mes livrables", icon: "deliverables" },
+  { href: "/mon-parcours/reservation", label: "Coaching", icon: "coaching" },
+  { href: "/mon-parcours/soutenance", label: "Soutenance", icon: "defense" },
+  { href: "/mon-parcours/offres", label: "Offres d'emploi", icon: "jobs" },
+  { href: "/mon-parcours/visibilite", label: "Visibilité entreprises", icon: "visibility" },
 ];
 
 /**
@@ -21,15 +21,14 @@ const nav: NavItem[] = [
 export default async function PortalLayout({ children }: { children: ReactNode }) {
   const org = await getOrgContext();
   if (!org) {
-    return <PageContainer><p className="text-grey-600">Organisme introuvable pour ce domaine.</p></PageContainer>;
+    return <PageContainer><p className="text-muted">Organisme introuvable pour ce domaine.</p></PageContainer>;
   }
 
   await requireOrgRole(org.id, ["student"]);
 
   return (
-    <div>
-      <AppHeader orgName={org.name} subtitle="Espace apprenant" nav={nav} />
-      <PageContainer>{children}</PageContainer>
-    </div>
+    <AppShell orgName={org.name} subtitle="Espace apprenant" nav={nav}>
+      {children}
+    </AppShell>
   );
 }

@@ -27,7 +27,7 @@ export function CreateProgramForm() {
       <Input name="specialty" placeholder="Spécialité" aria-label="Spécialité" />
       <Input name="family" placeholder="Famille (SAP, Odoo, HubSpot…)" aria-label="Famille" />
       <Input name="rncp" placeholder="Certification RNCP / RS" aria-label="Certification RNCP/RS" />
-      <label className="flex items-center gap-2 text-sm text-grey-600">
+      <label className="flex items-center gap-2 text-sm text-muted">
         <input type="checkbox" name="cpfEligible" className="accent-brand" /> Éligible CPF
       </label>
       <Input name="path360l" placeholder="Parcours 360L (requis pour publier)" aria-label="Parcours 360L" />

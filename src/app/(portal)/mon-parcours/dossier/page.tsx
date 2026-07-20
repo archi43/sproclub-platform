@@ -13,9 +13,9 @@ const val = (v: unknown) => (v === null || v === undefined || v === "" ? "—" :
  *  satisfaction, et documents (Storage isolé). Portail apprenant (student). */
 export default async function MonDossierPage() {
   const org = await getOrgContext();
-  if (!org) return <p className="text-grey-600">Organisme introuvable.</p>;
+  if (!org) return <p className="text-muted">Organisme introuvable.</p>;
   const user = await getCurrentUser();
-  if (!user?.email) return <p className="text-grey-600">Session expirée.</p>;
+  if (!user?.email) return <p className="text-muted">Session expirée.</p>;
 
   const [dossiers, documents] = await Promise.all([
     getMyDossiers(org.id),
@@ -79,7 +79,7 @@ export default async function MonDossierPage() {
         {documents.length === 0 ? (
           <EmptyState title="Aucun document" description="Vos attestations et documents apparaîtront ici." />
         ) : (
-          <ul className="divide-y divide-grey-300/60">
+          <ul className="divide-y divide-line/60">
             {documents.map((doc) => (
               <li key={doc.name} className="flex items-center justify-between gap-3 py-2.5">
                 <span className="text-sm text-ink">{doc.name}</span>
@@ -102,7 +102,7 @@ export default async function MonDossierPage() {
 function Row({ label, value }: { label: string; value: ReactNode }) {
   return (
     <div>
-      <dt className="text-xs text-grey-600">{label}</dt>
+      <dt className="text-xs text-muted">{label}</dt>
       <dd className="font-medium text-ink">{value}</dd>
     </div>
   );

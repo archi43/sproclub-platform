@@ -16,7 +16,7 @@ export default async function ConformitePage({
   searchParams: Record<string, string | string[] | undefined>;
 }) {
   const org = await getOrgContext();
-  if (!org) return <p className="text-grey-600">Organisme introuvable.</p>;
+  if (!org) return <p className="text-muted">Organisme introuvable.</p>;
 
   const pick = (k: string) => {
     const v = searchParams[k];
@@ -44,11 +44,11 @@ export default async function ConformitePage({
           <option value="">Tous les programmes</option>
           {programs.map((p) => <option key={p} value={p}>{p}</option>)}
         </Select>
-        <label className="flex items-center gap-2 text-sm text-grey-600">
+        <label className="flex items-center gap-2 text-sm text-muted">
           <input type="checkbox" name="cpf" value="1" defaultChecked={cpfOnly} className="accent-brand" /> CPF uniquement
         </label>
         <Button type="submit" size="sm">Filtrer</Button>
-        {(program || cpfOnly) && <Link href="/coordination/conformite" className="text-sm text-grey-600 no-underline hover:underline">Réinitialiser</Link>}
+        {(program || cpfOnly) && <Link href="/coordination/conformite" className="text-sm text-muted no-underline hover:underline">Réinitialiser</Link>}
       </form>
 
       {rows.length === 0 ? (
@@ -68,7 +68,7 @@ export default async function ConformitePage({
               <Tr key={d.enrollmentId} className={d.nonConforming ? "bg-error/5" : undefined}>
                 <Td className="font-medium">
                   <Link href={`/coordination/apprenants/${d.learnerId}`}>{d.learnerName}</Link>
-                  {d.program && <div className="text-xs text-grey-600">{d.program}</div>}
+                  {d.program && <div className="text-xs text-muted">{d.program}</div>}
                 </Td>
                 <Td>{d.status ?? "—"}</Td>
                 {d.pieces.map((p) => (

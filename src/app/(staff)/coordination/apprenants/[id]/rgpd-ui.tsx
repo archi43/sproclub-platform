@@ -32,7 +32,7 @@ export function EraseLearner({ learnerId }: { learnerId: string }) {
         autoComplete="off"
       />
       <EraseButton />
-      <span id="erase-help" className="w-full text-xs text-grey-600">
+      <span id="erase-help" className="w-full text-xs text-muted">
         Action irréversible : tapez <strong>EFFACER</strong> pour anonymiser définitivement ce dossier.
       </span>
       {state.message && <Alert tone={state.ok ? "success" : "error"}>{state.message}</Alert>}

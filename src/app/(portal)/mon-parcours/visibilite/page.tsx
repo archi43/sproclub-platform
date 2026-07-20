@@ -13,7 +13,7 @@ import { VisibilityForm } from "./visibility-form";
  */
 export default async function VisibilitePage() {
   const org = await getOrgContext();
-  if (!org) return <p className="text-grey-600">Organisme introuvable.</p>;
+  if (!org) return <p className="text-muted">Organisme introuvable.</p>;
 
   const profile = await getMyTalentProfile(org.id);
   const consented = !!profile?.consentedAt && !profile?.revokedAt;
@@ -26,7 +26,7 @@ export default async function VisibilitePage() {
       />
       <Card>
         <div className="mb-4 flex items-center gap-2">
-          <span className="text-sm font-medium text-grey-600">Statut :</span>
+          <span className="text-sm font-medium text-muted">Statut :</span>
           {consented ? <Badge tone="success">Visible des partenaires</Badge> : <Badge tone="neutral">Non visible</Badge>}
         </div>
         <VisibilityForm

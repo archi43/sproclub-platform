@@ -19,7 +19,7 @@ const NEED_LABEL: Record<TrainingNeedStatus, string> = { open: "Transmis", revie
  */
 export default async function RecrutementPage() {
   const org = await getOrgContext();
-  if (!org) return <p className="text-grey-600">Organisme introuvable.</p>;
+  if (!org) return <p className="text-muted">Organisme introuvable.</p>;
 
   const [offers, needs] = await Promise.all([listAllOffers(org.id), listAllTrainingNeeds(org.id)]);
   const pending = offers.filter((o) => o.status === "pending");
@@ -42,8 +42,8 @@ export default async function RecrutementPage() {
                   <Tr key={o.id}>
                     <Td>
                       <span className="font-medium text-ink">{o.title}</span>
-                      <span className="block text-xs text-grey-600">{o.companyName ?? "—"}</span>
-                      <span className="mt-1 block max-w-xl whitespace-pre-wrap text-sm text-grey-600">{o.description}</span>
+                      <span className="block text-xs text-muted">{o.companyName ?? "—"}</span>
+                      <span className="mt-1 block max-w-xl whitespace-pre-wrap text-sm text-muted">{o.description}</span>
                     </Td>
                     <Td>{o.contractType ?? "—"}</Td>
                     <Td><OfferModeration offerId={o.id} status={o.status} /></Td>
@@ -92,13 +92,13 @@ export default async function RecrutementPage() {
                   <Tr key={n.id}>
                     <Td>
                       <span className="font-medium text-ink">{n.title}</span>
-                      {n.description && <span className="block max-w-md text-xs text-grey-600">{n.description}</span>}
+                      {n.description && <span className="block max-w-md text-xs text-muted">{n.description}</span>}
                     </Td>
                     <Td>{n.companyName ?? "—"}</Td>
                     <Td>{n.headcount ?? "—"}</Td>
                     <Td>{n.timeframe ?? "—"}</Td>
                     <Td>
-                      <span className="mb-1 block text-xs text-grey-600">{NEED_LABEL[n.status]}</span>
+                      <span className="mb-1 block text-xs text-muted">{NEED_LABEL[n.status]}</span>
                       <NeedReview needId={n.id} status={n.status} />
                     </Td>
                   </Tr>

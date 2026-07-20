@@ -21,7 +21,7 @@ function evaluatorLabel(e: JuryEvaluator): string {
 /** Coordination — jury assignment (écran staff). */
 export default async function CoordinationPage() {
   const org = await getOrgContext();
-  if (!org) return <p className="text-grey-600">Organisme introuvable.</p>;
+  if (!org) return <p className="text-muted">Organisme introuvable.</p>;
 
   const defenses = await getDefenses(org.id);
   const candidatesByDefense = await Promise.all(
@@ -53,14 +53,14 @@ export default async function CoordinationPage() {
                       <p className="font-heading font-semibold text-brand">
                         {d.learnerName} — Projet {d.projectNumber}
                       </p>
-                      <p className="text-sm text-grey-600">
+                      <p className="text-sm text-muted">
                         {d.program ?? "Programme ?"} · {fmt.format(new Date(d.startsAt))}
                       </p>
                     </div>
                     <Badge tone={d.status === "confirmed" ? "success" : "warning"}>{d.status}</Badge>
                   </div>
 
-                  <p className="mt-2 text-sm text-grey-600">
+                  <p className="mt-2 text-sm text-muted">
                     Coach référent (exclu du jury) : {d.coachEmail ?? "—"}
                   </p>
 
@@ -72,7 +72,7 @@ export default async function CoordinationPage() {
                   {!complete && (
                     <div className="mt-3">
                       {candidatesByDefense[i].length === 0 ? (
-                        <p className="text-sm italic text-grey-600">Aucun évaluateur éligible dans le vivier de ce programme.</p>
+                        <p className="text-sm italic text-muted">Aucun évaluateur éligible dans le vivier de ce programme.</p>
                       ) : (
                         <AssignForm reservationId={d.id} candidates={candidatesByDefense[i]} />
                       )}

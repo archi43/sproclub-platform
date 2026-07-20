@@ -34,13 +34,13 @@ export function VisibilityForm({ values }: { values: VisibilityFormValues }) {
           type="checkbox"
           name="consent"
           defaultChecked={values.consented}
-          className="mt-1 h-5 w-5 rounded border-grey-300 accent-brand"
+          className="mt-1 h-5 w-5 rounded border-line accent-brand"
         />
         <span className="text-sm text-ink">
           J&apos;accepte que mon nom, ma progression, mes résultats d&apos;évaluation (synthèse chiffrée)
           et ma disponibilité soient visibles des <strong>entreprises partenaires</strong> de
           l&apos;organisme, actuelles et futures.
-          <span className="block text-grey-600">
+          <span className="block text-muted">
             Consentement révocable à tout moment en décochant cette case. Les commentaires de vos coachs
             et jurys ne sont jamais partagés.
           </span>

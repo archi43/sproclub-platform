@@ -29,11 +29,11 @@ export default function LoginPage() {
     <main className="mx-auto flex min-h-screen max-w-md flex-col justify-center px-6 py-16">
       <div className="mb-6 flex items-center gap-3">
         <BrandMark size="md" />
-        <h1 className="text-2xl font-bold text-brand">Connexion</h1>
+        <h1 className="text-xl font-semibold tracking-tight text-brand">Connexion</h1>
       </div>
 
       <Card>
-        <p className="mb-4 text-sm text-grey-600">
+        <p className="mb-4 text-sm text-muted">
           Saisissez votre adresse e-mail : vous recevrez un code de connexion à 6 chiffres.
         </p>
         <form action={requestAction} className="space-y-4">
@@ -51,7 +51,7 @@ export default function LoginPage() {
         )}
 
         {sentTo && (
-          <form action={verifyAction} className="mt-6 space-y-4 border-t border-grey-300/60 pt-5">
+          <form action={verifyAction} className="mt-6 space-y-4 border-t border-line pt-5">
             <input type="hidden" name="email" value={sentTo} />
             <Field label={`Code reçu à ${sentTo}`} htmlFor="code">
               <Input
