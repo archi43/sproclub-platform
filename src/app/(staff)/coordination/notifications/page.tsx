@@ -31,7 +31,7 @@ export default async function NotificationsPage({
   searchParams: Record<string, string | string[] | undefined>;
 }) {
   const org = await getOrgContext();
-  if (!org) return <p className="text-grey-600">Organisme introuvable.</p>;
+  if (!org) return <p className="text-muted">Organisme introuvable.</p>;
 
   const raw = searchParams.status;
   const statusParam = (Array.isArray(raw) ? raw[0] : raw) || undefined;
@@ -62,7 +62,7 @@ export default async function NotificationsPage({
         </Select>
         <Button type="submit" size="sm">Filtrer</Button>
         {status && (
-          <Link href="/coordination/notifications" className="text-sm text-grey-600 no-underline hover:underline">
+          <Link href="/coordination/notifications" className="text-sm text-muted no-underline hover:underline">
             Réinitialiser
           </Link>
         )}
@@ -92,7 +92,7 @@ export default async function NotificationsPage({
                     <Td>{n.subject}</Td>
                     <Td>
                       <Badge tone={statusTone[n.status] ?? "neutral"}>{statusLabel[n.status] ?? n.status}</Badge>
-                      {n.status === "error" && n.error && <span className="ml-2 text-xs text-grey-600">{n.error}</span>}
+                      {n.status === "error" && n.error && <span className="ml-2 text-xs text-muted">{n.error}</span>}
                     </Td>
                   </Tr>
                 ))}
@@ -104,7 +104,7 @@ export default async function NotificationsPage({
 
       <Card>
         <CardTitle>Préférences (opt-out)</CardTitle>
-        <p className="mb-3 text-sm text-grey-600">
+        <p className="mb-3 text-sm text-muted">
           Désactivez une relance pour un destinataire précis. Les envois correspondants seront ignorés.
         </p>
         <OptOutManager optOuts={optOuts} />
@@ -117,7 +117,7 @@ function Tile({ label, value, tone }: { label: string; value: number; tone?: "wa
   const color = tone === "danger" ? "text-error" : tone === "warning" ? "text-warning" : "text-brand";
   return (
     <Card>
-      <div className="text-xs text-grey-600">{label}</div>
+      <div className="text-xs text-muted">{label}</div>
       <div className={`mt-1 text-xl font-semibold tabular-nums ${color}`}>{value}</div>
     </Card>
   );

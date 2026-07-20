@@ -11,10 +11,10 @@ export default async function Home() {
     <main className="mx-auto flex min-h-screen max-w-3xl flex-col justify-center px-6 py-16">
       <div className="flex items-center gap-3">
         <BrandMark size="lg" />
-        <h1 className="text-3xl font-bold text-brand">Plateforme pédagogique</h1>
+        <h1 className="text-2xl font-semibold tracking-tight text-brand">Plateforme pédagogique</h1>
       </div>
 
-      <p className="mt-4 text-grey-600">
+      <p className="mt-4 text-muted">
         {org ? (
           <>Espace de l&apos;organisme <strong className="text-ink">{org.name}</strong>.</>
         ) : (

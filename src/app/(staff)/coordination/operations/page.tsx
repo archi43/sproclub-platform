@@ -25,7 +25,7 @@ export default async function OperationsPage({
   searchParams: Record<string, string | string[] | undefined>;
 }) {
   const org = await getOrgContext();
-  if (!org) return <p className="text-grey-600">Organisme introuvable.</p>;
+  if (!org) return <p className="text-muted">Organisme introuvable.</p>;
 
   const raw = searchParams.program;
   const program = (Array.isArray(raw) ? raw[0] : raw) || undefined;
@@ -68,7 +68,7 @@ export default async function OperationsPage({
         </Select>
         <Button type="submit" size="sm">Filtrer</Button>
         {program && (
-          <Link href="/coordination/operations" className="text-sm text-grey-600 no-underline hover:underline">
+          <Link href="/coordination/operations" className="text-sm text-muted no-underline hover:underline">
             Réinitialiser
           </Link>
         )}
@@ -198,9 +198,9 @@ export default async function OperationsPage({
 
 function SummaryChip({ count, label, tone }: { count: number; label: string; tone: "neutral" | "warning" | "danger" }) {
   return (
-    <span className="inline-flex items-center gap-2 rounded-lg border border-grey-300 bg-white px-3 py-1.5 text-sm">
+    <span className="inline-flex items-center gap-2 rounded-lg border border-line bg-white px-3 py-1.5 text-sm">
       <Badge tone={count > 0 ? tone : "neutral"}>{count}</Badge>
-      <span className="text-grey-600">{label}</span>
+      <span className="text-muted">{label}</span>
     </span>
   );
 }

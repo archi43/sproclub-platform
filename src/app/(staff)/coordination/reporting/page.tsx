@@ -24,7 +24,7 @@ export default async function ReportingPage({
   searchParams: Record<string, string | string[] | undefined>;
 }) {
   const org = await getOrgContext();
-  if (!org) return <p className="text-grey-600">Organisme introuvable.</p>;
+  if (!org) return <p className="text-muted">Organisme introuvable.</p>;
 
   const pick = (k: string) => {
     const v = searchParams[k];
@@ -56,34 +56,34 @@ export default async function ReportingPage({
 
       <form method="get" className="flex flex-wrap items-end gap-2">
         <label className="text-sm">
-          <span className="mb-1 block text-grey-600">Segmenter par</span>
+          <span className="mb-1 block text-muted">Segmenter par</span>
           <Select name="dim" defaultValue={dimension} className="w-auto">
             {DIMENSIONS.map((d) => <option key={d} value={d}>{DIMENSION_LABELS[d]}</option>)}
           </Select>
         </label>
         <label className="text-sm">
-          <span className="mb-1 block text-grey-600">Programme</span>
+          <span className="mb-1 block text-muted">Programme</span>
           <Select name="program" defaultValue={filters.program ?? ""} className="w-auto">
             <option value="">Tous</option>
             {report.programs.map((p) => <option key={p} value={p}>{p}</option>)}
           </Select>
         </label>
         <label className="text-sm">
-          <span className="mb-1 block text-grey-600">Financeur</span>
+          <span className="mb-1 block text-muted">Financeur</span>
           <Select name="financer" defaultValue={filters.financer ?? ""} className="w-auto">
             <option value="">Tous</option>
             {report.financers.map((f) => <option key={f} value={f}>{f}</option>)}
           </Select>
         </label>
         <label className="text-sm">
-          <span className="mb-1 block text-grey-600">Année</span>
+          <span className="mb-1 block text-muted">Année</span>
           <Select name="year" defaultValue={filters.year ?? ""} className="w-auto">
             <option value="">Toutes</option>
             {report.years.map((y) => <option key={y} value={y}>{y}</option>)}
           </Select>
         </label>
         <Button type="submit" size="sm">Filtrer</Button>
-        <Link href="/coordination/reporting" className="text-sm text-grey-600 no-underline hover:underline">Réinitialiser</Link>
+        <Link href="/coordination/reporting" className="text-sm text-muted no-underline hover:underline">Réinitialiser</Link>
       </form>
 
       {report.segments.length === 0 ? (

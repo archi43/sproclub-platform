@@ -14,7 +14,7 @@ export default async function ApprenantsPage({
   searchParams: Record<string, string | string[] | undefined>;
 }) {
   const org = await getOrgContext();
-  if (!org) return <p className="text-grey-600">Organisme introuvable.</p>;
+  if (!org) return <p className="text-muted">Organisme introuvable.</p>;
 
   const pick = (k: string) => {
     const v = searchParams[k];
@@ -46,11 +46,11 @@ export default async function ApprenantsPage({
           <option value="">Tous les financeurs</option>
           {options.financers.map((f) => <option key={f} value={f}>{f}</option>)}
         </Select>
-        <label className="flex items-center gap-2 text-sm text-grey-600">
+        <label className="flex items-center gap-2 text-sm text-muted">
           <input type="checkbox" name="late" value="1" defaultChecked={filters.late} className="accent-brand" /> En retard
         </label>
         <Button type="submit" size="sm">Filtrer</Button>
-        <Link href="/coordination/apprenants" className="text-sm text-grey-600 no-underline hover:underline">
+        <Link href="/coordination/apprenants" className="text-sm text-muted no-underline hover:underline">
           Réinitialiser
         </Link>
       </form>

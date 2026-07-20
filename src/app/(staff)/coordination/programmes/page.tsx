@@ -9,7 +9,7 @@ import { CreateProgramForm, PublishButton } from "./program-ui";
 /** Module 4 / S4.1 — programme catalogue (direction/coordinator). */
 export default async function ProgrammesPage() {
   const org = await getOrgContext();
-  if (!org) return <p className="text-grey-600">Organisme introuvable.</p>;
+  if (!org) return <p className="text-muted">Organisme introuvable.</p>;
 
   const programs = await listPrograms(org.id);
 

@@ -23,7 +23,7 @@ const bool = (v: unknown) => (v === true ? "Oui" : v === false ? "Non" : "—");
 function Field({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex gap-3">
-      <span className="min-w-48 shrink-0 text-grey-600">{label}</span>
+      <span className="min-w-48 shrink-0 text-muted">{label}</span>
       <span className="text-ink">{value}</span>
     </div>
   );
@@ -40,7 +40,7 @@ function Section({ title, children }: { title: string; children: ReactNode }) {
 /** Module 2 / S2.2 — 360 learner sheet on real data. */
 export default async function FicheApprenant({ params }: { params: { id: string } }) {
   const org = await getOrgContext();
-  if (!org) return <p className="text-grey-600">Organisme introuvable.</p>;
+  if (!org) return <p className="text-muted">Organisme introuvable.</p>;
 
   const [sheet, reports] = await Promise.all([
     getLearnerSheet(org.id, params.id),
@@ -50,7 +50,7 @@ export default async function FicheApprenant({ params }: { params: { id: string 
     return (
       <div className="space-y-4">
         <Link href="/coordination/apprenants" className="text-sm">← Apprenants</Link>
-        <p className="text-grey-600">Apprenant introuvable (ou hors de votre périmètre).</p>
+        <p className="text-muted">Apprenant introuvable (ou hors de votre périmètre).</p>
       </div>
     );
   }
@@ -84,7 +84,7 @@ export default async function FicheApprenant({ params }: { params: { id: string 
         <Field label="Type de stagiaire" value={val(learner.trainee_type)} />
       </Section>
 
-      {enrollments.length === 0 && <p className="text-sm text-grey-600">Aucun dossier de formation.</p>}
+      {enrollments.length === 0 && <p className="text-sm text-muted">Aucun dossier de formation.</p>}
       {enrollments.map((e, i) => (
         <div key={String(e.id ?? i)} className="space-y-3">
           <h2 className="text-lg font-semibold text-brand">Dossier — {val(e.program)}</h2>
@@ -134,12 +134,12 @@ export default async function FicheApprenant({ params }: { params: { id: string 
           <Section title="Documents (génération)">
             <GenerateDocuments enrollmentId={String(e.id)} learnerId={params.id} />
             {emissionsByEnrollment[i].length > 0 && (
-              <ul className="mt-3 divide-y divide-grey-300/60">
+              <ul className="mt-3 divide-y divide-line/60">
                 {emissionsByEnrollment[i].map((doc: Emission) => (
                   <li key={doc.id} className="flex items-center justify-between gap-3 py-2">
                     <span>
                       {doc.kindLabel}
-                      <span className="ml-2 text-xs text-grey-600">{doc.generatedAt.slice(0, 10)}</span>
+                      <span className="ml-2 text-xs text-muted">{doc.generatedAt.slice(0, 10)}</span>
                     </span>
                     {doc.url ? (
                       <a href={doc.url} target="_blank" rel="noopener noreferrer" aria-label={`Télécharger ${doc.kindLabel}`} className="text-sm text-brand no-underline hover:underline">
@@ -156,12 +156,12 @@ export default async function FicheApprenant({ params }: { params: { id: string 
 
       <Section title="Comptes rendus de coaching">
         {reports.length === 0 ? (
-          <span className="text-grey-600">Aucun compte rendu saisi par le coach.</span>
+          <span className="text-muted">Aucun compte rendu saisi par le coach.</span>
         ) : (
           <ul className="space-y-2">
             {reports.map((r) => (
-              <li key={r.id} className="rounded-lg border border-grey-300 bg-surface p-3">
-                <div className="mb-1 flex items-center gap-2 text-xs text-grey-600">
+              <li key={r.id} className="rounded-lg border border-line bg-surface p-3">
+                <div className="mb-1 flex items-center gap-2 text-xs text-muted">
                   <span>{val(r.sessionDate ?? r.createdAt.slice(0, 10))}</span>
                   {r.grade != null && <Badge tone="brand">Note {r.grade}</Badge>}
                 </div>
@@ -174,7 +174,7 @@ export default async function FicheApprenant({ params }: { params: { id: string 
 
       <Section title="Vivier de talents (entreprises partenaires)">
         <div className="mb-3 flex flex-wrap items-center gap-2 text-sm">
-          <span className="text-grey-600">Consentement :</span>
+          <span className="text-muted">Consentement :</span>
           {talent?.consentedAt && !talent.revokedAt ? (
             <Badge tone="success">Visible des partenaires (consenti le {val(talent.consentedAt.slice(0, 10))})</Badge>
           ) : talent?.revokedAt ? (
@@ -182,8 +182,8 @@ export default async function FicheApprenant({ params }: { params: { id: string 
           ) : (
             <Badge tone="neutral">Jamais consenti</Badge>
           )}
-          {talent?.availableFrom && <span className="text-grey-600">· dispo déclarée : {val(talent.availableFrom)}</span>}
-          {talent?.contractSought && <span className="text-grey-600">· {talent.contractSought}</span>}
+          {talent?.availableFrom && <span className="text-muted">· dispo déclarée : {val(talent.availableFrom)}</span>}
+          {talent?.contractSought && <span className="text-muted">· {talent.contractSought}</span>}
         </div>
         <TalentStatusForm learnerId={params.id} current={talent?.staffStatus ?? null} />
       </Section>
@@ -200,13 +200,13 @@ export default async function FicheApprenant({ params }: { params: { id: string 
         </div>
 
         <div className="mt-4">
-          <h4 className="mb-2 text-xs font-semibold uppercase tracking-wide text-grey-600">Journal d&apos;accès</h4>
+          <h4 className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted">Journal d&apos;accès</h4>
           {audit.length === 0 ? (
-            <span className="text-grey-600">Aucun accès tracé.</span>
+            <span className="text-muted">Aucun accès tracé.</span>
           ) : (
             <ul className="space-y-1 text-sm">
               {audit.map((a, i) => (
-                <li key={i} className="flex flex-wrap items-center gap-2 text-grey-600">
+                <li key={i} className="flex flex-wrap items-center gap-2 text-muted">
                   <span className="tabular-nums">{a.at.slice(0, 16).replace("T", " ")}</span>
                   <Badge tone="neutral">{a.action}</Badge>
                   {a.actorEmail && <span className="text-ink">{a.actorEmail}</span>}

@@ -33,11 +33,11 @@ export function OptOutManager({ optOuts }: { optOuts: OptOutView[] }) {
     <div className="space-y-4">
       <form action={action} className="flex flex-wrap items-end gap-2">
         <div>
-          <label htmlFor="pref-email" className="mb-1 block text-xs text-grey-600">E-mail destinataire</label>
+          <label htmlFor="pref-email" className="mb-1 block text-xs text-muted">E-mail destinataire</label>
           <Input id="pref-email" name="email" type="email" placeholder="personne@exemple.fr" className="w-64" autoComplete="off" />
         </div>
         <div>
-          <label htmlFor="pref-kind" className="mb-1 block text-xs text-grey-600">Type de relance</label>
+          <label htmlFor="pref-kind" className="mb-1 block text-xs text-muted">Type de relance</label>
           <Select id="pref-kind" name="kind" defaultValue="" className="w-auto">
             <option value="" disabled>Choisir…</option>
             {NOTIFICATION_KINDS.map((k) => (
@@ -50,7 +50,7 @@ export function OptOutManager({ optOuts }: { optOuts: OptOutView[] }) {
       </form>
 
       {optOuts.length === 0 ? (
-        <p className="text-sm text-grey-600">Aucune relance désactivée : tous les destinataires reçoivent les relances.</p>
+        <p className="text-sm text-muted">Aucune relance désactivée : tous les destinataires reçoivent les relances.</p>
       ) : (
         <ul className="space-y-1">
           {optOuts.map((o) => (
@@ -59,7 +59,7 @@ export function OptOutManager({ optOuts }: { optOuts: OptOutView[] }) {
               <Badge tone="neutral">{kindLabel(o.kind)}</Badge>
               <form action={removeOptOutAction}>
                 <input type="hidden" name="id" value={o.id} />
-                <button type="submit" className="text-xs text-grey-600 underline hover:text-brand">Réactiver</button>
+                <button type="submit" className="text-xs text-muted underline hover:text-brand">Réactiver</button>
               </form>
             </li>
           ))}

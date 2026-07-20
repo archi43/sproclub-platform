@@ -9,14 +9,15 @@
   body {
     @apply bg-surface text-ink font-body antialiased;
   }
+  /* Titres : navy de marque, poids et interlettrage resserrés (rendu épuré). */
   h1, h2, h3, h4, h5, h6 {
-    @apply font-heading text-brand;
+    @apply font-heading text-brand tracking-tight;
   }
   a {
     @apply text-brand underline-offset-2 hover:underline;
   }
-  /* Visible focus for keyboard users (accessibility). */
+  /* Focus clavier visible mais discret (accessibilité). */
   :focus-visible {
-    @apply outline-none ring-2 ring-brand ring-offset-2 ring-offset-surface;
+    @apply outline-none ring-2 ring-brand/60 ring-offset-2 ring-offset-surface;
   }
 }

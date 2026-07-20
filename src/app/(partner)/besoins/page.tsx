@@ -19,7 +19,7 @@ const NEED_STATUS: Record<TrainingNeedStatus, { label: string; tone: "success" |
  */
 export default async function BesoinsPage() {
   const org = await getOrgContext();
-  if (!org) return <p className="text-grey-600">Organisme introuvable.</p>;
+  if (!org) return <p className="text-muted">Organisme introuvable.</p>;
 
   const needs = await listMyTrainingNeeds(org.id);
 
@@ -54,12 +54,12 @@ export default async function BesoinsPage() {
                 <Tr key={n.id}>
                   <Td className="font-medium text-ink">
                     {n.title}
-                    {n.description && <span className="block text-xs text-grey-600">{n.description}</span>}
+                    {n.description && <span className="block text-xs text-muted">{n.description}</span>}
                   </Td>
                   <Td>{n.headcount ?? "—"}</Td>
                   <Td>{n.timeframe ?? "—"}</Td>
                   <Td><Badge tone={NEED_STATUS[n.status].tone}>{NEED_STATUS[n.status].label}</Badge></Td>
-                  <Td className="text-sm text-grey-600">{new Date(n.createdAt).toLocaleDateString("fr-FR")}</Td>
+                  <Td className="text-sm text-muted">{new Date(n.createdAt).toLocaleDateString("fr-FR")}</Td>
                 </Tr>
               ))}
             </TBody>

@@ -15,7 +15,7 @@ import { InterestButton } from "./interest-button";
  */
 export default async function OffresApprenantPage() {
   const org = await getOrgContext();
-  if (!org) return <p className="text-grey-600">Organisme introuvable.</p>;
+  if (!org) return <p className="text-muted">Organisme introuvable.</p>;
 
   const [offers, interested, talent] = await Promise.all([
     listPublishedOffers(org.id),
@@ -48,7 +48,7 @@ export default async function OffresApprenantPage() {
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div>
                     <p className="font-heading text-lg font-semibold text-brand">{o.title}</p>
-                    <p className="text-sm text-grey-600">
+                    <p className="text-sm text-muted">
                       {o.companyName ?? "Entreprise partenaire"}
                       {o.contractType ? ` · ${o.contractType}` : ""}
                       {o.location ? ` · ${o.location}` : ""}

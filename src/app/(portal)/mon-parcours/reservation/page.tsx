@@ -18,7 +18,7 @@ const fmt = new Intl.DateTimeFormat("fr-FR", {
 /** Student portal — coaching booking (pilot). */
 export default async function ReservationPage() {
   const org = await getOrgContext();
-  if (!org) return <p className="text-grey-600">Organisme introuvable.</p>;
+  if (!org) return <p className="text-muted">Organisme introuvable.</p>;
 
   const supabase = createClient();
   const [slots, reservations] = await Promise.all([
@@ -50,14 +50,14 @@ export default async function ReservationPage() {
       <div>
         <h2 className="mb-3 text-lg font-semibold text-brand">Mes réservations</h2>
         {reservations.length === 0 ? (
-          <p className="text-sm text-grey-600">Aucune réservation pour le moment.</p>
+          <p className="text-sm text-muted">Aucune réservation pour le moment.</p>
         ) : (
           <ul className="space-y-2">
             {reservations.map((r) => (
               <li key={r.id} className="flex items-center gap-3 text-sm">
                 <Badge tone="brand">{r.kind === "coaching" ? "Coaching" : "Soutenance"}</Badge>
                 <span>{fmt.format(new Date(r.starts_at))}</span>
-                <span className="text-grey-600">({r.status})</span>
+                <span className="text-muted">({r.status})</span>
               </li>
             ))}
           </ul>

@@ -2,11 +2,11 @@ import type { InputHTMLAttributes, SelectHTMLAttributes, TextareaHTMLAttributes,
 import { cn } from "@/lib/utils";
 
 const field =
-  "w-full rounded-lg border border-grey-300 bg-white px-3 py-2 text-sm text-ink placeholder:text-grey-600/60 " +
-  "focus-visible:border-brand disabled:opacity-50";
+  "w-full rounded-lg border border-line bg-white px-3 py-2 text-sm text-ink placeholder:text-muted/50 " +
+  "transition-colors focus-visible:border-brand disabled:opacity-50";
 
 export function Label({ className, ...props }: LabelHTMLAttributes<HTMLLabelElement>) {
-  return <label className={cn("mb-1 block text-sm font-medium text-grey-600", className)} {...props} />;
+  return <label className={cn("mb-1.5 block text-sm font-medium text-ink", className)} {...props} />;
 }
 
 export function Input({ className, ...props }: InputHTMLAttributes<HTMLInputElement>) {

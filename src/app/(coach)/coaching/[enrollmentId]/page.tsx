@@ -17,7 +17,7 @@ const fmtDateTime = (iso: string) => dtTimeFmt.format(new Date(iso));
  *  dossier → we render a not-found message. */
 export default async function CoachDossierPage({ params }: { params: { enrollmentId: string } }) {
   const org = await getOrgContext();
-  if (!org) return <p className="text-grey-600">Organisme introuvable.</p>;
+  if (!org) return <p className="text-muted">Organisme introuvable.</p>;
 
   const dossier = await getCoachDossier(org.id, params.enrollmentId);
   if (!dossier) {
@@ -117,8 +117,8 @@ export default async function CoachDossierPage({ params }: { params: { enrollmen
         ) : (
           <ul className="space-y-3">
             {reports.map((r) => (
-              <li key={r.id} className="rounded-lg border border-grey-300 bg-surface p-3">
-                <div className="mb-1 flex items-center gap-2 text-xs text-grey-600">
+              <li key={r.id} className="rounded-lg border border-line bg-surface p-3">
+                <div className="mb-1 flex items-center gap-2 text-xs text-muted">
                   <span>{fmtDate(r.sessionDate ?? r.createdAt)}</span>
                   {r.grade != null && <Badge tone="brand">Note {r.grade}</Badge>}
                 </div>
@@ -135,7 +135,7 @@ export default async function CoachDossierPage({ params }: { params: { enrollmen
 function Stat({ label, value, tone }: { label: string; value: string; tone?: "error" }) {
   return (
     <div>
-      <dt className="text-xs text-grey-600">{label}</dt>
+      <dt className="text-xs text-muted">{label}</dt>
       <dd className={tone === "error" ? "font-medium text-error" : "font-medium text-ink"}>{value}</dd>
     </div>
   );

@@ -1,48 +1,49 @@
 import type { ReactNode } from "react";
-import { SignOutButton } from "@/components/sign-out-button";
-import { NavTabs } from "@/components/nav-tabs";
-import { BrandMark } from "@/components/ui/brand-mark";
+import { Sidebar, type NavItem } from "@/components/sidebar";
 
-export interface NavItem {
-  href: string;
-  label: string;
-}
+export type { NavItem };
 
 /** Skip-to-content link — first focusable element, hidden until focused. Lets
- *  keyboard/screen-reader users jump past the header nav to the page content. */
+ *  keyboard/screen-reader users jump past the nav to the page content. */
 function SkipLink() {
   return (
     <a
       href="#main-content"
-      className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-2 focus:z-50 focus:rounded-md focus:bg-white focus:px-3 focus:py-2 focus:text-sm focus:font-medium focus:text-brand"
+      className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-3 focus:z-50 focus:rounded-md focus:bg-white focus:px-3 focus:py-2 focus:text-sm focus:font-medium focus:text-brand focus:shadow"
     >
       Aller au contenu
     </a>
   );
 }
 
-/** Common app header: navy band (charte SproCLUB), brand mark, org name, role nav. */
-export function AppHeader({ orgName, subtitle, nav }: { orgName: string; subtitle?: string; nav?: NavItem[] }) {
+/**
+ * App shell (direction épurée) : rail de navigation clair à gauche sur desktop,
+ * barre + tiroir sur mobile. Le contenu occupe la colonne principale.
+ */
+export function AppShell({ orgName, subtitle, nav, children }: {
+  orgName: string; subtitle?: string; nav: NavItem[]; children: ReactNode;
+}) {
   return (
-    <header className="relative bg-brand text-white shadow-sm">
+    <div className="min-h-screen bg-surface lg:flex">
       <SkipLink />
-      <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3 sm:px-6">
-        <div className="flex items-center gap-2.5">
-          <BrandMark tone="onDark" />
-          <span className="font-heading text-lg font-bold">{orgName}</span>
-          {subtitle && <span className="hidden text-sm text-brand-mid sm:inline">· {subtitle}</span>}
-        </div>
-        {/* Keyboard focus ring must stay visible on the navy band. */}
-        <SignOutButton className="border-transparent focus-visible:ring-white focus-visible:ring-offset-brand" />
+      <Sidebar orgName={orgName} subtitle={subtitle} nav={nav} />
+      <div className="min-w-0 flex-1">
+        <main
+          id="main-content"
+          tabIndex={-1}
+          className="mx-auto w-full max-w-6xl scroll-mt-4 px-5 py-8 focus:outline-none sm:px-6 lg:px-10 lg:py-10"
+        >
+          {children}
+        </main>
       </div>
-      {nav && nav.length > 0 && <NavTabs items={nav} />}
-    </header>
+    </div>
   );
 }
 
+/** Conteneur simple pour les états sans shell (fallback « organisme introuvable »). */
 export function PageContainer({ children }: { children: ReactNode }) {
   return (
-    <main id="main-content" tabIndex={-1} className="mx-auto max-w-6xl px-4 py-8 scroll-mt-4 focus:outline-none sm:px-6">
+    <main id="main-content" tabIndex={-1} className="mx-auto max-w-6xl px-6 py-8 focus:outline-none">
       {children}
     </main>
   );

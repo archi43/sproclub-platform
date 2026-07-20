@@ -20,7 +20,7 @@ export default async function VivierPage({
   searchParams: { programme?: string; dispo?: string };
 }) {
   const org = await getOrgContext();
-  if (!org) return <p className="text-grey-600">Organisme introuvable.</p>;
+  if (!org) return <p className="text-muted">Organisme introuvable.</p>;
   const { programme, dispo } = searchParams;
 
   const [pool, company] = await Promise.all([listTalentPool(org.id), getMyPartnerCompany(org.id)]);
@@ -55,22 +55,22 @@ export default async function VivierPage({
 
       <div className="mb-6 grid gap-4 sm:grid-cols-3">
         <Card>
-          <p className="text-sm text-grey-600">Candidats visibles</p>
+          <p className="text-sm text-muted">Candidats visibles</p>
           <p className="mt-1 font-heading text-3xl font-bold text-brand">{pool.length}</p>
         </Card>
         <Card>
-          <p className="text-sm text-grey-600">Disponibles maintenant</p>
+          <p className="text-sm text-muted">Disponibles maintenant</p>
           <p className="mt-1 font-heading text-3xl font-bold text-success">{availableNow}</p>
         </Card>
         <Card>
-          <p className="text-sm text-grey-600">Note jury moyenne</p>
+          <p className="text-sm text-muted">Note jury moyenne</p>
           <p className="mt-1 font-heading text-3xl font-bold text-brand">{avgScore != null ? `${avgScore}/100` : "—"}</p>
         </Card>
       </div>
 
       <form method="GET" className="mb-4 flex flex-wrap items-end gap-3">
         <div>
-          <label htmlFor="filter-programme" className="mb-1 block text-sm font-medium text-grey-600">Programme</label>
+          <label htmlFor="filter-programme" className="mb-1 block text-sm font-medium text-muted">Programme</label>
           <Select id="filter-programme" name="programme" defaultValue={programme ?? ""}>
             <option value="">Tous</option>
             {programs.map((p) => (
@@ -79,7 +79,7 @@ export default async function VivierPage({
           </Select>
         </div>
         <div>
-          <label htmlFor="filter-dispo" className="mb-1 block text-sm font-medium text-grey-600">Disponibilité</label>
+          <label htmlFor="filter-dispo" className="mb-1 block text-sm font-medium text-muted">Disponibilité</label>
           <Select id="filter-dispo" name="dispo" defaultValue={dispo ?? ""}>
             <option value="">Tous</option>
             <option value="disponible">Disponibles maintenant</option>
@@ -115,13 +115,13 @@ export default async function VivierPage({
                   <Td className="font-medium text-ink">{[c.firstName, c.lastName].filter(Boolean).join(" ") || "—"}</Td>
                   <Td>
                     {c.program ?? "—"}
-                    {c.specialty && <span className="block text-xs text-grey-600">{c.specialty}</span>}
+                    {c.specialty && <span className="block text-xs text-muted">{c.specialty}</span>}
                   </Td>
                   <Td><ProgressCell progress={c.progress} /></Td>
                   <Td>
                     {c.projectsValidated ?? 0}/{c.projectsRequired ?? "—"}
                     {c.juryValidatedCount > 0 && (
-                      <span className="block text-xs text-grey-600">{c.juryValidatedCount} validation(s) jury</span>
+                      <span className="block text-xs text-muted">{c.juryValidatedCount} validation(s) jury</span>
                     )}
                   </Td>
                   <Td>{c.juryAvgScore != null ? <Badge tone="brand">{c.juryAvgScore}/100</Badge> : "—"}</Td>
@@ -133,7 +133,7 @@ export default async function VivierPage({
                     )}
                   </Td>
                   <Td><AvailabilityBadge availability={availability} /></Td>
-                  <Td className="text-sm text-grey-600">
+                  <Td className="text-sm text-muted">
                     {[c.contractSought, c.mobility].filter(Boolean).join(" · ") || "—"}
                   </Td>
                 </Tr>
@@ -151,7 +151,7 @@ function ProgressCell({ progress }: { progress: number | null }) {
   const pct = Math.max(0, Math.min(100, progress));
   return (
     <div className="min-w-[8rem]">
-      <div className="flex items-center justify-between text-xs text-grey-600">
+      <div className="flex items-center justify-between text-xs text-muted">
         <span>{pct}%</span>
       </div>
       <div className="mt-1 h-2 w-full overflow-hidden rounded-full bg-brand-tint" role="progressbar" aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100}>

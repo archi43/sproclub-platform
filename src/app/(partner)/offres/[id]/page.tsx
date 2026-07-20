@@ -14,7 +14,7 @@ import { Table, THead, TBody, Tr, Th, Td } from "@/components/ui/table";
  */
 export default async function OffreDetailPage({ params }: { params: { id: string } }) {
   const org = await getOrgContext();
-  if (!org) return <p className="text-grey-600">Organisme introuvable.</p>;
+  if (!org) return <p className="text-muted">Organisme introuvable.</p>;
 
   // RLS : listMyCompanyOffers ne rend que les offres de la société du partenaire.
   const offers = await listMyCompanyOffers(org.id);
@@ -49,7 +49,7 @@ export default async function OffreDetailPage({ params }: { params: { id: string
       <Card className="p-0">
         <div className="p-4">
           <CardTitle>Candidats intéressés</CardTitle>
-          <p className="text-sm text-grey-600">
+          <p className="text-sm text-muted">
             Apprenants ayant manifesté leur intérêt et rendu leur profil visible. Synthèse pédagogique
             (progression, validations jury) — les coordonnées sont partagées après mise en relation par la coordination.
           </p>
@@ -77,13 +77,13 @@ export default async function OffreDetailPage({ params }: { params: { id: string
                   <Td className="font-medium text-ink">{[c.firstName, c.lastName].filter(Boolean).join(" ") || "—"}</Td>
                   <Td>
                     {c.program ?? "—"}
-                    {c.specialty && <span className="block text-xs text-grey-600">{c.specialty}</span>}
+                    {c.specialty && <span className="block text-xs text-muted">{c.specialty}</span>}
                   </Td>
                   <Td>{c.progress != null ? `${c.progress}%` : "—"}</Td>
                   <Td>{c.projectsValidated ?? 0}/{c.projectsRequired ?? "—"}</Td>
                   <Td>{c.juryAvgScore != null ? <Badge tone="brand">{c.juryAvgScore}/100</Badge> : "—"}</Td>
-                  <Td className="text-sm text-grey-600">{[c.contractSought, c.mobility].filter(Boolean).join(" · ") || "—"}</Td>
-                  <Td className="text-sm text-grey-600">{new Date(c.interestedAt).toLocaleDateString("fr-FR")}</Td>
+                  <Td className="text-sm text-muted">{[c.contractSought, c.mobility].filter(Boolean).join(" · ") || "—"}</Td>
+                  <Td className="text-sm text-muted">{new Date(c.interestedAt).toLocaleDateString("fr-FR")}</Td>
                 </Tr>
               ))}
             </TBody>
