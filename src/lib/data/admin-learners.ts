@@ -77,18 +77,20 @@ export async function listDossiers(orgId: string, filters: DossierFilters = {}):
 /** Distinct values for the list filters (from the rows the user may see). */
 export async function dossierFilterOptions(orgId: string): Promise<{
   programs: string[];
+  specialties: string[];
   statuses: string[];
   financers: string[];
 }> {
   const supabase = createClient();
   const { data } = await supabase
     .from("enrollments_ro")
-    .select("program, status, financer")
+    .select("program, specialty, status, financer")
     .eq("org_id", orgId)
     .limit(2000);
   const uniq = (xs: (string | null)[]) => [...new Set(xs.filter(Boolean) as string[])].sort();
   return {
     programs: uniq((data ?? []).map((r) => r.program)),
+    specialties: uniq((data ?? []).map((r) => r.specialty)),
     statuses: uniq((data ?? []).map((r) => r.status)),
     financers: uniq((data ?? []).map((r) => r.financer)),
   };

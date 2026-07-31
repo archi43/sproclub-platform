@@ -4,8 +4,8 @@ import { directionDashboard, compliancePrograms, type Rate } from "@/lib/data/co
 import { PageHeader, EmptyState } from "@/components/ui/page-header";
 import { Card, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Select } from "@/components/ui/form";
+import { FilterBar, FilterField } from "@/components/ui/filter-bar";
 import { Alert } from "@/components/ui/alert";
 import { Table, THead, TBody, Tr, Th, Td } from "@/components/ui/table";
 
@@ -38,14 +38,14 @@ export default async function PilotagePage({
     <div className="space-y-6">
       <PageHeader title="Pilotage" description="État de santé pédagogique : alertes, résultats et activité." />
 
-      <form method="get" className="flex flex-wrap items-center gap-2">
-        <Select name="program" defaultValue={program ?? ""} aria-label="Programme" className="w-auto">
-          <option value="">Tous les programmes</option>
-          {programs.map((p) => <option key={p} value={p}>{p}</option>)}
-        </Select>
-        <Button type="submit" size="sm">Filtrer</Button>
-        {program && <Link href="/coordination/pilotage" className="text-sm text-muted no-underline hover:underline">Réinitialiser</Link>}
-      </form>
+      <FilterBar resetHref="/coordination/pilotage" active={!!program}>
+        <FilterField label="Programme">
+          <Select name="program" defaultValue={program ?? ""}>
+            <option value="">Tous</option>
+            {programs.map((p) => <option key={p} value={p}>{p}</option>)}
+          </Select>
+        </FilterField>
+      </FilterBar>
 
       {/* Alertes en tête */}
       {kpis.nonConforming > 0 && (

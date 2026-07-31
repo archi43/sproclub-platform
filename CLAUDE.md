@@ -96,7 +96,15 @@ haut, déconnexion en bas), qui se replie en **barre + tiroir** sur mobile.
 
 **Primitives d'UI** dans `src/components/ui`, réutilisées partout (aucune page ne les recode) :
 Button, Input/Select/Textarea, Card, Table, Badge, Alert, Tabs, Dialog, Toast, Skeleton,
-EmptyState, PageHeader.
+EmptyState, PageHeader, FilterBar.
+
+**Filtres des écrans-listes** (`src/components/ui/filter-bar.tsx`) : `FilterBar` +
+`FilterField`/`FilterCheckbox`, rendu **serveur pur** (`<form method="get">` → `searchParams`,
+aucun JS client), libellé visible au-dessus de chaque contrôle (le `<label>` englobe le champ,
+plus d'`aria-label` de substitution), « Réinitialiser » affiché seulement quand un filtre est
+posé (`active`). La primitive ne porte **aucune marge extérieure** : l'écran gère son rythme
+vertical (`space-y-*` du conteneur, ou `className="mb-6"`). Tout écran-liste passe par elle
+(apprenants, opérations, pilotage, conformité, reporting, exploitation, notifications, vivier).
 
 **App shell et navigation** (`src/components/app-shell.tsx` + `src/components/sidebar.tsx`) :
 - **Sidebar claire à gauche** (desktop) : marque + nom de l'organisme en haut, nav verticale
@@ -213,7 +221,7 @@ le claim JWT `app_metadata.org_id` (robuste avec le pooling PostgREST).
 ## État actuel
 Produit **en ligne** (staging) et prouvé en réel. Base Supabase UE (`zbvohktqfgwajjvnpets`,
 `eu-north-1`) ; app déployée sur **Vercel région `fra1`** : **https://sproclub-platform.vercel.app**.
-Migrations **0001→0026** + seed appliqués. Suite de tests **133/133** verte contre la vraie base
+Migrations **0001→0026** + seed appliqués. Suite de tests **140/140** verte contre la vraie base
 (inclut `test:rgpd` 10, `test:observability` 6, `test:notifications` 8, `test:nav` 5, `test:members` 3,
 `test:l360` 13, `tests/inc14` 7, `test:talent` 12, `test:jobs` 11). Exécution **sérialisée**
 (`npm test` → `--test-concurrency=1`) pour éviter la flakiness de rate-limit auth sous concurrence.

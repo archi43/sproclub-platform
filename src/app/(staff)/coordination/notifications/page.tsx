@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { getOrgContext } from "@/lib/tenant";
 import { recentNotifications, notificationsSummary, listOptOuts } from "@/lib/data/notifications";
 import { kindLabel } from "@/lib/notification-rules";
@@ -6,8 +5,8 @@ import { OptOutManager } from "./prefs-ui";
 import { PageHeader, EmptyState } from "@/components/ui/page-header";
 import { Card, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Select } from "@/components/ui/form";
+import { FilterBar, FilterField } from "@/components/ui/filter-bar";
 import { Table, THead, TBody, Tr, Th, Td } from "@/components/ui/table";
 
 const fmt = new Intl.DateTimeFormat("fr-FR", {
@@ -53,20 +52,16 @@ export default async function NotificationsPage({
         <Tile label="Erreurs" value={summary.errors} tone={summary.errors > 0 ? "danger" : undefined} />
       </div>
 
-      <form method="get" className="flex flex-wrap items-center gap-2">
-        <Select name="status" defaultValue={status ?? ""} aria-label="Statut" className="w-auto">
-          <option value="">Tous les statuts</option>
-          {STATUSES.map((s) => (
-            <option key={s} value={s}>{statusLabel[s]}</option>
-          ))}
-        </Select>
-        <Button type="submit" size="sm">Filtrer</Button>
-        {status && (
-          <Link href="/coordination/notifications" className="text-sm text-muted no-underline hover:underline">
-            Réinitialiser
-          </Link>
-        )}
-      </form>
+      <FilterBar resetHref="/coordination/notifications" active={!!status}>
+        <FilterField label="Statut">
+          <Select name="status" defaultValue={status ?? ""}>
+            <option value="">Tous</option>
+            {STATUSES.map((s) => (
+              <option key={s} value={s}>{statusLabel[s]}</option>
+            ))}
+          </Select>
+        </FilterField>
+      </FilterBar>
 
       <Card>
         {rows.length === 0 ? (

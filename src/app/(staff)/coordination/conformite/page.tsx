@@ -3,8 +3,8 @@ import { getOrgContext } from "@/lib/tenant";
 import { listDossierCompleteness, compliancePrograms } from "@/lib/data/compliance";
 import { PageHeader, EmptyState } from "@/components/ui/page-header";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Select } from "@/components/ui/form";
+import { FilterBar, FilterField, FilterCheckbox } from "@/components/ui/filter-bar";
 import { Table, THead, TBody, Tr, Th, Td } from "@/components/ui/table";
 
 /** Module 3 / S3.1 — dossier completeness grid. One row per dossier, a column
@@ -39,17 +39,15 @@ export default async function ConformitePage({
     <div className="space-y-6">
       <PageHeader title="Conformité des dossiers" description="Complétude des pièces obligatoires (S3.1)." />
 
-      <form method="get" className="flex flex-wrap items-center gap-2">
-        <Select name="program" defaultValue={program ?? ""} aria-label="Programme" className="w-auto">
-          <option value="">Tous les programmes</option>
-          {programs.map((p) => <option key={p} value={p}>{p}</option>)}
-        </Select>
-        <label className="flex items-center gap-2 text-sm text-muted">
-          <input type="checkbox" name="cpf" value="1" defaultChecked={cpfOnly} className="accent-brand" /> CPF uniquement
-        </label>
-        <Button type="submit" size="sm">Filtrer</Button>
-        {(program || cpfOnly) && <Link href="/coordination/conformite" className="text-sm text-muted no-underline hover:underline">Réinitialiser</Link>}
-      </form>
+      <FilterBar resetHref="/coordination/conformite" active={!!program || cpfOnly}>
+        <FilterField label="Programme">
+          <Select name="program" defaultValue={program ?? ""}>
+            <option value="">Tous</option>
+            {programs.map((p) => <option key={p} value={p}>{p}</option>)}
+          </Select>
+        </FilterField>
+        <FilterCheckbox name="cpf" label="CPF uniquement" defaultChecked={cpfOnly} />
+      </FilterBar>
 
       {rows.length === 0 ? (
         <EmptyState title="Aucun dossier" description="Aucun dossier ne correspond à ces filtres." />
