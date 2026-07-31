@@ -12,8 +12,8 @@ import {
 import { PageHeader, EmptyState } from "@/components/ui/page-header";
 import { Card, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Select } from "@/components/ui/form";
+import { FilterBar, FilterField } from "@/components/ui/filter-bar";
 import { Table, THead, TBody, Tr, Th, Td } from "@/components/ui/table";
 
 /** Module 1 / S1.1 — "Conduite de la semaine" : priorized action queue for the
@@ -61,18 +61,14 @@ export default async function OperationsPage({
         <SummaryChip tone={reports.length > 0 ? "warning" : "neutral"} count={reports.length} label="CR à saisir" />
       </div>
 
-      <form method="get" className="flex flex-wrap items-center gap-2">
-        <Select name="program" defaultValue={program ?? ""} aria-label="Programme" className="w-auto">
-          <option value="">Tous les programmes</option>
-          {programs.map((p) => <option key={p} value={p}>{p}</option>)}
-        </Select>
-        <Button type="submit" size="sm">Filtrer</Button>
-        {program && (
-          <Link href="/coordination/operations" className="text-sm text-muted no-underline hover:underline">
-            Réinitialiser
-          </Link>
-        )}
-      </form>
+      <FilterBar resetHref="/coordination/operations" active={!!program}>
+        <FilterField label="Programme">
+          <Select name="program" defaultValue={program ?? ""}>
+            <option value="">Tous</option>
+            {programs.map((p) => <option key={p} value={p}>{p}</option>)}
+          </Select>
+        </FilterField>
+      </FilterBar>
 
       {/* Soutenances à venir */}
       <Card>

@@ -1,11 +1,11 @@
-import Link from "next/link";
 import { getOrgContext } from "@/lib/tenant";
 import { getReport, type Dimension } from "@/lib/data/reporting";
 import { DIMENSION_LABELS } from "@/lib/reporting-rules";
 import type { Rate } from "@/lib/compliance-rules";
 import { PageHeader, EmptyState } from "@/components/ui/page-header";
-import { Button, buttonClasses } from "@/components/ui/button";
+import { buttonClasses } from "@/components/ui/button";
 import { Select } from "@/components/ui/form";
+import { FilterBar, FilterField } from "@/components/ui/filter-bar";
 import { Table, THead, TBody, Tr, Th, Td } from "@/components/ui/table";
 
 function rateText(r: Rate | null, kind: "percent" | "raw" = "percent"): string {
@@ -32,6 +32,8 @@ export default async function ReportingPage({
   };
   const dimension = (DIMENSIONS.includes(pick("dim") as Dimension) ? pick("dim") : "program") as Dimension;
   const filters = { program: pick("program"), financer: pick("financer"), year: pick("year") };
+  // La dimension a une valeur par défaut : elle ne compte comme filtre que si elle en diffère.
+  const hasFilter = Object.values(filters).some(Boolean) || dimension !== "program";
 
   const report = await getReport(org.id, dimension, filters);
 
@@ -54,37 +56,31 @@ export default async function ReportingPage({
         }
       />
 
-      <form method="get" className="flex flex-wrap items-end gap-2">
-        <label className="text-sm">
-          <span className="mb-1 block text-muted">Segmenter par</span>
-          <Select name="dim" defaultValue={dimension} className="w-auto">
+      <FilterBar resetHref="/coordination/reporting" active={hasFilter}>
+        <FilterField label="Segmenter par">
+          <Select name="dim" defaultValue={dimension}>
             {DIMENSIONS.map((d) => <option key={d} value={d}>{DIMENSION_LABELS[d]}</option>)}
           </Select>
-        </label>
-        <label className="text-sm">
-          <span className="mb-1 block text-muted">Programme</span>
-          <Select name="program" defaultValue={filters.program ?? ""} className="w-auto">
+        </FilterField>
+        <FilterField label="Programme">
+          <Select name="program" defaultValue={filters.program ?? ""}>
             <option value="">Tous</option>
             {report.programs.map((p) => <option key={p} value={p}>{p}</option>)}
           </Select>
-        </label>
-        <label className="text-sm">
-          <span className="mb-1 block text-muted">Financeur</span>
-          <Select name="financer" defaultValue={filters.financer ?? ""} className="w-auto">
+        </FilterField>
+        <FilterField label="Financeur">
+          <Select name="financer" defaultValue={filters.financer ?? ""}>
             <option value="">Tous</option>
             {report.financers.map((f) => <option key={f} value={f}>{f}</option>)}
           </Select>
-        </label>
-        <label className="text-sm">
-          <span className="mb-1 block text-muted">Année</span>
-          <Select name="year" defaultValue={filters.year ?? ""} className="w-auto">
+        </FilterField>
+        <FilterField label="Année">
+          <Select name="year" defaultValue={filters.year ?? ""}>
             <option value="">Toutes</option>
             {report.years.map((y) => <option key={y} value={y}>{y}</option>)}
           </Select>
-        </label>
-        <Button type="submit" size="sm">Filtrer</Button>
-        <Link href="/coordination/reporting" className="text-sm text-muted no-underline hover:underline">Réinitialiser</Link>
-      </form>
+        </FilterField>
+      </FilterBar>
 
       {report.segments.length === 0 ? (
         <EmptyState title="Aucune donnée" description="Aucun dossier ne correspond à ces filtres." />

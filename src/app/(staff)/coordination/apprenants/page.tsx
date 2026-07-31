@@ -2,8 +2,8 @@ import Link from "next/link";
 import { getOrgContext } from "@/lib/tenant";
 import { listDossiers, dossierFilterOptions, type DossierFilters } from "@/lib/data/admin-learners";
 import { PageHeader, EmptyState } from "@/components/ui/page-header";
-import { Button } from "@/components/ui/button";
 import { Select } from "@/components/ui/form";
+import { FilterBar, FilterField, FilterCheckbox } from "@/components/ui/filter-bar";
 import { Table, THead, TBody, Tr, Th, Td } from "@/components/ui/table";
 
 /** Module 2 / S2.1 — filterable list of dossiers (direction/coordinator; a coach
@@ -22,10 +22,12 @@ export default async function ApprenantsPage({
   };
   const filters: DossierFilters = {
     program: pick("program"),
+    specialty: pick("specialty"),
     status: pick("status"),
     financer: pick("financer"),
     late: pick("late") === "1",
   };
+  const hasFilter = Object.values(filters).some(Boolean);
 
   const [rows, options] = await Promise.all([listDossiers(org.id, filters), dossierFilterOptions(org.id)]);
 
@@ -33,27 +35,33 @@ export default async function ApprenantsPage({
     <div>
       <PageHeader title="Apprenants" description={`${rows.length} dossier(s)`} />
 
-      <form method="get" className="mb-5 flex flex-wrap items-center gap-2">
-        <Select name="program" defaultValue={filters.program ?? ""} aria-label="Programme" className="w-auto">
-          <option value="">Tous les programmes</option>
-          {options.programs.map((p) => <option key={p} value={p}>{p}</option>)}
-        </Select>
-        <Select name="status" defaultValue={filters.status ?? ""} aria-label="Statut" className="w-auto">
-          <option value="">Tous les statuts</option>
-          {options.statuses.map((s) => <option key={s} value={s}>{s}</option>)}
-        </Select>
-        <Select name="financer" defaultValue={filters.financer ?? ""} aria-label="Financeur" className="w-auto">
-          <option value="">Tous les financeurs</option>
-          {options.financers.map((f) => <option key={f} value={f}>{f}</option>)}
-        </Select>
-        <label className="flex items-center gap-2 text-sm text-muted">
-          <input type="checkbox" name="late" value="1" defaultChecked={filters.late} className="accent-brand" /> En retard
-        </label>
-        <Button type="submit" size="sm">Filtrer</Button>
-        <Link href="/coordination/apprenants" className="text-sm text-muted no-underline hover:underline">
-          Réinitialiser
-        </Link>
-      </form>
+      <FilterBar resetHref="/coordination/apprenants" active={hasFilter} className="mb-6">
+        <FilterField label="Programme">
+          <Select name="program" defaultValue={filters.program ?? ""}>
+            <option value="">Tous</option>
+            {options.programs.map((p) => <option key={p} value={p}>{p}</option>)}
+          </Select>
+        </FilterField>
+        <FilterField label="Spécialité">
+          <Select name="specialty" defaultValue={filters.specialty ?? ""}>
+            <option value="">Toutes</option>
+            {options.specialties.map((s) => <option key={s} value={s}>{s}</option>)}
+          </Select>
+        </FilterField>
+        <FilterField label="Statut">
+          <Select name="status" defaultValue={filters.status ?? ""}>
+            <option value="">Tous</option>
+            {options.statuses.map((s) => <option key={s} value={s}>{s}</option>)}
+          </Select>
+        </FilterField>
+        <FilterField label="Financeur">
+          <Select name="financer" defaultValue={filters.financer ?? ""}>
+            <option value="">Tous</option>
+            {options.financers.map((f) => <option key={f} value={f}>{f}</option>)}
+          </Select>
+        </FilterField>
+        <FilterCheckbox name="late" label="En retard" defaultChecked={filters.late} />
+      </FilterBar>
 
       {rows.length === 0 ? (
         <EmptyState title="Aucun dossier" description="Aucun dossier ne correspond à ces filtres." />

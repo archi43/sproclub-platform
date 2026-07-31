@@ -6,7 +6,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Table, THead, TBody, Tr, Th, Td } from "@/components/ui/table";
 import { Select } from "@/components/ui/form";
-import { Button } from "@/components/ui/button";
+import { FilterBar, FilterField } from "@/components/ui/filter-bar";
 
 /**
  * Portail entreprise partenaire — vivier de talents (INC-17).
@@ -68,26 +68,23 @@ export default async function VivierPage({
         </Card>
       </div>
 
-      <form method="GET" className="mb-4 flex flex-wrap items-end gap-3">
-        <div>
-          <label htmlFor="filter-programme" className="mb-1 block text-sm font-medium text-muted">Programme</label>
-          <Select id="filter-programme" name="programme" defaultValue={programme ?? ""}>
+      <FilterBar resetHref="/vivier" active={!!programme || !!dispo} className="mb-6">
+        <FilterField label="Programme">
+          <Select name="programme" defaultValue={programme ?? ""}>
             <option value="">Tous</option>
             {programs.map((p) => (
               <option key={p} value={p}>{p}</option>
             ))}
           </Select>
-        </div>
-        <div>
-          <label htmlFor="filter-dispo" className="mb-1 block text-sm font-medium text-muted">Disponibilité</label>
-          <Select id="filter-dispo" name="dispo" defaultValue={dispo ?? ""}>
+        </FilterField>
+        <FilterField label="Disponibilité">
+          <Select name="dispo" defaultValue={dispo ?? ""}>
             <option value="">Tous</option>
             <option value="disponible">Disponibles maintenant</option>
             <option value="bientot">Disponibles ou bientôt</option>
           </Select>
-        </div>
-        <Button type="submit" variant="secondary">Filtrer</Button>
-      </form>
+        </FilterField>
+      </FilterBar>
 
       {filtered.length === 0 ? (
         <EmptyState
