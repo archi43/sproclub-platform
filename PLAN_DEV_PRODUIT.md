@@ -175,6 +175,29 @@ coordination du jury. Base Supabase UE, Cal.eu branché.
   (trigger), `security_barrier` sur les vues, bornes de longueur. `test:jobs` **11** (5 pur +
   6 intégration : modération + re-modération, isolation société/org, intérêt scoped, vue
   candidats consentants, DELETE refusé, audit, besoins verrouillés).
+- ✅ **INC-19** (disponibilités des coachs et du jury) : lève le différé d'INC-4. Jusqu'ici
+  `availabilities` n'était alimentée que par le miroir Cal.com, depuis un **compte hôte unique**
+  et en écriture staff seulement : un coach ne pouvait pas publier ses créneaux, et le rôle
+  `evaluator` n'avait **aucune surface applicative**. Solution hybride : **saisie native**
+  (plages récurrentes `availability_rules` + exceptions `availability_blocks`, une fermeture
+  l'emportant toujours sur une ouverture) **+ agenda externe en lecture seule** (`calendar_feeds`,
+  iCalendar ; occupations dans `busy_periods` écrites par le job service-role). Règles **pures**
+  `availability-rules.ts` (expansion des créneaux, fuseau Europe/Paris robuste au changement
+  d'heure) et `calendar/ics.ts` (parseur minimal + **garde SSRF** : réseau interne et schémas
+  non-http refusés). Écran « Mes disponibilités » partagé par le portail coach
+  (`/disponibilites`) et le **nouveau portail jury** (`src/app/(evaluator)`, `/jury`). Cron
+  `api/admin/sync-calendars` (06:00). Migration `0027`. **Confidentialité** : le lien d'agenda
+  est un secret — `calendar_feeds` n'a délibérément aucune policy staff, et l'UI n'en affiche
+  que l'hôte. **Correctif de conception** : `getAvailabilities` renvoyait tous les créneaux de
+  l'organisme — sans garde-fou, un apprenant se serait vu proposer le coach de quelqu'un
+  d'autre ; les créneaux `self:` sont désormais filtrés par coach référent
+  (`filterBookableSlots`), ceux du miroir `cal:` restent ouverts. Les rendez-vous déjà pris
+  masquent les créneaux (coaching via `coach_email`, soutenances via `reservation_evaluators`).
+  `test:availability` **29** (20 pur + 9 intégration : usurpation d'hôte refusée, cloisonnement
+  entre coachs, apprenant non autorisé, agenda invisible du staff, `busy_periods` service-role
+  only, isolation inter-org, reprise en main par la coordination).
+  **Différé** : développement des récurrences (RRULE) des agendas externes ; horizon de
+  publication fixé à 60 jours.
   **Prochaine étape : Étape 7** (ouverture à d'autres organismes).
 
 Suite `main` : **branche → PR → CI verte → merge → déploiement** (previews Vercel actifs).

@@ -1,6 +1,8 @@
 import { getOrgContext } from "@/lib/tenant";
 import { createClient } from "@/lib/supabase/server";
 import { getAvailabilities, getReservations } from "@/lib/data/reservations";
+import { getMyCoachHostIds } from "@/lib/data/availability";
+import { filterBookableSlots } from "@/lib/availability-rules";
 import { PageHeader, EmptyState } from "@/components/ui/page-header";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -21,10 +23,15 @@ export default async function ReservationPage() {
   if (!org) return <p className="text-muted">Organisme introuvable.</p>;
 
   const supabase = createClient();
-  const [slots, reservations] = await Promise.all([
+  const [allSlots, reservations, coachHostIds] = await Promise.all([
     getAvailabilities(supabase, org.id, "coaching"),
     getReservations(supabase, org.id),
+    getMyCoachHostIds(org.id),
   ]);
+  // Les créneaux auto-publiés (INC-19) appartiennent à une personne : on ne
+  // propose que ceux des coachs référents de l'apprenant. Les créneaux du
+  // miroir Cal.com, issus du compte hôte central, restent ouverts à tous.
+  const slots = filterBookableSlots(allSlots, coachHostIds);
   const booked = new Set(reservations.map((r) => r.starts_at));
 
   return (
