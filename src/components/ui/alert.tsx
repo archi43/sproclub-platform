@@ -1,11 +1,12 @@
 import type { ReactNode } from "react";
 import { cn } from "@/lib/utils";
 
-type Tone = "info" | "success" | "error";
+type Tone = "info" | "success" | "warning" | "error";
 
 const tones: Record<Tone, string> = {
   info: "bg-brand-tint text-brand",
   success: "bg-success/10 text-success",
+  warning: "bg-warning/10 text-warning",
   error: "bg-accent-tint text-error",
 };
 
