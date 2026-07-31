@@ -3,7 +3,7 @@ import { getOrgContext } from "@/lib/tenant";
 import { listDossiers, dossierFilterOptions, type DossierFilters } from "@/lib/data/admin-learners";
 import { PageHeader, EmptyState } from "@/components/ui/page-header";
 import { Select } from "@/components/ui/form";
-import { FilterBar, FilterField, FilterCheckbox } from "@/components/ui/filter-bar";
+import { FilterBar, FilterField, FilterCheckbox, FilterSearch } from "@/components/ui/filter-bar";
 import { Table, THead, TBody, Tr, Th, Td } from "@/components/ui/table";
 
 /** Module 2 / S2.1 — filterable list of dossiers (direction/coordinator; a coach
@@ -21,6 +21,7 @@ export default async function ApprenantsPage({
     return (Array.isArray(v) ? v[0] : v) || undefined;
   };
   const filters: DossierFilters = {
+    search: pick("q"),
     program: pick("program"),
     specialty: pick("specialty"),
     status: pick("status"),
@@ -36,6 +37,7 @@ export default async function ApprenantsPage({
       <PageHeader title="Apprenants" description={`${rows.length} dossier(s)`} />
 
       <FilterBar resetHref="/coordination/apprenants" active={hasFilter} className="mb-6">
+        <FilterSearch defaultValue={filters.search} placeholder="Nom ou e-mail…" />
         <FilterField label="Programme">
           <Select name="program" defaultValue={filters.program ?? ""}>
             <option value="">Tous</option>
