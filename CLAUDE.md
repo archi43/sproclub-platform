@@ -189,7 +189,18 @@ vers ces jetons et primitives, sans changer la logique.
   `mon-parcours/offres` (apprenant, intérêt un clic), `coordination/recrutement` (modération +
   suivi des besoins). Migration `0026` : `job_offers` (modération par trigger), `job_interests`,
   `partner_training_needs`, vue `job_offer_candidates` (consentants au vivier), `my_partner_company()`.
-- `supabase/migrations/0001` → `0026` ; seed `supabase/seed/sproclub_bootstrap.sql`.
+- `src/lib/availability-rules.ts` (INC-19, pur : expansion des plages récurrentes en créneaux,
+  fermeture prioritaire sur ouverture, fuseau Europe/Paris robuste au changement d'heure) +
+  `src/lib/calendar/ics.ts` (port pur : parseur iCalendar minimal + garde SSRF) +
+  `src/lib/calendar/sync.ts` (job service-role : flux → `busy_periods` → republication) +
+  `src/lib/data/availability.ts` (CRUD RLS des plages/exceptions/agenda, publication `self:%`).
+  Écran « Mes disponibilités » partagé (`src/components/availability/*`) monté dans le portail
+  coach (`/disponibilites`) et le **nouveau portail jury** (`src/app/(evaluator)`, `/jury`).
+  Cron `api/admin/sync-calendars`. Migration `0027` : `availability_rules` (récurrence hebdo),
+  `availability_blocks` (exceptions open/closed), `calendar_feeds` (URL d'agenda — **lisible par
+  son seul propriétaire, le staff n'y accède pas**), `busy_periods` (occupations, écriture
+  service-role) ; `availabilities_own_manage` ouvre la publication au titulaire.
+- `supabase/migrations/0001` → `0027` ; seed `supabase/seed/sproclub_bootstrap.sql`.
   (`0004` invariants réservation, `0005` normalisation e-mails minuscules à l'écriture,
   `0012` gestion utilisateurs/rôles : désactivation qui coupe l'accès + policies de gestion,
   `0013` `enrollments_ro.pending_reports` pour la file d'opérations, `0014` portail coach :
@@ -221,12 +232,12 @@ le claim JWT `app_metadata.org_id` (robuste avec le pooling PostgREST).
 ## État actuel
 Produit **en ligne** (staging) et prouvé en réel. Base Supabase UE (`zbvohktqfgwajjvnpets`,
 `eu-north-1`) ; app déployée sur **Vercel région `fra1`** : **https://sproclub-platform.vercel.app**.
-Migrations **0001→0026** + seed appliqués. Suite de tests **140/140** verte contre la vraie base
+Migrations **0001→0027** + seed appliqués. Suite de tests **169/169** verte contre la vraie base
 (inclut `test:rgpd` 10, `test:observability` 6, `test:notifications` 8, `test:nav` 5, `test:members` 3,
-`test:l360` 13, `tests/inc14` 7, `test:talent` 12, `test:jobs` 11). Exécution **sérialisée**
+`test:l360` 13, `tests/inc14` 7, `test:talent` 12, `test:jobs` 11, `test:availability` 29). Exécution **sérialisée**
 (`npm test` → `--test-concurrency=1`) pour éviter la flakiness de rate-limit auth sous concurrence.
-**6 crons Vercel** (sync 05:00, sync 360L filet quotidien 05:45, miroir 06:30, export BPF lundi 07:00,
-purge rétention 03:15, relances 08:00) + **workflow GitHub Actions horaire** `sync-l360-hourly`
+**7 crons Vercel** (sync 05:00, sync 360L filet quotidien 05:45, agendas 06:00, miroir 06:30,
+export BPF lundi 07:00, purge rétention 03:15, relances 08:00) + **workflow GitHub Actions horaire** `sync-l360-hourly`
 (le plan Vercel Hobby n'autorise que des crons quotidiens ; l'horaire passe par Actions,
 activé en posant le secret `CRON_SECRET` dans GitHub). Note déploiement :
 appliquer chaque migration **avant** le code (0012 : garde de rôle lit `memberships.deactivated_at` ;

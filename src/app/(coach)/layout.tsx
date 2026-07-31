@@ -5,6 +5,7 @@ import { AppShell, PageContainer, type NavItem } from "@/components/app-shell";
 
 const nav: NavItem[] = [
   { href: "/coaching", label: "Mes apprenants", icon: "students" },
+  { href: "/disponibilites", label: "Mes disponibilités", icon: "coaching" },
 ];
 
 /**
