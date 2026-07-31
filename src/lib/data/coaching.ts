@@ -1,5 +1,6 @@
 import "server-only";
 import { createClient } from "@/lib/supabase/server";
+import { sanitizeSearchTerm, buildIlikeOr } from "@/lib/search-rules";
 
 /**
  * Coach portal data-access (INC-4, Étape 3). Every read runs through the
@@ -31,13 +32,24 @@ export interface CoachLearner {
 }
 
 /** The coach's own dossiers (RLS-scoped by coach_email). */
-export async function listMyLearners(orgId: string): Promise<CoachLearner[]> {
+export async function listMyLearners(orgId: string, search?: string): Promise<CoachLearner[]> {
   const supabase = createClient();
-  const { data, error } = await supabase
+  const term = sanitizeSearchTerm(search);
+  // `!inner` quand on recherche : la jointure doit filtrer, pas seulement enrichir.
+  const learnerJoin = term
+    ? "learner:learners_ro!inner(first_name, last_name, email)"
+    : "learner:learners_ro(first_name, last_name, email)";
+
+  let q = supabase
     .from("enrollments_ro")
-    .select("id, learner_id, program, status, progress, late_days, learner:learners_ro(first_name, last_name, email)")
+    .select(`id, learner_id, program, status, progress, late_days, ${learnerJoin}`)
     .eq("org_id", orgId)
     .order("late_days", { ascending: false, nullsFirst: false });
+  if (term) {
+    q = q.or(buildIlikeOr(term, ["first_name", "last_name", "email"]), { referencedTable: "learner" });
+  }
+
+  const { data, error } = await q;
   if (error) throw new Error(`Failed to load coach learners: ${error.message}`);
 
   type Raw = { id: string; learner_id: string; program: string | null; status: string | null; progress: number | null; late_days: number | null; learner: LearnerEmbed };

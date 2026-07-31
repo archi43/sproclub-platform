@@ -2,21 +2,39 @@ import Link from "next/link";
 import { getOrgContext } from "@/lib/tenant";
 import { listMyLearners } from "@/lib/data/coaching";
 import { PageHeader, EmptyState } from "@/components/ui/page-header";
+import { FilterBar, FilterSearch } from "@/components/ui/filter-bar";
 import { Table, THead, TBody, Tr, Th, Td } from "@/components/ui/table";
 
 /** Coach portal home — the coach's own dossiers (RLS-scoped). */
-export default async function CoachingPage() {
+export default async function CoachingPage({
+  searchParams,
+}: {
+  searchParams: Record<string, string | string[] | undefined>;
+}) {
   const org = await getOrgContext();
   if (!org) return <p className="text-muted">Organisme introuvable.</p>;
 
-  const learners = await listMyLearners(org.id);
+  const raw = searchParams.q;
+  const search = (Array.isArray(raw) ? raw[0] : raw) || undefined;
+  const learners = await listMyLearners(org.id, search);
 
   return (
     <div className="space-y-6">
       <PageHeader title="Mes apprenants" description={`${learners.length} dossier(s) que vous accompagnez.`} />
 
+      <FilterBar resetHref="/coaching" active={!!search}>
+        <FilterSearch defaultValue={search} placeholder="Nom ou e-mail…" />
+      </FilterBar>
+
       {learners.length === 0 ? (
-        <EmptyState title="Aucun apprenant" description="Aucun dossier ne vous est rattaché pour le moment." />
+        <EmptyState
+          title="Aucun apprenant"
+          description={
+            search
+              ? "Aucun de vos apprenants ne correspond à cette recherche."
+              : "Aucun dossier ne vous est rattaché pour le moment."
+          }
+        />
       ) : (
         <Table>
           <THead>

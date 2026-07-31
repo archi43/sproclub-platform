@@ -1,5 +1,6 @@
 import "server-only";
 import { createClient } from "@/lib/supabase/server";
+import { sanitizeSearchTerm, buildIlikeOr } from "@/lib/search-rules";
 
 /**
  * Admin learner data (Module 2 / S2.1 list + S2.2 sheet).
@@ -28,6 +29,8 @@ export interface DossierFilters {
   status?: string;
   financer?: string;
   late?: boolean; // only dossiers with late_days > 0
+  /** Recherche libre sur le nom ou l'e-mail de l'apprenant. */
+  search?: string;
 }
 
 type RawRow = {
@@ -44,13 +47,22 @@ type RawRow = {
 
 export async function listDossiers(orgId: string, filters: DossierFilters = {}): Promise<DossierRow[]> {
   const supabase = createClient();
+  const term = sanitizeSearchTerm(filters.search);
+  // `!inner` quand on recherche : la jointure doit filtrer, pas seulement enrichir.
+  const learnerJoin = term
+    ? "learner:learners_ro!inner(first_name, last_name, email)"
+    : "learner:learners_ro(first_name, last_name, email)";
+
   let q = supabase
     .from("enrollments_ro")
-    .select("id, learner_id, program, specialty, financer, status, progress, late_days, learner:learners_ro(first_name, last_name, email)")
+    .select(`id, learner_id, program, specialty, financer, status, progress, late_days, ${learnerJoin}`)
     .eq("org_id", orgId)
     .order("status", { ascending: true })
     .limit(1000);
 
+  if (term) {
+    q = q.or(buildIlikeOr(term, ["first_name", "last_name", "email"]), { referencedTable: "learner" });
+  }
   if (filters.program) q = q.eq("program", filters.program);
   if (filters.specialty) q = q.eq("specialty", filters.specialty);
   if (filters.status) q = q.eq("status", filters.status);
