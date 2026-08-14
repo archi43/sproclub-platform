@@ -12,3 +12,4 @@ build/
 next-env.d.ts.bak
 .env*
 /presentation/
+CLAUDE.md.avant-doctor

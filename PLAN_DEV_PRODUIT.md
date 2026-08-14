@@ -198,6 +198,28 @@ coordination du jury. Base Supabase UE, Cal.eu branché.
   only, isolation inter-org, reprise en main par la coordination).
   **Différé** : développement des récurrences (RRULE) des agendas externes ; horizon de
   publication fixé à 60 jours.
+- ✅ **INC-20** (« Mon parcours » conforme au CDC, P.A1) : l'écran d'accueil de l'apprenant
+  était quasi vide — il n'y trouvait aucune des informations que le cahier des charges lui
+  promet. Il porte désormais l'**en-tête de dossier** (programme, spécialité, statut, dates de
+  début et de fin, fin d'accès, coach référent), la **progression** (barre accessible
+  `role="progressbar"` avec valeurs ARIA, projets validés / requis, livrables déposés, jours
+  de retard, badge et note jury par projet), les **prochains rendez-vous** (« À confirmer » /
+  « Confirmé ») et des **alertes** ordonnées par urgence. Règles pures `journey-rules.ts`
+  (`buildJourneyAlerts` : fin d'accès à 30 j puis 7 j, échéance à 3 j, réservation en attente,
+  pièces manquantes actionnables ; un dossier terminé fait taire les alertes ; `progressPercent`
+  accepte les deux échelles 0–1 et 0–100 rencontrées dans les données réelles). Accès aux
+  données `data/learner-journey.ts` sous RLS. `test:journey` **9**.
+- ✅ **INC-21** (recherche d'apprenant) : les écrans-listes ne se parcouraient qu'au filtre ;
+  retrouver une personne nommée imposait de dérouler des centaines de lignes. Champ de
+  recherche libre (nom, prénom, e-mail) sur la liste coordination et sur le portefeuille coach,
+  via la primitive `FilterSearch` (même rendu serveur pur que le reste de `FilterBar`). Règles
+  pures `search-rules.ts` : le terme est **assaini** — les caractères qui altèrent la grammaire
+  de filtre PostgREST (virgule, parenthèses, guillemets, `%`, `_`, `*`, `:`) sont neutralisés,
+  ce qui interdit d'élargir la requête depuis l'URL — borné à 80 caractères et ignoré en deçà
+  de 2. Jointure en `!inner` dès qu'un terme est posé (la jointure doit filtrer, pas seulement
+  enrichir) et `.or(..., { referencedTable })`. La **RLS reste le garde-fou** : un coach ne peut
+  rien trouver hors de son portefeuille, la recherche ne fait que réduire un ensemble déjà
+  cloisonné. `test:search` **6** ; résistance à l'injection de filtre vérifiée sur la base réelle.
   **Prochaine étape : Étape 7** (ouverture à d'autres organismes).
 
 Suite `main` : **branche → PR → CI verte → merge → déploiement** (previews Vercel actifs).
