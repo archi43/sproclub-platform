@@ -7,11 +7,11 @@ sont restes dans `CLAUDE.md`.
 
 Produit **en ligne** (staging) et prouvé en réel. Base Supabase UE (`zbvohktqfgwajjvnpets`,
 `eu-north-1`) ; app déployée sur **Vercel région `fra1`** : **https://sproclub-platform.vercel.app**.
-Migrations **0001→0027** + seed appliqués. Suite de tests **201/201** verte contre la vraie base
+Migrations **0001→0027** + seed appliqués. Suite de tests **207/207** verte contre la vraie base
 (vérifié le 2026-08-26, 0 sauté ; inclut `test:rgpd` 10, `test:observability` 6,
 `test:notifications` 8, `test:nav` 5, `test:members` 3, `test:l360` 13, `tests/inc14` 7,
 `test:talent` 12, `test:jobs` 11, `test:availability` 29, `test:journey` 9, `test:search` 6,
-`test:design` 17). Exécution **sérialisée**
+`test:design` 17, `test:roles` 12). Exécution **sérialisée**
 (`npm test` → `--test-concurrency=1`) pour éviter la flakiness de rate-limit auth sous concurrence.
 **7 crons Vercel** (sync 05:00, sync 360L filet quotidien 05:45, agendas 06:00, miroir 06:30,
 export BPF lundi 07:00, purge rétention 03:15, relances 08:00) + **workflow GitHub Actions horaire** `sync-l360-hourly`
@@ -257,6 +257,16 @@ Incréments livrés (voir `PLAN_DEV_PRODUIT.md`) :
   un favicon `src/app/icon.png` (l'app n'en avait aucun). `BrandMark` sert la bonne variante
   selon le ton de la coque ; chaque ton a **son fichier**, pas de recoloration CSS. 92 Ko au
   total. À remplacer par une source vectorielle si elle existe.
+- **INC-23 (accueil : portail par rôle + cohérence visuelle)** : l'accueil était resté à l'écart
+  de la refonte — première URL du produit, il gardait un rendu générique à côté de la connexion
+  refaite. Il adopte la même silhouette en deux panneaux. **Et il portait un vrai défaut** : tout
+  compte connecté se voyait proposer `/mon-parcours`, le portail apprenant, donc un coach, un
+  membre du jury, la coordination ou une entreprise partenaire atterrissait sur une route que sa
+  garde de rôle refuse. Table `ROLE_HOME` + règle pure `homeHrefForRoles` (`roles.ts`) : le rôle
+  **le plus large** décide, car un coach est souvent aussi évaluateur et le portail jury est plus
+  étroit que le sien. Les deux cas limites sont traités explicitement plutôt que par un lien mort :
+  domaine sans organisme, et compte sans aucun rôle. `test:roles` complété de **6** tests purs.
+
   **Vérifié en réel** : rendu de `coordination/apprenants` sous session staff (coque navy,
   marqueur actif, tuiles alimentées par les dossiers réels).
   Reste : Étape 7 (ouverture à d'autres organismes).

@@ -262,6 +262,17 @@ coordination du jury. Base Supabase UE, Cal.eu branché.
   vectorielle si elle existe.
   **Différé** : migration des écrans restants vers l'échelle typographique (les primitives la
   portent déjà, les écrans en héritent) ; bascule confort/compact sur les écrans-listes.
+- ✅ **INC-23** (accueil : portail par rôle + cohérence visuelle) : l'accueil, première URL du
+  produit, était resté à l'écart de la refonte et détonnait à côté de la connexion. Il adopte la
+  même silhouette en deux panneaux. **Il portait surtout un vrai défaut fonctionnel** : tout
+  compte connecté se voyait proposer `/mon-parcours`, le portail apprenant — un coach, un membre
+  du jury, la coordination ou une entreprise partenaire atterrissait donc sur une route que sa
+  garde de rôle refuse. Corrigé par une table `ROLE_HOME` et la règle pure `homeHrefForRoles`
+  (`src/lib/roles.ts`) : le rôle **le plus large** décide, parce qu'un coach est souvent aussi
+  évaluateur et que le portail jury est plus étroit que le sien. Deux cas limites traités
+  explicitement au lieu d'un lien mort : domaine sans organisme résolu, et compte sans aucun rôle
+  dans l'organisme. `test:roles` complété de **6** tests purs (couverture de tous les rôles,
+  arbitrage multi-rôles, absence de rôle).
   **Prochaine étape : Étape 7** (ouverture à d'autres organismes).
 
 Suite `main` : **branche → PR → CI verte → merge → déploiement** (previews Vercel actifs).
