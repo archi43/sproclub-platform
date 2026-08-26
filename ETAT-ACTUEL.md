@@ -246,6 +246,11 @@ Incréments livrés (voir `PLAN_DEV_PRODUIT.md`) :
   `success #2E7D32` tombait à 4,47:1 sur sa propre teinte. Variantes `-ink` ajoutées et usages
   corrigés. Nouvelles primitives `StatTile`/`StatGrid` et colonnes `numeric` (`tabular-nums`).
   `test:design` **17** (11 contraste + 6 synthèse de liste).
+  **Écran de connexion repris** : il vit hors de l'app shell et n'héritait donc d'aucune coque
+  (première impression sans caractère, beaucoup de vide). Il la reconstitue en deux panneaux —
+  navy à gauche (marque, ce que l'accès ouvre, et deux faits qui rassurent : code à usage unique,
+  hébergement UE), plan de travail clair à droite. Le panneau navy ne porte **aucun élément
+  focusable** : l'anneau de focus global est en navy et y serait invisible.
   **Vérifié en réel** : rendu de `coordination/apprenants` sous session staff (coque navy,
   marqueur actif, tuiles alimentées par les dossiers réels).
   Reste : Étape 7 (ouverture à d'autres organismes).

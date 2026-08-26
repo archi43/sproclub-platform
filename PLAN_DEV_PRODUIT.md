@@ -250,6 +250,10 @@ coordination du jury. Base Supabase UE, Cal.eu branché.
   compté pour zéro). `test:design` **17** (11 contraste + 6 synthèse).
   **Vérifié en réel** : rendu de `coordination/apprenants` sous session staff — coque navy,
   marqueur actif, tuiles alimentées par les dossiers réels.
+  **Écran de connexion repris** : premier écran vu par tous les rôles, il vit hors de l'app shell
+  et n'héritait donc d'aucune coque. Il la reconstitue en deux panneaux (navy identitaire à
+  gauche, plan de travail clair à droite), sans élément focusable côté navy — l'anneau de focus
+  global est en navy et y serait invisible.
   **Différé** : migration des écrans restants vers l'échelle typographique (les primitives la
   portent déjà, les écrans en héritent) ; bascule confort/compact sur les écrans-listes.
   **Prochaine étape : Étape 7** (ouverture à d'autres organismes).
