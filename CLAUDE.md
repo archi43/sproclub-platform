@@ -47,7 +47,7 @@ par **incréments complets**, en suivant `PLAN_DEV_PRODUIT.md` dans l'ordre reco
   **#24365E**, accent **#F74335** ; responsive et accessible (contrastes, clavier, ARIA) ;
   ne pas utiliser le rouge pour du petit texte sur blanc.
 - Aucun secret au dépôt ni dans le chat ; hébergement UE (RGPD).
-- Commits atomiques, messages conventionnels ; mettre à jour « État actuel » de ce fichier
+- Commits atomiques, messages conventionnels ; mettre à jour `ETAT-ACTUEL.md`
   et le statut dans `PLAN_DEV_PRODUIT.md` à chaque incrément.
 
 **Auto-vérification avant de dire « fait »** :
@@ -123,91 +123,42 @@ ARIA, focus visible, contrastes conformes.
 **Migration** : refactorer les écrans existants (accueil, login, mon-parcours, coordination)
 vers ces jetons et primitives, sans changer la logique.
 
-## Structure
-- `src/middleware.ts` — résolution du tenant (domaine → organisme) + refresh session.
-- `src/lib/host.ts` — parsing d'hôte pur (Edge-safe) ; `src/lib/tenant.ts` — résolution
-  de l'organisme en base (server-only) ; `src/lib/supabase/*` — clients.
-- `src/lib/auth.ts` — gardes de route par rôle ; `src/lib/data/*` — accès aux données
-  (contexte d'organisme + requêtes métier, séparés de la présentation).
-- `src/app/(auth)/login`, `src/app/auth/callback`, `src/app/auth/signout` — auth par lien e-mail.
-- `src/app/(portal)/mon-parcours` — portail apprenant (pilote, écran P.A1), gardé par `student`.
-- `src/app/(staff)/coordination` — affectation du jury + `coordination/administration` (INC-10 :
-  gestion utilisateurs/rôles + vivier), gardés par `direction`/`coordinator`.
-- `src/lib/data/members.ts`, `src/lib/data/evaluators.ts` — gestion des memberships/vivier (RLS) ;
-  `src/lib/members/provision.ts` — invitation service-role ; `src/lib/supabase/admin.ts` — client
-  service-role factoré (bypass RLS, derrière garde de rôle).
-- `src/lib/data/operations.ts` — file d'actions priorisée S1.1 (opérations, lecture RLS) ;
-  écran `src/app/(staff)/coordination/operations`.
-- `src/app/(coach)` — portail coach (route group gardé `coach`) : « Mes apprenants » +
-  dossier + saisie CR ; `src/lib/data/coaching.ts` (lecture/écriture RLS des `coaching_reports`).
-- `src/lib/compliance-rules.ts` (règles pures, testées hors DB) + `src/lib/data/compliance.ts`
-  (lecture RLS) ; écrans `coordination/pilotage` (S0.1) et `coordination/conformite` (S3.1).
-- `src/lib/reporting-rules.ts` (pur : segmentation + CSV, garde anti-injection de formule) +
-  `src/lib/data/reporting.ts` ; écran `coordination/reporting`, export `coordination/reporting/export`
-  (route gardée, tracée), cron `api/admin/export-bpf` (Module 5).
-- `src/lib/data/learner-dossier.ts` + écran `mon-parcours/dossier` (P.A2) ; documents via
-  **Supabase Storage** (bucket privé `learner-docs`, RLS par org+apprenant `0015`, chemin
-  `{org_id}/{email}/{fichier}`, écriture service-role uniquement).
-- `src/lib/documents/*` (contenu pur + rendu **pdf-lib**) + `src/lib/data/documents-admin.ts`
-  (génération service-role derrière garde staff) ; journal `document_emissions` (`0016`) ; UI de
-  génération sur la fiche apprenant (Module INC-9).
-- `src/lib/data/rgpd.ts` (INC-11) : audit (`audit_log` + `log_access` definer, `0017`), export des
-  données personnelles, effacement (anonymisation en place + `data_erasures` consultée par la sync).
-  `src/lib/rgpd-rules.ts` : règle pure `decideAccountErasure` (ne jamais supprimer un compte
-  référencé ailleurs → cascade), testée hors DB. `0018`/`0019` verrouillent `is_erased`
-  (service-role only ; `0019` révoque le grant par défaut Supabase à anon/authenticated).
-  `RETENTION.md` documente durées + droits. Section RGPD sur la fiche apprenant (clients injectables
-  pour prouver l'effacement en test ; journal ignoré sur préfetch Next).
-- `src/lib/data/ops.ts` (INC-12) : journal d'exploitation `ops_events` (org_id + RLS staff, écrit
-  service-role) + `checkRateLimit` (RPC `rate_limit_touch`, `0020`) ; `src/lib/ratelimit-rules.ts`
-  (pur : identifiant client + limites nommées, testé hors DB). Écran `coordination/exploitation`
-  (tuiles + filtre niveau). Rate limiting du login + logs des routes publiques/crons. Cron
-  `api/admin/purge-retention` (purge de rétention automatisée). Alerting webhook optionnel
-  (`OPS_ALERT_WEBHOOK`, aucun secret au dépôt). `RUNBOOK.md` : incident, sauvegarde/restauration,
-  rotation des secrets.
-- `src/lib/notification-rules.ts` (INC-7, pur : relances dues + `dedupeKey` stable) + `src/lib/data/
-  notifications.ts` (calcul service-role, enqueue idempotent, dispatch, journal ; clients/mailer/horloge
-  injectables) + port `src/lib/notifications/mailer.ts` (adaptateur Resend, **dégradation propre** si non
-  configuré). Tables `notifications` (journal, unique `org_id,dedupe_key`) + `notification_prefs` (opt-out)
-  (`0021`, RLS staff). Cron `api/admin/run-notifications` (rappels soutenance/fin d'accès/CR) ; écran
-  `coordination/notifications` (journal). Anti-doublon Airtable via `NOTIF_DISABLED_KINDS`.
-- `src/lib/l360-rules.ts` (INC-15, pur : n° de projet depuis le nom de parcours, cours de rendu =
-  dernier cours, décision dépôt/validation) + `src/lib/l360/client.ts` (port + adaptateur API v2
-  360Learning, OAuth2, lecture seule, dégradation propre) + `src/lib/l360/sync.ts` (auto-découverte
-  `l360_path_mappings`, reflet dépôt/validation JURY dans `project_deliverables`, jointure e-mail,
-  skip-list RGPD, idempotent). Route cron horaire `api/admin/sync-l360` (`0023`).
-- `src/lib/talent-rules.ts` (INC-17, pur : disponibilité — statut coordination > déclaratif
-  apprenant > état de formation) + `src/lib/data/talent.ts` (vivier RLS : vue `talent_pool` pour
-  les partenaires, consentement apprenant, statut staff, entreprises). Portail
-  `src/app/(partner)/vivier` (rôle `partner`, rattaché à une `partner_companies` via
-  `memberships.partner_company_id`) ; écran apprenant `mon-parcours/visibilite` (consentement
-  explicite révocable + dispo déclarative) ; administration (entreprises + invitation partner) ;
-  fiche apprenant (statut vivier). Migrations `0024` (enum) + `0025` (schéma + vue + trigger).
-- `src/lib/job-rules.ts` (INC-18, pur : machine à états de modération des offres) +
-  `src/lib/data/jobs.ts` (offres, intérêts, candidats via vue `job_offer_candidates`, besoins de
-  formation). Écrans `(partner)/offres` (+ `/[id]` candidats) et `(partner)/besoins`,
-  `mon-parcours/offres` (apprenant, intérêt un clic), `coordination/recrutement` (modération +
-  suivi des besoins). Migration `0026` : `job_offers` (modération par trigger), `job_interests`,
-  `partner_training_needs`, vue `job_offer_candidates` (consentants au vivier), `my_partner_company()`.
-- `src/lib/availability-rules.ts` (INC-19, pur : expansion des plages récurrentes en créneaux,
-  fermeture prioritaire sur ouverture, fuseau Europe/Paris robuste au changement d'heure) +
-  `src/lib/calendar/ics.ts` (port pur : parseur iCalendar minimal + garde SSRF) +
-  `src/lib/calendar/sync.ts` (job service-role : flux → `busy_periods` → republication) +
-  `src/lib/data/availability.ts` (CRUD RLS des plages/exceptions/agenda, publication `self:%`).
-  Écran « Mes disponibilités » partagé (`src/components/availability/*`) monté dans le portail
-  coach (`/disponibilites`) et le **nouveau portail jury** (`src/app/(evaluator)`, `/jury`).
-  Cron `api/admin/sync-calendars`. Migration `0027` : `availability_rules` (récurrence hebdo),
-  `availability_blocks` (exceptions open/closed), `calendar_feeds` (URL d'agenda — **lisible par
-  son seul propriétaire, le staff n'y accède pas**), `busy_periods` (occupations, écriture
-  service-role) ; `availabilities_own_manage` ouvre la publication au titulaire.
-- `supabase/migrations/0001` → `0027` ; seed `supabase/seed/sproclub_bootstrap.sql`.
-  (`0004` invariants réservation, `0005` normalisation e-mails minuscules à l'écriture,
-  `0012` gestion utilisateurs/rôles : désactivation qui coupe l'accès + policies de gestion,
-  `0013` `enrollments_ro.pending_reports` pour la file d'opérations, `0014` portail coach :
-  périmètre coach resserré (RLS) + table `coaching_reports`, `0016` `document_emissions`,
-  `0017` RGPD (`audit_log`/`log_access`, `data_erasures`/`is_erased`), `0018`/`0019` lockdown `is_erased`,
-  `0020` exploitation (`ops_events` + `rate_limit_events`/`rate_limit_touch`),
-  `0021` notifications (`notifications` + `notification_prefs`).)
+## Le patron qui revient partout
+
+Chaque domaine métier suit le même triplet, sans exception :
+
+- `src/lib/<domaine>-rules.ts` : règles **pures**, sans base ni horloge, testées hors DB
+  (`compliance-rules`, `reporting-rules`, `rgpd-rules`, `ratelimit-rules`, `notification-rules`,
+  `l360-rules`, `talent-rules`, `job-rules`, `availability-rules`, `nav-active`).
+- `src/lib/data/<domaine>.ts` : accès aux données **sous RLS**, client injecté (jamais de
+  client global, pour que les tests puissent prouver l'isolation).
+- Un écran dans le route group du rôle concerné, plus une migration numérotée.
+
+Les intégrations externes suivent **port + adaptateur** dans `src/lib/<service>/` avec
+**dégradation propre** si le credential manque : Cal.eu (booking), Airtable (sync),
+360Learning (l360), Resend (mailer), iCalendar (calendar).
+
+Le client **service-role** est factoré dans `src/lib/supabase/admin.ts` et ne sert que
+derrière une garde de rôle, pour ce que la RLS ne peut pas faire : provisioning d'utilisateur,
+écritures de cron, génération de documents.
+
+La carte fichier par fichier est dans `STRUCTURE.md`. En cas de doute, `ls -R src/` fait foi.
+
+## Pièges déjà rencontrés (ne pas les reproduire)
+
+- **`0019` révoque le grant EXECUTE par défaut** que Supabase accorde à `anon` et
+  `authenticated`. Sans lui, `is_erased` fuyait entre locataires. Toute nouvelle fonction
+  `SECURITY DEFINER` doit être verrouillée de la même façon.
+- **`calendar_feeds` n'est lisible que par son propriétaire**, le staff n'y a pas accès.
+  C'est délibéré : ce sont des URL d'agenda personnel.
+- **Depuis `0012`, `memberships` porte 3 clés étrangères vers `profiles`.** Tout embed
+  PostgREST doit être désambiguïsé (`profiles!memberships_profile_id_fkey`), sinon l'écran
+  Administration casse en production. C'est déjà arrivé.
+- **Sémantique 360Learning validée en réel** : `onTime` plafonne à 97 %, `successful` vaut 100.
+  On n'écrit **jamais** un downgrade : seuls les dépôts avérés sont reflétés.
+- **Les formulaires Fillout SproCLUB n'ont pas d'e-mail** (l'apprenant est un RecordPicker).
+  La jointure passe par recordID : Commande directe, ou via la table Soutenances.
+- **`0024` (enum) doit précéder `0025`** (policies qui utilisent la valeur `partner`).
 
 ## Modèle de rôles (décision)
 Les rôles sont **par organisme**, portés par `memberships` (org_id, profile_id, role) —
@@ -224,198 +175,30 @@ le claim JWT `app_metadata.org_id` (robuste avec le pooling PostgREST).
   RLS côté serveur ; journalisation des accès aux dossiers ; hébergement UE (RGPD).
 - Tests (unitaires + bout en bout sur la réservation), intégration continue (`.github/workflows/ci.yml`).
 
+## Exploitation (faits durables)
+
+- Base Supabase UE `zbvohktqfgwajjvnpets` (`eu-north-1`) ; app déployée sur **Vercel `fra1`** :
+  https://sproclub-platform.vercel.app
+- **Appliquer chaque migration AVANT le code qui en dépend.** Le code lit des colonnes et des
+  tables que la migration crée ; l'ordre inverse casse la production.
+- **`npm test` est sérialisé** (`--test-concurrency=1`). Le rate-limit d'authentification
+  Supabase rend la suite instable en parallèle : ne pas paralléliser pour gagner du temps.
+- **7 crons Vercel** + un workflow GitHub Actions horaire `sync-l360-hourly`. Le plan Vercel
+  Hobby n'autorise que des crons quotidiens, l'horaire passe donc par Actions (secret
+  `CRON_SECRET` à poser dans GitHub).
+- Dépôt **public**, merge bloqué sans CI verte (ruleset `main-ci-required`). La CI monte un
+  Supabase local jetable et exécute la vraie suite d'intégration, sans aucun secret.
+- Comptes de test : voir `SETUP.md`.
+- **Reste opérationnel** : rotation de la clé Cal.com et du token Airtable (tous deux ont
+  transité par le chat) ; SMTP dédié Resend pour lever la limite d'envoi ; connexion
+  GitHub↔Vercel pour un auto-deploy fiable.
+
+État détaillé des incréments livrés : **`ETAT-ACTUEL.md`**.
+
 ## Trajectoire (7 étapes)
 0 Assainissement · 1 Fondations · 2 Pilote (portail apprenant + réservation) ·
 3 Portail coach · 4 Administration · 5 Reporting · 6 Extension programme ·
 7 Ouverture à d'autres organismes.
-
-## État actuel
-Produit **en ligne** (staging) et prouvé en réel. Base Supabase UE (`zbvohktqfgwajjvnpets`,
-`eu-north-1`) ; app déployée sur **Vercel région `fra1`** : **https://sproclub-platform.vercel.app**.
-Migrations **0001→0027** + seed appliqués. Suite de tests **169/169** verte contre la vraie base
-(inclut `test:rgpd` 10, `test:observability` 6, `test:notifications` 8, `test:nav` 5, `test:members` 3,
-`test:l360` 13, `tests/inc14` 7, `test:talent` 12, `test:jobs` 11, `test:availability` 29). Exécution **sérialisée**
-(`npm test` → `--test-concurrency=1`) pour éviter la flakiness de rate-limit auth sous concurrence.
-**7 crons Vercel** (sync 05:00, sync 360L filet quotidien 05:45, agendas 06:00, miroir 06:30,
-export BPF lundi 07:00, purge rétention 03:15, relances 08:00) + **workflow GitHub Actions horaire** `sync-l360-hourly`
-(le plan Vercel Hobby n'autorise que des crons quotidiens ; l'horaire passe par Actions,
-activé en posant le secret `CRON_SECRET` dans GitHub). Note déploiement :
-appliquer chaque migration **avant** le code (0012 : garde de rôle lit `memberships.deactivated_at` ;
-0013 : sync écrit `enrollments_ro.pending_reports` ; 0014 : portail coach lit `coaching_reports` ;
-0017→0019 : audit + effacement RGPD, `is_erased` réservé au service-role ;
-0020 : exploitation, `ops_events` lu par l'écran + routes/crons y écrivent, `rate_limit_touch` réservé au service-role ;
-0021 : notifications, cron `run-notifications` écrit `notifications`, écran + prefs lus par le staff ;
-0023 : pont 360L, cron `sync-l360` écrit `l360_path_mappings` + `project_deliverables`, UI lit
-`validated_at`/`source` ;
-0024→0025 : vivier partenaires — 0024 (enum) doit précéder 0025 (policies qui utilisent
-'partner'), les portails lisent la vue `talent_pool` et les écrans staff `partner_companies`).
-
-Incréments livrés (voir `PLAN_DEV_PRODUIT.md`) :
-- **Fondations + pilote (Étapes 1-2)** : multi-locataire (RLS), auth lien e-mail (callback
-  PKCE + token_hash) + gardes de rôle, isolation prouvée (`test:isolation` 3/3), invariants
-  de réservation en base (`test:booking` 5/5). Portail apprenant (parcours, livrables,
-  coaching, soutenance) + coordination (affectation du jury). Cal.eu branché de bout en bout
-  (miroir des créneaux, createBooking, cancel). Revue sécurité passée (RLS complète, code
-  mort supprimé, open redirect corrigé). Aucun secret au dépôt.
-- **INC-0 (mise en ligne)** : déploiement Vercel UE, variables d'env dans Vercel, redirections
-  auth Supabase, **2 crons quotidiens** (sync 05:00 UTC, miroir 06:30 UTC). **La CI exécute la
-  vraie suite d'intégration** contre un Supabase **local jetable** (`supabase start`, migrations
-  appliquées, 14 tests, 0 sauté) → protège réellement RLS + invariants ; aucun secret (clés
-  locales de dev publiques). Grants API explicites (`0011`) pour un Postgres local autonome.
-  **Blocage de merge actif** (dépôt public + ruleset `main-ci-required` : job CI requis avant
-  merge sur `main`) → « toujours vert » contraignant, via PR. Dépôt : **public**.
-- **INC-1 (données réelles)** : sync **Airtable → Postgres** lecture seule, idempotente
-  (`src/lib/sync/*`, route `/api/admin/sync-airtable` + cron). **511 dossiers réels** synchronisés
-  (519 Commandes, **8 sans e-mail écartées et loggées** — pas de perte silencieuse) ; `test:sync` 2/2.
-- **INC-2 (espace admin)** : référentiel programmes (Module 4, table `programs` + règle de
-  publication) et Module 2 (liste apprenants filtrable + fiche 360 sur données réelles), sous
-  `src/app/(staff)/coordination/*`, gardés direction/coordinator ; `test:admin` (RLS de rôle) 4/4.
-- **Design system livré** : Tailwind + tokens de marque (#24365E / #F74335), polices Montserrat/
-  Hind Madurai (`next/font`), primitives accessibles `src/components/ui` (Button, Input/Select/
-  Textarea/Field, Card, Badge, Alert, Table, PageHeader, EmptyState, Skeleton, ErrorState) + app
-  shell. **Charte appliquée à TOUS les écrans** (accueil, login, mon-parcours, portail, coordination) ;
-  plus aucun style inline ; états chargement (loading.tsx)/vide/erreur (error.tsx), responsive + a11y.
-- **INC-10 (gestion des utilisateurs et des rôles)** : écran admin `coordination/administration`
-  (direction/coordinator). Invitation = provisioning **service-role** (`src/lib/members/provision.ts` :
-  find-or-create auth user + claim `app_metadata.org_id` + profile + membership, avec compensation) —
-  seule opération que la RLS ne peut faire. **Désactivation qui coupe réellement l'accès** :
-  `memberships.deactivated_at`/`deactivated_by` (`0012`), et les helpers `is_member`/`has_org_role`/
-  `has_current_org_role`/`shares_org_with`/`set_current_org` ignorent les lignes désactivées → RLS
-  refuse tout. Attribution des écritures (CA-T3) via `invited_by`/`deactivated_by`. Rôles/vivier gérés
-  **par la RLS** (`src/lib/data/members.ts`, `src/lib/data/evaluators.ts`, client injecté) : nouvelles
-  policies `membership_staff_read` + `membership_manage` (0012) — direction/coordinator gèrent, un
-  coordinateur ne peut **jamais** créer/modifier/supprimer un membership `direction`. Gardes appli :
-  pas d'auto-désactivation, dernier compte de direction protégé. Client admin factoré
-  (`src/lib/supabase/admin.ts`, réutilisé par `tenant.ts` + route sync). `test:roles` **6/6** (matrice
-  RLS, coupure d'accès, réactivation) ; **non-régression 14/14**. **Correctif (bug prod)** : depuis `0012`,
-  `memberships` a 3 FK vers `profiles` → l'embed PostgREST `profile:profiles(...)` était ambigu et cassait
-  l'écran Administration ; désambiguïsé en `profiles!memberships_profile_id_fkey` (`listMembers`,
-  `listEvaluatorCandidates`), couvert par `test:members` 3.
-- **INC-3 (opérations pédagogiques, Module 1 / S1.1)** : écran `coordination/operations`
-  « Conduite de la semaine » — file d'actions **triée par urgence** sur données réelles :
-  soutenances à venir (+ jury à compléter), **accès serveur à libérer** (`access_end_date` ≤30/≤7 j,
-  = « base de l'alerte serveurs » du dictionnaire), apprenants en retard (`late_days`), comptes rendus
-  à saisir (`pending_reports`, ajouté à la sync — `0013`). Dossiers « Terminé » exclus ; filtre
-  programme ; liens vers fiche apprenant et affectation jury (règle coach≠évaluateur déjà en base 0004).
-  Lecture RLS (`src/lib/data/operations.ts`, client requête-scopé). `test:operations` **5/5** (fenêtre
-  d'alerte, exclusions, tri, jury incomplet, périmètre coach). **Différé** (données Airtable non
-  synchronisées) : gestion complète des serveurs SAP (table *Affectation ressources*) et calendrier
-  planning S1.2 → futur incrément d'extension de sync.
-- **INC-4 (portail coach + boucle réservation, Étape 3)** : route group `src/app/(coach)` gardé
-  `coach` — « Mes apprenants » (avancement, planning, soutenances, livrables) et saisie des **comptes
-  rendus/notes** (`coaching_reports`, app-owned, `0014`), **visibles côté admin** (fiche apprenant).
-  **Périmètre coach resserré en RLS** (`0014`) : `learners_read`/`reservations_staff_read`/
-  `deliverables_staff_read` limitent désormais le coach à ses **propres** dossiers (`coach_email`) ;
-  policy `coaching_reports_coach_manage` (écrit ses dossiers, auteur = lui-même) + `_staff_read`
-  (direction/coordinator). À la confirmation d'une soutenance, les deux évaluateurs sont ajoutés
-  comme **invités Cal.eu** (`BookingProvider.addGuests` → `PATCH /bookings`, best-effort, dégradation
-  propre). `test:coach` **5/5** (périmètre étanche, écriture scoped, auteur=appelant, visibilité admin) ;
-  **non-régression**. **Différé + credential** : remontée Airtable des CR (token **write**, actuellement
-  read-only) et publication multi-coach des disponibilités (config Cal.eu par coach).
-- **INC-11 (RGPD : audit, export, droit à l'oubli)** : **journal d'audit** (`audit_log` + `log_access`
-  SECURITY DEFINER, `0017`) — un appelant ne trace que pour son org/identité, actions en liste blanche,
-  lecture direction/coordinator ; **export** des données personnelles (route gardée, tracée, bornée RLS) ;
-  **effacement** (direction only, mot de confirmation) : anonymisation **en place** (id/FK conservés),
-  neutralisation des identifiants d'insertion, purge des documents (paginée), suppression du compte
-  **uniquement** s'il n'est pas référencé ailleurs (règle pure `decideAccountErasure` — pas de
-  cascade-delete de tiers), et **liste de suppression** (`data_erasures`) que la sync consulte pour ne
-  jamais réimporter. `is_erased` verrouillé service-role (`0018`/`0019`, corrige une fuite inter-locataire).
-  `test:rgpd` **10** (5 pur + 5 intégration : attribution, journal staff-only, registre org-scoped +
-  écriture refusée, anonymisation à FK intacte, skip-list de sync) ; **non-régression**. `RETENTION.md`
-  documente durées + droits. **Différé** : purge automatique (cron) → INC-12.
-- **INC-12 (exploitation et observabilité)** : **journal d'exploitation** (`ops_events`, org_id + RLS
-  staff-read, écrit service-role, `0020`) alimenté par les crons (sync/miroir/export/purge), l'action de
-  connexion et les routes ; écran `coordination/exploitation` (tuiles 24 h/7 j, filtre niveau, charte).
-  **Rate limiting** des points d'entrée publics : `rate_limit_touch` (SECURITY DEFINER service-role) +
-  table verrouillée `rate_limit_events` (fenêtre glissante) ; login limité (5/15 min/IP, fail-safe),
-  observation bornée des sondages sur endpoints protégés. **Purge de rétention** automatisée (cron
-  `api/admin/purge-retention` : `audit_log` 12 mois, `ops_events` 90 j, `rate_limit_events` 2 j — finit
-  le différé INC-11). **Alerting** optionnel par webhook (`OPS_ALERT_WEBHOOK`, aucun secret au dépôt).
-  `RUNBOOK.md` (incident, sauvegarde/restauration testée, rotation des secrets Cal.eu/Airtable/
-  service-role/`CRON_SECRET`). `src/lib/ratelimit-rules.ts` pur (login limité par IP **et** par
-  e-mail destinataire). `test:observability` **6** (3 pur + 3 intégration : fenêtre de débit, fonction
-  service-role only, table verrouillée, RLS `ops_events` staff/coach/isolation) ; **non-régression**. **Différé** : exécution réelle du test de restauration
-  en staging (procédure documentée) ; SMTP dédié (Resend).
-- **INC-7 (notifications et relances)** : pipeline **calcul → enqueue idempotent → dispatch** des
-  relances e-mail (rappel de soutenance ≤3 j, fin d'accès serveur ≤7 j, comptes rendus à saisir → coach),
-  calculées depuis le modèle opérationnel. Règle **pure** `buildDueNotifications` (relances dues +
-  `dedupeKey` stable, testée hors DB). **Port/adaptateur** mailer (`src/lib/notifications/mailer.ts`,
-  Resend) avec **dégradation propre** : sans credential, les relances restent `pending` sans casser
-  l'app. Journal `notifications` (unique `org_id,dedupe_key` → idempotence cron), préférences d'**opt-out**
-  `notification_prefs`, RLS staff (`0021`). Cron `api/admin/run-notifications` (résumé dans le journal
-  d'exploitation) ; écran `coordination/notifications`. **Anti-doublon Airtable** via `NOTIF_DISABLED_KINDS`.
-  `test:notifications` **8** (5 pur + 3 intégration : idempotence, RLS staff/coach/isolation, opt-out) ;
-  **non-régression**. **Pause credential** : `RESEND_API_KEY` + `NOTIF_FROM` pour activer l'envoi réel.
-  **Différé** : échéances CPF (champ absent du modèle) ; confirmations événementielles.
-- **INC-13 (accessibilité et mobile)** : app shell accessible — **lien d'évitement** (skip to content) +
-  `main#main-content` focusable, **nav active** (`aria-current` + état visible, composant client
-  `src/components/nav-tabs.tsx`), **viewport** explicite (zoom autorisé, a11y), cibles tactiles ≥44px,
-  `Th scope="col"`. Logique d'onglet actif extraite en **règle pure** `src/lib/nav-active.ts`
-  (`test:nav` 5 : match exact, enfant profond, racine de section, frontière de segment). Tables déjà
-  responsives (primitive `overflow-x-auto`), grilles label/valeur adaptatives, focus-visible global.
-  Vérif : `next lint` (jsx-a11y) vert ; contrôle **axe-core ponctuel** (0 violation WCAG 2 A/AA sur page
-  publique, manuel — non automatisé en CI) ; pas de débordement horizontal ; **non-régression 86/86**.
-  Pas de schéma/RLS (incrément front).
-- **INC-15 (pont 360Learning : livrables de projet)** : contrainte métier — les apprenants déposent
-  sur 360L et le **JURY** évalue/valide (déblocage du projet suivant natif 360L, non pilotable par
-  API : la v2 n'expose ni fichiers ni écriture, vérifié en réel). Sync **lecture seule, horaire**
-  (`api/admin/sync-l360`, CRON_SECRET) : auto-découverte des parcours « Projet n°X » →
-  `l360_path_mappings` (insert-only, ajustements manuels autoritaires, RLS staff-read, `0023`) ;
-  **dépôt** = tentative clôturée sur le cours de rendu (dernier cours du parcours) →
-  `deliverable_submitted` + `submitted_at` (débloque la soutenance, trigger `0004`) ; **validation
-  jury** = parcours `successful` → `validated_at` + `l360_score` (sémantique validée sur données
-  réelles : `onTime` plafonne à 97 %, `successful` = 100). Jointure par e-mail normalisé, skip-list
-  RGPD (`data_erasures`), e-mails inconnus comptés, **jamais de downgrade** (on n'écrit que des
-  dépôts avérés ; `source` tracée `platform`/`l360`). Port/adaptateur `src/lib/l360/client.ts`
-  (OAuth2 client credentials, token caché, pagination Link, dégradation propre) ; règles pures
-  `src/lib/l360-rules.ts`. Badges « Validé par le jury » (portail apprenant + dossier coach).
-  `test:l360` **13** (8 pur + 5 intégration : reflet + RGPD, idempotence, RLS, garde-fou
-  anti-réécriture d'un livrable validé — trigger `protect_l360_deliverable` ; tolérance aux
-  pannes de l'API 360L : un parcours en échec est sauté et compté (`fetchErrors`), jamais fatal).
-  **Actif en production** : credentials Vercel + secret GitHub posés ; premier run réel vérifié
-  (61 mappings auto-découverts, 1 789 livrables reflétés dont 1 421 validés jury, re-run idempotent).
-- **INC-16 (activation Fillout, tout le périmètre évaluatif)** : `FILLOUT_FORM_IDS` = **27
-  formulaires** (5 comptes rendus, 11 évaluations projet, 6 soutenances projet, 4 grilles
-  d'évaluation, suivi étudiant). Les formulaires SproCLUB sont **adossés à Airtable** : pas
-  d'e-mail, l'apprenant est un RecordPicker → jointure par **recordID** : Commande directe
-  (« Etudiant(s) », « Sales Orders-header ») ou **via la table Soutenances** (map
-  recordID soutenance → Commande, `fetchSoutenanceCommandeMap`, injectée dans `syncFillout`) ;
-  repli e-mail conservé ; `matchedByRecordId`/`matchedViaSoutenance` tracés. Différé :
-  chaînes « Session Onboarding »/« Examen » (~220 soumissions, tables intermédiaires). Normalisation : date de session (DatePicker), note = moyenne des
-  **StarRating**, RecordPicker/FileUpload lisibles. **Anti-doublon write-back** : les CR
-  `source='fillout'` sont exclus du write-back Airtable (les formulaires y créent déjà leur
-  record) — `listPendingWritebackReports` filtré, prouvé par test. `tests/inc14` **7**.
-  **Actif en production** : 2 139/2 222 soumissions historiques rattachées (610 direct,
-  1 529 via Soutenances), 1 449 notées, 278 dossiers alimentés.
-- **INC-17 (vivier de talents — entreprises partenaires)** : rôle `partner` (rattaché à une
-  `partner_companies` via `memberships.partner_company_id`), **nominatif avec consentement
-  explicite** de l'apprenant (tracé, révocable — écran `mon-parcours/visibilite`), **synthèse
-  chiffrée** temps réel (progression, projets validés, note moyenne jury 360L, assiduité,
-  dispo — jamais les commentaires internes), **dispo double** (statut coordination prioritaire,
-  règle pure `talent-rules.ts`). Surface partenaire unique : vue `talent_pool` (0025 —
-  consentants, org courante, effacés RGPD exclus, grants stricts) ; `staff_status` verrouillé
-  par trigger ; effacement RGPD purge le profil. Portail `(partner)/vivier`, administration
-  (entreprises + invitation), fiche apprenant (statut vivier). **Revue sécurité passée avec
-  correctifs prouvés** : `profiles_org_read` et `availabilities_read` resserrées (un partner
-  ne lit ni l'annuaire ni les créneaux), rôle partner impossible sans société (action + vue +
-  trigger de cohérence de tenant `memberships_partner_company_org`), consultations du vivier
-  **journalisées** (`log_access` étendu à `talent_pool.view`, y compris pour le rôle partner).
-  `test:talent` **12** (4 pur + 8 intégration RLS/consentement/isolation/trigger/effacés/
-  annuaire verrouillé/audit).
-- **INC-18 (jobboard + besoins de formation)** : les entreprises partenaires publient des
-  **offres** (modérées par la coordination avant d'être visibles des apprenants — machine à
-  états `job-rules.ts` + trigger `protect_job_offer_moderation`) ; l'apprenant marque son
-  **intérêt en un clic** ; le partenaire voit les candidats intéressés via la vue
-  `job_offer_candidates` (intersection intérêt × consentement vivier — synthèse chiffrée,
-  société propriétaire, effacés RGPD exclus). Les entreprises expriment aussi leurs **besoins
-  de formation** (`partner_training_needs`, signal B2B vers la coordination, jamais exposé aux
-  apprenants, statut verrouillé). `my_partner_company()` (SECURITY DEFINER) résout la société
-  du partenaire. `test:jobs` **11** (5 pur + 6 intégration RLS).
-  Reste : Étape 7 (ouverture à d'autres organismes).
-
-Comptes de test : student (melissa.blld), coach, coordinator, 3 évaluateurs, hôte Cal.eu (voir `SETUP.md`).
-Reste (opérationnel) : **rotation** clé Cal.com + token Airtable (transités par le chat) ;
-SMTP dédié (Resend) pour lever la limite d'envoi ; connexion GitHub↔Vercel pour l'auto-deploy fiable.
 
 ## Réservation (Étape 2)
 Invariants métier **au niveau base** (migration `0004`, triggers), prouvés par
@@ -438,7 +221,11 @@ Restes différés : INC-3 serveurs SAP + planning S1.2 ; INC-4 remontée Airtabl
 dispos multi-coach ; INC-12 exécution réelle du test de restauration en staging ; INC-7 credential
 Resend (`RESEND_API_KEY`/`NOTIF_FROM`) pour l'envoi réel + échéances CPF — en attente d'extension sync / credential.
 
-## Documents de référence (dossier parent SPROPULSE)
-Cahier de conception, cahier des charges écran par écran, dictionnaire de données,
-plan de recette, note d'architecture technique, note d'architecture multi-locataire,
-cadrage technique, schémas `pilote_schema.sql` et `tenancy_schema.sql`.
+## Documents de référence
+- `STRUCTURE.md` — carte du code, fichier par fichier.
+- `ETAT-ACTUEL.md` — journal des incréments livrés.
+- `PLAN_DEV_PRODUIT.md` — plan et statut des incréments.
+- `SETUP.md`, `RUNBOOK.md`, `RETENTION.md`, `RESTORE_DRILL.md` — exploitation.
+- Dossier parent `SPROPULSE` : cahier de conception, cahier des charges écran par écran,
+  dictionnaire de données, plan de recette, note d'architecture technique, note d'architecture
+  multi-locataire, cadrage technique, schémas `pilote_schema.sql` et `tenancy_schema.sql`.
