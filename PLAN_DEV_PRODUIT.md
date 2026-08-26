@@ -220,6 +220,38 @@ coordination du jury. Base Supabase UE, Cal.eu branché.
   enrichir) et `.or(..., { referencedTable })`. La **RLS reste le garde-fou** : un coach ne peut
   rien trouver hors de son portefeuille, la recherche ne fait que réduire un ensemble déjà
   cloisonné. `test:search` **6** ; résistance à l'injection de filtre vérifiée sur la base réelle.
+- ✅ **INC-22** (direction visuelle « Poste de pilotage » + contraste prouvé) : la direction
+  épurée livrée en #28 était jugée générique, sans caractère et peu lisible. Trois directions
+  ont été maquettées sur des écrans réels **à charte figée** (mêmes couleurs, mêmes polices,
+  seule leur application change) ; la direction retenue fait du navy **l'environnement** des
+  rôles qui opèrent — rail sombre, plan de travail clair — rend le rouge à son rôle de
+  **signal**, et greffe dans la zone de contenu l'échelle typographique de la direction
+  « Registre » (chiffres de synthèse en grand, libellés en petites capitales espacées, filets
+  fins, aucune boîte superflue). **Coque par famille de rôle** (`AppShell tone`) : `navy` pour
+  coordination/coach/jury, `light` pour apprenant/entreprise partenaire — un apprenant en
+  formation n'a pas à se retrouver dans un poste de conduite, et la coque colorée sera le
+  support naturel de la marque d'un autre organisme à l'**étape 7**. L'item de nav actif porte
+  **trois marques simultanées** (fond, filet rouge, `aria-current`) : l'état n'est jamais porté
+  par la seule couleur.
+  **Jetons unifiés** : `src/lib/design-tokens.ts` devient la source de vérité unique, importée
+  par `tailwind.config.ts` **et** auditée par les tests — une couleur écrite en dur ailleurs
+  échapperait à la preuve de contraste.
+  **Contraste prouvé, pas déclaré** : `contrast-rules.ts` (pur, sans import, WCAG 2.1) et
+  `CHARTE_TEXT_PAIRS` recalculent toute combinaison texte/fond que l'interface garantit ;
+  `npm run test:design` échoue si l'une descend sous AA. Le test a **trouvé deux défauts réels
+  et non théoriques** : `warning #B8860B` mesurait 3,25:1 sur blanc et était **déjà en
+  production sur quatre écrans** (exploitation, conformité, notifications, mon-parcours), et
+  `success #2E7D32` tombait à 4,47:1 sur sa propre teinte. Variantes `-ink` ajoutées, usages
+  corrigés. L'accessibilité étant un argument commercial auprès des financeurs publics, ce test
+  est la pièce d'audit : il se rejoue à l'identique.
+  Nouvelles primitives `StatTile`/`StatGrid` (bande de synthèse en tête d'écran-liste, chiffres
+  décrivant la **sélection affichée**) et colonnes `numeric` (`tabular-nums`) sur `Th`/`Td` ;
+  règles pures `list-summary-rules.ts` (un avancement inconnu est **exclu** de la moyenne, pas
+  compté pour zéro). `test:design` **17** (11 contraste + 6 synthèse).
+  **Vérifié en réel** : rendu de `coordination/apprenants` sous session staff — coque navy,
+  marqueur actif, tuiles alimentées par les dossiers réels.
+  **Différé** : migration des écrans restants vers l'échelle typographique (les primitives la
+  portent déjà, les écrans en héritent) ; bascule confort/compact sur les écrans-listes.
   **Prochaine étape : Étape 7** (ouverture à d'autres organismes).
 
 Suite `main` : **branche → PR → CI verte → merge → déploiement** (previews Vercel actifs).

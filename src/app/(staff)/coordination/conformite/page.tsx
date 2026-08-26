@@ -71,7 +71,7 @@ export default async function ConformitePage({
                 <Td>{d.status ?? "—"}</Td>
                 {d.pieces.map((p) => (
                   <Td key={p.key} className="text-center">
-                    <span aria-label={p.present ? `${p.label} présent` : `${p.label} manquant`} className={p.present ? "font-semibold text-success" : "font-semibold text-warning"}>
+                    <span aria-label={p.present ? `${p.label} présent` : `${p.label} manquant`} className={p.present ? "font-semibold text-success" : "font-semibold text-warning-ink"}>
                       {p.present ? "✓" : "✗"}
                     </span>
                   </Td>

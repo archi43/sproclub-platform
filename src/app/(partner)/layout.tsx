@@ -24,7 +24,7 @@ export default async function PartnerLayout({ children }: { children: ReactNode 
   await requireOrgRole(org.id, ["partner"]);
 
   return (
-    <AppShell orgName={org.name} subtitle="Espace entreprise partenaire" nav={nav}>
+    <AppShell orgName={org.name} subtitle="Espace entreprise partenaire" nav={nav} tone="light">
       {children}
     </AppShell>
   );

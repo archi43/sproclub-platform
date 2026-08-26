@@ -11,7 +11,7 @@ export function Table({ children, className }: { children: ReactNode; className?
 }
 
 export function THead({ children }: { children: ReactNode }) {
-  return <thead className="border-b border-line text-left text-muted">{children}</thead>;
+  return <thead className="border-b border-line bg-surface text-left text-muted">{children}</thead>;
 }
 
 export function TBody({ children }: { children: ReactNode }) {
@@ -22,16 +22,27 @@ export function Tr({ className, ...props }: HTMLAttributes<HTMLTableRowElement>)
   return <tr className={cn("transition-colors hover:bg-surface", className)} {...props} />;
 }
 
-export function Th({ scope = "col", className, ...props }: ThHTMLAttributes<HTMLTableCellElement>) {
+/** `numeric` aligne à droite et fige la chasse des chiffres : les colonnes de
+ *  pourcentages et de retards restent lisibles en colonne. */
+export function Th({ scope = "col", numeric, className, ...props }: ThHTMLAttributes<HTMLTableCellElement> & { numeric?: boolean }) {
   return (
     <th
       scope={scope}
-      className={cn("px-4 py-3 text-xs font-medium uppercase tracking-wide", className)}
+      className={cn(
+        "px-4 py-3 text-label font-medium uppercase",
+        numeric && "text-right",
+        className
+      )}
       {...props}
     />
   );
 }
 
-export function Td({ className, ...props }: TdHTMLAttributes<HTMLTableCellElement>) {
-  return <td className={cn("px-4 py-3 align-middle", className)} {...props} />;
+export function Td({ numeric, className, ...props }: TdHTMLAttributes<HTMLTableCellElement> & { numeric?: boolean }) {
+  return (
+    <td
+      className={cn("px-4 py-3.5 align-middle", numeric && "text-right tabular-nums", className)}
+      {...props}
+    />
+  );
 }

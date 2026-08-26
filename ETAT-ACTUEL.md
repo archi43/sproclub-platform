@@ -7,10 +7,11 @@ sont restes dans `CLAUDE.md`.
 
 Produit **en ligne** (staging) et prouvé en réel. Base Supabase UE (`zbvohktqfgwajjvnpets`,
 `eu-north-1`) ; app déployée sur **Vercel région `fra1`** : **https://sproclub-platform.vercel.app**.
-Migrations **0001→0027** + seed appliqués. Suite de tests **184/184** verte contre la vraie base
-(vérifié le 2026-08-14, 0 sauté, 103 s ; inclut `test:rgpd` 10, `test:observability` 6,
+Migrations **0001→0027** + seed appliqués. Suite de tests **201/201** verte contre la vraie base
+(vérifié le 2026-08-26, 0 sauté ; inclut `test:rgpd` 10, `test:observability` 6,
 `test:notifications` 8, `test:nav` 5, `test:members` 3, `test:l360` 13, `tests/inc14` 7,
-`test:talent` 12, `test:jobs` 11, `test:availability` 29, `test:journey` 9, `test:search` 6). Exécution **sérialisée**
+`test:talent` 12, `test:jobs` 11, `test:availability` 29, `test:journey` 9, `test:search` 6,
+`test:design` 17). Exécution **sérialisée**
 (`npm test` → `--test-concurrency=1`) pour éviter la flakiness de rate-limit auth sous concurrence.
 **7 crons Vercel** (sync 05:00, sync 360L filet quotidien 05:45, agendas 06:00, miroir 06:30,
 export BPF lundi 07:00, purge rétention 03:15, relances 08:00) + **workflow GitHub Actions horaire** `sync-l360-hourly`
@@ -227,6 +228,26 @@ Incréments livrés (voir `PLAN_DEV_PRODUIT.md`) :
   borné à 80 caractères, ignoré en deçà de 2. Jointure en `!inner` quand un terme est posé (la
   jointure doit filtrer, pas seulement enrichir) et `.or(..., { referencedTable })`. La RLS
   reste le garde-fou : un coach ne peut rien trouver hors de son portefeuille. `test:search` **6**.
+- **INC-22 (direction visuelle « Poste de pilotage » + contraste prouvé)** : la direction épurée
+  était jugée générique et sans caractère. Trois directions ont été maquettées sur des écrans
+  réels à **charte figée** (mêmes couleurs, mêmes polices) ; la retenue fait du navy
+  **l'environnement** des rôles qui opèrent (rail sombre, plan de travail clair) et rend le
+  rouge à son rôle de **signal**, en greffant dans le contenu l'échelle typographique de la
+  direction « Registre » (chiffres en grand, libellés en petites capitales, filets fins).
+  **Coque par famille de rôle** (`AppShell tone`) : `navy` pour coordination/coach/jury,
+  `light` pour apprenant/entreprise — la coque colorée servira de support à la marque d'un
+  autre organisme à l'étape 7. L'item de nav actif porte **trois marques** (fond, filet rouge,
+  `aria-current`) : jamais la seule couleur.
+  **Jetons unifiés** : `src/lib/design-tokens.ts` devient la source unique, importée par
+  `tailwind.config.ts` **et** auditée par les tests — une couleur en dur échapperait à la preuve.
+  **Contraste prouvé, pas déclaré** : `contrast-rules.ts` (pur, WCAG 2.1) + `CHARTE_TEXT_PAIRS`
+  vérifient toute combinaison texte/fond garantie. Le test a **trouvé deux défauts réels** :
+  `warning #B8860B` mesurait 3,25:1 sur blanc et était **déjà en production sur quatre écrans** ;
+  `success #2E7D32` tombait à 4,47:1 sur sa propre teinte. Variantes `-ink` ajoutées et usages
+  corrigés. Nouvelles primitives `StatTile`/`StatGrid` et colonnes `numeric` (`tabular-nums`).
+  `test:design` **17** (11 contraste + 6 synthèse de liste).
+  **Vérifié en réel** : rendu de `coordination/apprenants` sous session staff (coque navy,
+  marqueur actif, tuiles alimentées par les dossiers réels).
   Reste : Étape 7 (ouverture à d'autres organismes).
 
 Comptes de test : apprenant, coach, coordinateur, 3 évaluateurs, hôte Cal.eu — identifiants
