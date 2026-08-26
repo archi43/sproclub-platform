@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
-import { Sidebar, type NavItem } from "@/components/sidebar";
+import { Sidebar, type NavItem, type ShellTone } from "@/components/sidebar";
 
-export type { NavItem };
+export type { NavItem, ShellTone };
 
 /** Skip-to-content link — first focusable element, hidden until focused. Lets
  *  keyboard/screen-reader users jump past the nav to the page content. */
@@ -17,16 +17,20 @@ function SkipLink() {
 }
 
 /**
- * App shell (direction épurée) : rail de navigation clair à gauche sur desktop,
- * barre + tiroir sur mobile. Le contenu occupe la colonne principale.
+ * App shell (direction « Poste de pilotage ») : rail de navigation à gauche sur
+ * desktop, barre + tiroir sur mobile. Le contenu occupe la colonne principale,
+ * sur un plan de travail clair quel que soit le ton du rail.
+ *
+ * `tone` vaut `navy` pour les rôles qui opèrent (coordination, coach, jury) et
+ * `light` pour les rôles invités (apprenant, entreprise partenaire).
  */
-export function AppShell({ orgName, subtitle, nav, children }: {
-  orgName: string; subtitle?: string; nav: NavItem[]; children: ReactNode;
+export function AppShell({ orgName, subtitle, nav, tone = "navy", children }: {
+  orgName: string; subtitle?: string; nav: NavItem[]; tone?: ShellTone; children: ReactNode;
 }) {
   return (
     <div className="min-h-screen bg-surface lg:flex">
       <SkipLink />
-      <Sidebar orgName={orgName} subtitle={subtitle} nav={nav} />
+      <Sidebar orgName={orgName} subtitle={subtitle} nav={nav} tone={tone} />
       <div className="min-w-0 flex-1">
         <main
           id="main-content"

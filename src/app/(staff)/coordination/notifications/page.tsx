@@ -109,7 +109,7 @@ export default async function NotificationsPage({
 }
 
 function Tile({ label, value, tone }: { label: string; value: number; tone?: "warning" | "danger" }) {
-  const color = tone === "danger" ? "text-error" : tone === "warning" ? "text-warning" : "text-brand";
+  const color = tone === "danger" ? "text-error" : tone === "warning" ? "text-warning-ink" : "text-brand";
   return (
     <Card>
       <div className="text-xs text-muted">{label}</div>

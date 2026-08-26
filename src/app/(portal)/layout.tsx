@@ -27,7 +27,7 @@ export default async function PortalLayout({ children }: { children: ReactNode }
   await requireOrgRole(org.id, ["student"]);
 
   return (
-    <AppShell orgName={org.name} subtitle="Espace apprenant" nav={nav}>
+    <AppShell orgName={org.name} subtitle="Espace apprenant" nav={nav} tone="light">
       {children}
     </AppShell>
   );

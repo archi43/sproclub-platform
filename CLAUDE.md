@@ -78,25 +78,57 @@ livrer un écran aux styles inline par défaut ; tout passe par les jetons et le
   en variables CSS `--font-heading` / `--font-body`.
 - Un seul jeu de **design tokens** (couleurs, typo, espacements) ; aucun style ad hoc.
 
-**Direction visuelle : épuré / minimal** (mêmes couleurs de marque, application modernisée) —
-surfaces plates, **filets fins** (`line`) au lieu de bordures marquées + ombres, plus d'air,
-navy réservé aux accents (texte secondaire en `muted`). L'app shell est une **sidebar claire**
-à gauche (rail de nav vertical avec icônes lucide, item actif surligné `brand-tint`, marque en
-haut, déconnexion en bas), qui se replie en **barre + tiroir** sur mobile.
+**Direction visuelle : « Poste de pilotage »** (INC-22, charte inchangée — seule son
+application change). Le navy cesse d'être un accent pour devenir **l'environnement** des rôles
+qui opèrent : rail sombre à gauche, plan de travail clair à droite. Le rouge redevient un
+**signal** (tuile critique, retard, item de nav actif), jamais un décor. Dans la zone de
+contenu, la hiérarchie est portée par **l'échelle typographique** et non par des boîtes :
+chiffres de synthèse en grand (`text-figure`), libellés en petites capitales espacées
+(`text-label`), filets fins, surfaces plates.
 
-**Charte** :
+**Ton de coque, par famille de rôle** (`AppShell tone`) :
+- `navy` — rôles qui **opèrent** (coordination/direction, coach, jury). La coque colorée est
+  aussi le support naturel de la marque d'un autre organisme à l'**étape 7**.
+- `light` — rôles **invités** (apprenant, entreprise partenaire) : un apprenant en formation
+  n'a pas à se retrouver dans un poste de conduite. Mêmes composants en dessous.
+
+**Jetons : une seule source de vérité.** `src/lib/design-tokens.ts` exporte `COLORS`, importé
+par `tailwind.config.ts` **et** audité par `tests/contrast.unit.test.mts`. Une couleur écrite
+en dur ailleurs échapperait à la preuve de contraste : ne jamais le faire.
 - Couleurs : primaire `#24365E` (`brand`), accent `#F74335` ; + `brand-dark #1A2947`,
-  `brand-tint #EEF1F7`, `accent-tint #FEE7E5`, `ink #1A1A1A`, `muted #5B6472` (texte
-  secondaire), `line #E7E8EC` (filet fin), `surface #FAFAFB` (fond quasi blanc),
-  `success #2E7D32`, `warning #B8860B`, `error #C0392B`. (`grey-600`/`grey-300` conservés
-  pour compat mais remplacés par `muted`/`line` dans l'UI.)
+  `brand-mid #8FA3C8`, `brand-tint #EEF1F7`, `accent-tint #FEE7E5`, `ink #1A1A1A`,
+  `muted #5B6472`, `line #E7E8EC`, `surface #FAFAFB`.
+- Coque : `shell #1A2947`, `shell-item #24365E` (item actif), `shell-fg #B9C4DA`,
+  `shell-fg-strong #FFFFFF`, `shell-line #2C3E64`.
+- Sémantiques, avec **variante `ink` obligatoire en texte** quand la version pleine échoue à
+  AA : `success #2E7D32` / `success-ink #276A2B` / `success-tint #E8F2E9` ;
+  `warning #B8860B` / `warning-ink #7A5A07` / `warning-tint #FBF3E0` ;
+  `error #C0392B` / `error-tint #FEE7E5`. (`grey-600`/`grey-300` conservés pour compat.)
 - Typo : titres Montserrat 600/700, texte Hind Madurai 400/500 ; fallbacks `system-ui`.
-- Logo shield `pro/club` dans l'en-tête ; version blanche sur fond bleu, espace de garde.
-- Le rouge sert aux accents, CTA et alertes, **jamais** au petit texte sur blanc (contraste).
+- **Logo** `pro/club` dans `public/brand/` + favicon `src/app/icon.png`. Quatre PNG détourés
+  (`{shield,lockup}` × `{white,navy}`), générés depuis le **logo source fourni par la direction** (PNG 1182 px, canal alpha propre).
+  Servis par la primitive `BrandMark` (`variant` shield/lockup, `tone` onLight/onDark).
+  **Chaque ton a son fichier** : aucune recoloration CSS, pour qu'un masque défaillant ne laisse
+  jamais un aplat plein à la place du logo. `shield` pour les en-têtes et le rail (le nom de
+  l'organisme est déjà en texte à côté), `lockup` quand le logo porte seul l'identité.
+  Décoratif (`alt=""`) par défaut ; passer `label` là où il porte seul l'identité (connexion).
+  L'écu est un logo **au trait fin** : sous ~32 px le filet devient ténu, d'où les tailles
+  relevées dans `BrandMark`. Un SVG reste préférable si la direction en obtient un.
+- Le rouge sert aux accents, CTA et alertes, **jamais** au petit texte sur blanc — règle
+  désormais **prouvée** (`#F74335` mesure 3,6:1, sous le seuil AA de 4,5:1).
+
+**Contraste : prouvé, pas déclaré.** `src/lib/contrast-rules.ts` (pur, sans import, WCAG 2.1)
++ `CHARTE_TEXT_PAIRS` dans `design-tokens.ts` listent **toute** combinaison texte/fond que
+l'interface garantit. `npm run test:design` échoue si l'une d'elles descend sous AA.
+**Ajouter la paire à `CHARTE_TEXT_PAIRS` avant de l'utiliser dans un écran** : c'est le
+garde-fou qui empêche de réintroduire un contraste non conforme. L'accessibilité étant un
+argument commercial auprès des financeurs publics, ce test est la pièce d'audit.
 
 **Primitives d'UI** dans `src/components/ui`, réutilisées partout (aucune page ne les recode) :
 Button, Input/Select/Textarea, Card, Table, Badge, Alert, Tabs, Dialog, Toast, Skeleton,
-EmptyState, PageHeader, FilterBar.
+EmptyState, PageHeader, FilterBar, **StatTile/StatGrid** (bande de synthèse en tête
+d'écran-liste ; les chiffres décrivent la **sélection affichée**, ce que le libellé doit dire).
+`Th`/`Td` acceptent `numeric` (aligné à droite, `tabular-nums`) pour les colonnes de chiffres.
 
 **Filtres des écrans-listes** (`src/components/ui/filter-bar.tsx`) : `FilterBar` +
 `FilterField`/`FilterCheckbox`, rendu **serveur pur** (`<form method="get">` → `searchParams`,
@@ -107,9 +139,11 @@ vertical (`space-y-*` du conteneur, ou `className="mb-6"`). Tout écran-liste pa
 (apprenants, opérations, pilotage, conformité, reporting, exploitation, notifications, vivier).
 
 **App shell et navigation** (`src/components/app-shell.tsx` + `src/components/sidebar.tsx`) :
-- **Sidebar claire à gauche** (desktop) : marque + nom de l'organisme en haut, nav verticale
-  par rôle avec icônes lucide (item actif `brand-tint`/`aria-current`), déconnexion épinglée
-  en bas. Sur mobile : barre supérieure + tiroir (`aria-modal`). Skip-link conservé.
+- **Sidebar à gauche** (desktop), navy ou claire selon `tone` : marque + nom de l'organisme en
+  haut, nav verticale par rôle avec icônes lucide, déconnexion épinglée en bas. L'item actif
+  porte **trois marques simultanées** — fond `shell-item`, filet rouge à gauche et
+  `aria-current="page"` : l'état n'est jamais porté par la seule couleur (RGAA).
+  Sur mobile : barre supérieure + tiroir (`aria-modal`). Skip-link conservé.
 - Le rôle passe ses `NavItem[]` (avec `icon`) au shell ; le contenu occupe la colonne
   principale (conteneur à largeur max, échelle 4/8 px, hiérarchie typo claire, état actif visible).
 
@@ -129,7 +163,12 @@ Chaque domaine métier suit le même triplet, sans exception :
 
 - `src/lib/<domaine>-rules.ts` : règles **pures**, sans base ni horloge, testées hors DB
   (`compliance-rules`, `reporting-rules`, `rgpd-rules`, `ratelimit-rules`, `notification-rules`,
-  `l360-rules`, `talent-rules`, `job-rules`, `availability-rules`, `nav-active`).
+  `l360-rules`, `talent-rules`, `job-rules`, `availability-rules`, `journey-rules`,
+  `search-rules`, `contrast-rules`, `list-summary-rules`, `nav-active`).
+  **Ces modules n'importent rien** : `node --test` ne résout pas l'alias `@/`, donc un
+  cross-import entre règles pures casserait la suite. Si deux domaines ont besoin de la même
+  transformation, c'est l'appelant qui la compose (ex. `progressPercent` appliqué avant
+  `summarizeDossiers`).
 - `src/lib/data/<domaine>.ts` : accès aux données **sous RLS**, client injecté (jamais de
   client global, pour que les tests puissent prouver l'isolation).
 - Un écran dans le route group du rôle concerné, plus une migration numérotée.
@@ -159,6 +198,13 @@ La carte fichier par fichier est dans `STRUCTURE.md`. En cas de doute, `ls -R sr
 - **Les formulaires Fillout SproCLUB n'ont pas d'e-mail** (l'apprenant est un RecordPicker).
   La jointure passe par recordID : Commande directe, ou via la table Soutenances.
 - **`0024` (enum) doit précéder `0025`** (policies qui utilisent la valeur `partner`).
+- **`next build` casse le serveur de dev en cours** : les deux partagent le dossier `.next`, et
+  l'app se retrouve sans CSS (assets en 404). Relancer `npm run dev` après toute vérification
+  par build. C'est arrivé plusieurs fois.
+- **Une couleur de texte ne se choisit pas à l'œil** : `#B8860B` (warning) plafonnait à 3,25:1
+  sur blanc et était **déjà en production** sur quatre écrans ; `#2E7D32` (success) tombait à
+  4,47:1 sur sa propre teinte. Les deux ont désormais une variante `-ink`. Tout nouveau couple
+  texte/fond passe par `CHARTE_TEXT_PAIRS`, sinon il n'est pas prouvé.
 
 ## Modèle de rôles (décision)
 Les rôles sont **par organisme**, portés par `memberships` (org_id, profile_id, role) —

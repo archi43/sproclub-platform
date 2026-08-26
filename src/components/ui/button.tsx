@@ -2,7 +2,7 @@ import type { ButtonHTMLAttributes, ComponentProps } from "react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 
-type Variant = "primary" | "accent" | "secondary" | "ghost" | "danger";
+type Variant = "primary" | "accent" | "secondary" | "ghost" | "danger" | "shell";
 type Size = "sm" | "md" | "lg";
 
 const base =
@@ -15,6 +15,8 @@ const variants: Record<Variant, string> = {
   secondary: "bg-white text-ink border border-line hover:bg-surface",
   ghost: "text-brand hover:bg-brand-tint",
   danger: "bg-error text-white hover:brightness-95",
+  // Contrôle posé sur la coque navy : contraste prouvé par le test de charte.
+  shell: "border border-shell-line text-shell-fg hover:bg-shell-item hover:text-shell-fg-strong",
 };
 const sizes: Record<Size, string> = {
   sm: "h-8 px-3",

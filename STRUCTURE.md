@@ -81,6 +81,19 @@ etaient noyees ont ete remontees dans `CLAUDE.md`.
   `availability_blocks` (exceptions open/closed), `calendar_feeds` (URL d'agenda — **lisible par
   son seul propriétaire, le staff n'y accède pas**), `busy_periods` (occupations, écriture
   service-role) ; `availabilities_own_manage` ouvre la publication au titulaire.
+- `src/lib/journey-rules.ts` (INC-20, pur : alertes de parcours ordonnées par urgence,
+  `progressPercent` tolérant aux deux échelles 0–1 / 0–100) + `src/lib/data/learner-journey.ts` ;
+  écran `mon-parcours` (P.A1).
+- `src/lib/search-rules.ts` (INC-21, pur : assainissement du terme contre l'injection de filtre
+  PostgREST, `buildIlikeOr`) ; recherche câblée dans `data/admin-learners.ts` et `data/coaching.ts`
+  via la primitive `FilterSearch`.
+- `src/lib/design-tokens.ts` (INC-22) — **source de vérité unique des couleurs**, importée par
+  `tailwind.config.ts` et auditée par les tests ; `CHARTE_TEXT_PAIRS` déclare toute combinaison
+  texte/fond garantie AA. `src/lib/contrast-rules.ts` (pur, sans import, WCAG 2.1 : luminance
+  relative, rapport de contraste, seuils AA). `src/lib/list-summary-rules.ts` (pur : synthèse
+  d'une sélection de dossiers, avancement inconnu exclu de la moyenne).
+  Coque à deux tons dans `src/components/sidebar.tsx` (`ShellTone` navy/light) ; primitives
+  `src/components/ui/stat.tsx` (`StatTile`/`StatGrid`).
 - `supabase/migrations/0001` → `0027` ; seed `supabase/seed/sproclub_bootstrap.sql`.
   (`0004` invariants réservation, `0005` normalisation e-mails minuscules à l'écriture,
   `0012` gestion utilisateurs/rôles : désactivation qui coupe l'accès + policies de gestion,

@@ -179,7 +179,7 @@ function Info({ label, value, tone }: { label: string; value: string; tone?: "wa
   return (
     <div>
       <dt className="text-xs font-medium text-muted">{label}</dt>
-      <dd className={`mt-1 text-sm ${tone === "warning" ? "font-medium text-warning" : "text-ink"}`}>{value}</dd>
+      <dd className={`mt-1 text-sm ${tone === "warning" ? "font-medium text-warning-ink" : "text-ink"}`}>{value}</dd>
     </div>
   );
 }
