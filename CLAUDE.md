@@ -106,14 +106,14 @@ en dur ailleurs échapperait à la preuve de contraste : ne jamais le faire.
   `error #C0392B` / `error-tint #FEE7E5`. (`grey-600`/`grey-300` conservés pour compat.)
 - Typo : titres Montserrat 600/700, texte Hind Madurai 400/500 ; fallbacks `system-ui`.
 - **Logo** `pro/club` dans `public/brand/` + favicon `src/app/icon.png`. Quatre PNG détourés
-  (`{shield,lockup}` × `{white,navy}`), générés depuis le masque du logo d'origine — extrait de
-  `SPROPULSE/Presentation_SproCLUB_Platform.pdf`, faute de source vectorielle au dépôt. Servis
-  par la primitive `BrandMark` (`variant` shield/lockup, `tone` onLight/onDark).
+  (`{shield,lockup}` × `{white,navy}`), générés depuis le **logo source fourni par la direction** (PNG 1182 px, canal alpha propre).
+  Servis par la primitive `BrandMark` (`variant` shield/lockup, `tone` onLight/onDark).
   **Chaque ton a son fichier** : aucune recoloration CSS, pour qu'un masque défaillant ne laisse
   jamais un aplat plein à la place du logo. `shield` pour les en-têtes et le rail (le nom de
   l'organisme est déjà en texte à côté), `lockup` quand le logo porte seul l'identité.
   Décoratif (`alt=""`) par défaut ; passer `label` là où il porte seul l'identité (connexion).
-  **Substituer une source vectorielle si elle existe** : le PNG plafonne la netteté en très grand.
+  L'écu est un logo **au trait fin** : sous ~32 px le filet devient ténu, d'où les tailles
+  relevées dans `BrandMark`. Un SVG reste préférable si la direction en obtient un.
 - Le rouge sert aux accents, CTA et alertes, **jamais** au petit texte sur blanc — règle
   désormais **prouvée** (`#F74335` mesure 3,6:1, sous le seuil AA de 4,5:1).
 

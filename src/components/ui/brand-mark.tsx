@@ -8,9 +8,9 @@ type Size = "sm" | "md" | "lg" | "xl";
  * Logo SproCLUB — écu `pro/club` (charte).
  *
  * Deux déclinaisons, deux tons. Les fichiers sont des PNG détourés générés
- * depuis le masque du logo d'origine, donc **jamais recolorés en CSS** : chaque
- * ton a son propre fichier, ce qui évite un aplat plein si un masque CSS
- * échouait. Espace de garde inclus dans l'image.
+ * depuis le logo source fourni par la direction (1182 px, canal alpha propre),
+ * donc **jamais recolorés en CSS** : chaque ton a son propre fichier, ce qui
+ * évite un aplat plein si un masque CSS échouait.
  *
  * - `shield` : l'écu seul, pour les en-têtes et le rail de navigation, où il
  *   côtoie déjà le nom de l'organisme en texte.
@@ -22,10 +22,13 @@ type Size = "sm" | "md" | "lg" | "xl";
  * explicite via `label`.
  */
 
-const SHIELD_RATIO = 316 / 410;
-const LOCKUP_RATIO = 481 / 565;
+// Rapports mesurés sur les fichiers détourés (voir CLAUDE.md pour leur origine).
+const SHIELD_RATIO = 364 / 472;
+const LOCKUP_RATIO = 554 / 650;
 
-const HEIGHTS: Record<Size, number> = { sm: 28, md: 36, lg: 44, xl: 96 };
+// L'écu est un logo au trait fin : sous ~32 px le filet devient ténu. Les
+// tailles du rail ont été relevées en conséquence, après contrôle visuel.
+const HEIGHTS: Record<Size, number> = { sm: 32, md: 40, lg: 48, xl: 104 };
 
 export function BrandMark({
   tone = "onLight",

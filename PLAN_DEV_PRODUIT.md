@@ -255,8 +255,8 @@ coordination du jury. Base Supabase UE, Cal.eu branché.
   gauche, plan de travail clair à droite), sans élément focusable côté navy — l'anneau de focus
   global est en navy et y serait invisible.
   **Vrai logo `pro/club`** : le carré « SC » n'était qu'un substitut, et le logo n'existait dans
-  aucun fichier du dépôt. Extrait du masque alpha de la présentation PDF, décliné en quatre PNG
-  détourés (`{shield,lockup}` × `{white,navy}`) plus un favicon — l'application n'en avait aucun.
+  aucun fichier du dépôt. D'abord extrait de la présentation PDF, puis regénéré depuis la **source fournie par la
+  direction** (PNG 1182 px, alpha propre). Décliné en quatre PNG détourés (`{shield,lockup}` × `{white,navy}`) plus un favicon — l'application n'en avait aucun.
   Chaque ton a son fichier plutôt qu'une recoloration CSS, pour qu'un masque défaillant ne laisse
   jamais un aplat plein à la place du logo. 92 Ko au total, à remplacer par une source
   vectorielle si elle existe.
