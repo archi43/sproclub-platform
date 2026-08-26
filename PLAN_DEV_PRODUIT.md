@@ -254,6 +254,12 @@ coordination du jury. Base Supabase UE, Cal.eu branché.
   et n'héritait donc d'aucune coque. Il la reconstitue en deux panneaux (navy identitaire à
   gauche, plan de travail clair à droite), sans élément focusable côté navy — l'anneau de focus
   global est en navy et y serait invisible.
+  **Vrai logo `pro/club`** : le carré « SC » n'était qu'un substitut, et le logo n'existait dans
+  aucun fichier du dépôt. Extrait du masque alpha de la présentation PDF, décliné en quatre PNG
+  détourés (`{shield,lockup}` × `{white,navy}`) plus un favicon — l'application n'en avait aucun.
+  Chaque ton a son fichier plutôt qu'une recoloration CSS, pour qu'un masque défaillant ne laisse
+  jamais un aplat plein à la place du logo. 92 Ko au total, à remplacer par une source
+  vectorielle si elle existe.
   **Différé** : migration des écrans restants vers l'échelle typographique (les primitives la
   portent déjà, les écrans en héritent) ; bascule confort/compact sur les écrans-listes.
   **Prochaine étape : Étape 7** (ouverture à d'autres organismes).

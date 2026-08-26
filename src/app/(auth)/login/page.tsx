@@ -50,10 +50,8 @@ export default function LoginPage() {
     <main className="min-h-screen lg:grid lg:grid-cols-[minmax(0,42%)_1fr]">
       {/* Panneau d'identité — bande compacte sur mobile, colonne pleine sur desktop */}
       <aside className="flex flex-col justify-between gap-10 bg-shell px-6 py-8 sm:px-10 lg:py-12">
-        <div className="flex items-center gap-3">
-          <BrandMark size="md" tone="onDark" />
-          <span className="font-heading text-sm font-semibold text-shell-fg-strong">SproCLUB</span>
-        </div>
+        {/* Le mot-symbole porte seul l'identité : il lui faut un texte alternatif. */}
+        <BrandMark variant="lockup" size="xl" tone="onDark" label="SproCLUB" />
 
         <div className="max-w-md">
           <p className="text-label font-medium uppercase text-shell-fg">Plateforme de formation</p>

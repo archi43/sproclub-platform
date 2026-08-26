@@ -251,6 +251,12 @@ Incréments livrés (voir `PLAN_DEV_PRODUIT.md`) :
   navy à gauche (marque, ce que l'accès ouvre, et deux faits qui rassurent : code à usage unique,
   hébergement UE), plan de travail clair à droite. Le panneau navy ne porte **aucun élément
   focusable** : l'anneau de focus global est en navy et y serait invisible.
+  **Vrai logo `pro/club`** : le carré « SC » était un substitut. Le logo n'existait dans aucun
+  fichier du dépôt ; il a été extrait du masque alpha de `Presentation_SproCLUB_Platform.pdf`,
+  décliné en quatre PNG détourés (`{shield,lockup}` × `{white,navy}`) dans `public/brand/`, plus
+  un favicon `src/app/icon.png` (l'app n'en avait aucun). `BrandMark` sert la bonne variante
+  selon le ton de la coque ; chaque ton a **son fichier**, pas de recoloration CSS. 92 Ko au
+  total. À remplacer par une source vectorielle si elle existe.
   **Vérifié en réel** : rendu de `coordination/apprenants` sous session staff (coque navy,
   marqueur actif, tuiles alimentées par les dossiers réels).
   Reste : Étape 7 (ouverture à d'autres organismes).
