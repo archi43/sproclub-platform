@@ -3,6 +3,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
 import { adminClient } from "@/lib/supabase/admin";
 import { getMailer, type Mailer } from "@/lib/notifications/mailer";
+import { EXCLUDE_CLOSED } from "@/lib/enrollment-status";
 import {
   buildDueNotifications,
   DEFENSE_REMINDER_DAYS,
@@ -22,7 +23,6 @@ import {
 
 const DAY = 86_400_000;
 const dateOnly = (d: Date) => d.toISOString().slice(0, 10);
-const excludeFinished = "status.is.null,status.neq.Terminé";
 type LearnerEmbed = { first_name: string | null; last_name: string | null; email: string } | null;
 const fullName = (l: LearnerEmbed) => [l?.first_name, l?.last_name].filter(Boolean).join(" ") || (l?.email ?? "—");
 
@@ -53,14 +53,14 @@ export async function gatherInputs(orgId: string, admin: SupabaseClient, today: 
       .eq("org_id", orgId)
       .gte("access_end_date", dateOnly(today))
       .lte("access_end_date", dateOnly(horizonServer))
-      .or(excludeFinished),
+      .or(EXCLUDE_CLOSED),
     admin
       .from("enrollments_ro")
       .select("id, coach_email, pending_reports, learner:learners_ro(first_name, last_name, email)")
       .eq("org_id", orgId)
       .gt("pending_reports", 0)
       .not("coach_email", "is", null)
-      .or(excludeFinished),
+      .or(EXCLUDE_CLOSED),
   ]);
 
   const start = Date.parse(dateOnly(today));

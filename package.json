@@ -12,7 +12,7 @@
     "test": "node --env-file-if-exists=.env.local --test-concurrency=1 --test tests/*.mts",
     "test:isolation": "node --env-file-if-exists=.env.local --test tests/isolation.integration.test.mts",
     "test:booking": "node --env-file-if-exists=.env.local --test tests/booking.integration.test.mts",
-    "test:sync": "node --env-file-if-exists=.env.local --test tests/sync.integration.test.mts",
+    "test:sync": "node --env-file-if-exists=.env.local --test tests/sync.integration.test.mts tests/mapping.unit.test.mts tests/enrollment-status.unit.test.mts",
     "test:admin": "node --env-file-if-exists=.env.local --test tests/admin-rls.integration.test.mts",
     "test:roles": "node --env-file-if-exists=.env.local --test tests/roles.integration.test.mts tests/roles-home.unit.test.mts",
     "test:members": "node --env-file-if-exists=.env.local --test tests/members.integration.test.mts",

@@ -7,11 +7,11 @@ sont restes dans `CLAUDE.md`.
 
 Produit **en ligne** (staging) et prouvé en réel. Base Supabase UE (`zbvohktqfgwajjvnpets`,
 `eu-north-1`) ; app déployée sur **Vercel région `fra1`** : **https://sproclub-platform.vercel.app**.
-Migrations **0001→0027** + seed appliqués. Suite de tests **207/207** verte contre la vraie base
+Migrations **0001→0027** + seed appliqués. Suite de tests **220/220** verte contre la vraie base
 (vérifié le 2026-08-26, 0 sauté ; inclut `test:rgpd` 10, `test:observability` 6,
 `test:notifications` 8, `test:nav` 5, `test:members` 3, `test:l360` 13, `tests/inc14` 7,
 `test:talent` 12, `test:jobs` 11, `test:availability` 29, `test:journey` 9, `test:search` 6,
-`test:design` 17, `test:roles` 12). Exécution **sérialisée**
+`test:design` 17, `test:roles` 12, `test:sync` 15). Exécution **sérialisée**
 (`npm test` → `--test-concurrency=1`) pour éviter la flakiness de rate-limit auth sous concurrence.
 **7 crons Vercel** (sync 05:00, sync 360L filet quotidien 05:45, agendas 06:00, miroir 06:30,
 export BPF lundi 07:00, purge rétention 03:15, relances 08:00) + **workflow GitHub Actions horaire** `sync-l360-hourly`
@@ -266,6 +266,22 @@ Incréments livrés (voir `PLAN_DEV_PRODUIT.md`) :
   **le plus large** décide, car un coach est souvent aussi évaluateur et le portail jury est plus
   étroit que le sien. Les deux cas limites sont traités explicitement plutôt que par un lien mort :
   domaine sans organisme, et compte sans aucun rôle. `test:roles` complété de **6** tests purs.
+- **INC-24 (synchronisation : spécialité, fin prévue, statuts oubliés)** : l'audit de la base a
+  montré `specialty` et `end_date` vides à 0 %. Diagnostic initial erroné (« Airtable ne les
+  remplit pas ») : en réalité **le mapping ne les écrivait nulle part**, alors qu'Airtable porte
+  la donnée. `end_date` ← `Date prévisionnelle de fin`, choisie parmi trois champs de fin parce
+  que c'est la seule renseignée sur les dossiers **actifs** (86 %, contre 7 % pour la « réélle »,
+  posée à la clôture). `specialty` ← `[OBSOLETE]Spécialisation` : le libellé est périmé, pas la
+  donnée (70 % des commandes, 21 spécialisations SAP réelles) ; les valeurs multiples séparées
+  par `;` sont conservées. **Troisième défaut trouvé au passage** : `normalizeStatut` ignorait
+  `1-Prêt à débuter` (22) et `2-Annulée` (19) — 41 dossiers arrivaient sans statut et
+  disparaissaient de tous les compteurs. **Conséquence traitée** : ces dossiers passaient par la
+  branche `status IS NULL` du filtre d'exclusion, donc étaient inclus dans la file d'opérations
+  et les relances ; une fois nommés, les « Annulée » y seraient restés à tort. D'où
+  `src/lib/enrollment-status.ts` (vocabulaire + `EXCLUDE_CLOSED`), partagé par `data/operations`
+  et `data/notifications`. **Piège désamorcé** : `.or(a,b)` est un OU — enchaîner deux `neq` au
+  premier niveau n'exclut plus rien (vérifié en réel : 530/530 retenus au lieu de 176). Les
+  exclusions passent par un `and(...)` imbriqué. `test:sync` complété de **13** tests purs.
 
   **Vérifié en réel** : rendu de `coordination/apprenants` sous session staff (coque navy,
   marqueur actif, tuiles alimentées par les dossiers réels).
