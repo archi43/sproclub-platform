@@ -1,0 +1,46 @@
+# Sync Airtable → Postgres au quart d'heure (INC-25).
+#
+# Pourquoi ici plutôt que dans vercel.json : le plan Vercel Hobby n'autorise que
+# des crons QUOTIDIENS. Le cron Vercel de 5 h est conservé comme filet ; la
+# fraîcheur réelle vient de ce workflow, gratuit et déjà éprouvé sur sync-l360.
+#
+# Coût mesuré : un passage complet dure ~33 s (537 commandes + 2 264 soumissions
+# Fillout). Quatre passages par heure restent très en deçà des quotas Airtable
+# (5 requêtes/seconde par base) et du temps de calcul Vercel.
+#
+# Skip propre tant que le secret CRON_SECRET n'est pas posé dans GitHub
+# (Settings → Secrets and variables → Actions).
+name: sync-airtable-quarterly
+
+on:
+  schedule:
+    - cron: "*/15 * * * *"
+  workflow_dispatch:
+
+# Une synchronisation à la fois : deux passages simultanés se disputeraient les
+# mêmes lignes et le quota Airtable, sans rien gagner en fraîcheur.
+concurrency:
+  group: sync-airtable
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Appeler la route de sync (CRON_SECRET)
+        env:
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+          SYNC_URL: https://sproclub-platform.vercel.app/api/admin/sync-airtable
+        run: |
+          if [ -z "$CRON_SECRET" ]; then
+            echo "CRON_SECRET absent — job ignoré (poser le secret GitHub pour activer le quart d'heure)."
+            exit 0
+          fi
+          code=$(curl -s --max-time 300 -o resp.json -w '%{http_code}' \
+            -H "x-cron-secret: $CRON_SECRET" "$SYNC_URL")
+          cat resp.json; echo
+          if [ "$code" != "200" ]; then
+            echo "::error::sync-airtable a répondu HTTP $code"
+            exit 1
+          fi
