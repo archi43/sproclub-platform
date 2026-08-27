@@ -273,6 +273,28 @@ coordination du jury. Base Supabase UE, Cal.eu branché.
   explicitement au lieu d'un lien mort : domaine sans organisme résolu, et compte sans aucun rôle
   dans l'organisme. `test:roles` complété de **6** tests purs (couverture de tous les rôles,
   arbitrage multi-rôles, absence de rôle).
+- ✅ **INC-24** (synchronisation : spécialité, fin prévue, statuts oubliés) : un audit de la base
+  de production a montré `specialty` et `end_date` renseignés sur **1 dossier sur 530**, alors que
+  les deux écrans du CDC les affichent. Diagnostic initial **erroné** — j'avais conclu qu'Airtable
+  ne les remplissait pas ; en vérifiant le schéma source, c'est **le mapping qui ne les écrivait
+  nulle part**. `end_date` ← `Date prévisionnelle de fin`, retenue parmi trois champs de fin parce
+  que c'est la seule renseignée sur les dossiers **actifs** (86 %, contre 7 % pour la « réélle »,
+  qui n'est posée qu'à la clôture). `specialty` ← `[OBSOLETE]Spécialisation` : le libellé est
+  périmé, pas la donnée (70 % des commandes, 21 spécialisations SAP réelles).
+  **Troisième défaut trouvé au passage** : `normalizeStatut` ne connaissait ni `1-Prêt à débuter`
+  (22 dossiers) ni `2-Annulée` (19) — ces 41 dossiers arrivaient sans statut et échappaient à tous
+  les compteurs, dont ceux du pilotage.
+  **Conséquence traitée plutôt que subie** : sans statut, ces dossiers passaient par la branche
+  `status IS NULL` du filtre d'exclusion et étaient donc **inclus** dans la file d'opérations et
+  les relances. Une fois nommés, les « Annulée » y seraient restés — on aurait relancé des
+  apprenants dont la commande n'a jamais démarré. D'où `src/lib/enrollment-status.ts` : vocabulaire
+  des six statuts, distinction actif/clos, et filtre `EXCLUDE_CLOSED` partagé par
+  `data/operations` et `data/notifications`.
+  **Piège désamorcé** : `.or(a,b)` est un OU, donc `status.neq.Terminé,status.neq.Annulée` au
+  premier niveau signifie « ≠ l'un OU ≠ l'autre », toujours vrai — le filtre n'exclurait plus
+  rien. Vérifié en réel : la forme naïve retient **530/530** dossiers au lieu de 176. Les
+  exclusions passent par un `and(...)` imbriqué, et un test fige la chaîne produite.
+  `test:sync` complété de **13** tests purs. Aucune migration : les colonnes existent depuis `0001`.
   **Prochaine étape : Étape 7** (ouverture à d'autres organismes).
 
 Suite `main` : **branche → PR → CI verte → merge → déploiement** (previews Vercel actifs).

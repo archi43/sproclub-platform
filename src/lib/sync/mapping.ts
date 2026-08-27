@@ -18,6 +18,17 @@ export const SRC = {
   dateDebContract: "Date contractuelle de début de formation",
   dateDebReelle: "Date réelle de début de formation",
   dateFinAcces: "Date de fin des accès",
+  // Fin prévue. Trois champs de fin coexistent dans la base : le rollup
+  // « prévisionnelle » est le seul renseigné sur les dossiers ACTIFS (86 %),
+  // « réélle » n'étant posée qu'à la clôture (7 % des actifs). L'apprenant a
+  // besoin de la première, pas de la seconde.
+  dateFinPrev: "Date prévisionnelle de fin",
+  dateFinPlan: "Date planifiée de fin de formation",
+  dateFinReelle: "Date réélle de fin de formation", // faute de frappe dans la base
+  // Spécialisation SAP (EWM, FICO, MM, SD, PP QM, ABAP…). Le champ porte encore
+  // le préfixe « [OBSOLETE] » côté Airtable, mais il reste alimenté sur 70 % des
+  // commandes : c'est le libellé qui est périmé, pas la donnée.
+  specialisation: "[OBSOLETE]Spécialisation",
   site: "Site de réalisation",
   coachEmail: "Email coach référent",
   avancement: "Avancement réél",
@@ -89,11 +100,31 @@ const keyword = (v: string | undefined, table: Array<[RegExp, string]>, fallback
 // --- domain normalizers -----------------------------------------------------
 export const normalizeEmail = (v: unknown): string | undefined => asString(v)?.toLowerCase();
 
+/**
+ * Statut du dossier. La base préfixe ses valeurs (`3-En cours`), d'où le retrait
+ * du numéro d'ordre avant reconnaissance.
+ *
+ * `Prêt à débuter` et `Annulée` manquaient : 41 dossiers arrivaient donc avec un
+ * statut vide et disparaissaient silencieusement de tous les compteurs — alors
+ * qu'un apprenant sur le point de démarrer est précisément celui qu'il faut voir.
+ * Toute valeur inconnue reste `undefined` : mieux vaut un trou visible qu'un
+ * dossier rangé dans la mauvaise case.
+ */
 const normalizeStatut = (v: unknown): string | undefined =>
   keyword((asSelect(v) ?? "").replace(/^\s*\d+\s*[-.]\s*/, ""), [
     [/termin/i, "Terminé"], [/cours/i, "En cours"], [/pause/i, "En pause"],
-    [/abandon/i, "Abandon"], [/onboard/i, "Onboarding"], [/prospect/i, "Prospect"],
+    [/abandon/i, "Abandon"], [/annul/i, "Annulée"],
+    [/(pr[êe]t|d[ée]buter)/i, "Prêt à débuter"],
+    [/onboard/i, "Onboarding"], [/prospect/i, "Prospect"],
   ]);
+
+/** Spécialisation : la base sépare les valeurs multiples par `;`. On garde la
+ *  liste lisible plutôt que d'en perdre une. */
+const normalizeSpecialite = (v: unknown): string | undefined => {
+  const s = asString(v);
+  if (!s) return undefined;
+  return s.split(";").map((p) => p.trim()).filter(Boolean).join(" · ") || undefined;
+};
 const normalizeFinanceur = (v: unknown): string | undefined =>
   keyword(asSelect(v), [
     [/cpf/i, "CPF"], [/entreprise/i, "Entreprise"],
@@ -134,9 +165,12 @@ export interface LearnerRow {
 export interface EnrollmentRow {
   airtable_record_id: string;
   program?: string;
+  specialty?: string;
   status?: string;
   financer?: string;
   start_date?: string;
+  /** Fin prévue de la formation (à ne pas confondre avec la fin des accès). */
+  end_date?: string;
   access_end_date?: string;
   coach_email?: string;
   site?: string;
@@ -186,6 +220,10 @@ export function buildEnrollment(rec: SourceRecord): EnrollmentRow {
     status: normalizeStatut(g(SRC.statut)),
     financer: normalizeFinanceur(g(SRC.financeur)),
     start_date: asDate(g(SRC.dateDebReelle)) ?? asDate(g(SRC.dateDebContract)),
+    // Fin prévue, du plus fiable au moins fiable sur un dossier en cours.
+    end_date:
+      asDate(g(SRC.dateFinPrev)) ?? asDate(g(SRC.dateFinPlan)) ?? asDate(g(SRC.dateFinReelle)),
+    specialty: normalizeSpecialite(g(SRC.specialisation)),
     access_end_date: asDate(g(SRC.dateFinAcces)),
     coach_email: normalizeEmail(g(SRC.coachEmail)),
     site: normalizeSite(g(SRC.site)),

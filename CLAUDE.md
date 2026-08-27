@@ -198,6 +198,18 @@ La carte fichier par fichier est dans `STRUCTURE.md`. En cas de doute, `ls -R sr
 - **Les formulaires Fillout SproCLUB n'ont pas d'e-mail** (l'apprenant est un RecordPicker).
   La jointure passe par recordID : Commande directe, ou via la table Soutenances.
 - **`0024` (enum) doit précéder `0025`** (policies qui utilisent la valeur `partner`).
+- **`.or(a,b)` de PostgREST est un OU, pas un ET.** Enchaîner deux exclusions au premier niveau
+  (`status.neq.X,status.neq.Y`) ne filtre plus rien : « ≠ X OU ≠ Y » est toujours vrai. Vérifié
+  en réel — la forme naïve retenait 530 dossiers sur 530. Dès la deuxième valeur, grouper dans
+  un `and(...)` imbriqué. Le filtre d'exclusion des dossiers clos vit dans
+  `src/lib/enrollment-status.ts` et un test fige la chaîne produite.
+- **Les statuts Airtable sont préfixés** (`3-En cours`). `normalizeStatut` retire le numéro
+  d'ordre, mais **toute valeur inconnue devient `null`** — et un dossier sans statut échappe
+  silencieusement à tous les compteurs. C'est arrivé pour `Prêt à débuter` et `Annulée` (41
+  dossiers). Vérifier la liste réelle des valeurs source avant de supposer qu'elle est couverte.
+- **Un champ vide à l'écran ne veut pas dire une source vide.** `specialty` et `end_date`
+  affichaient un blanc alors qu'Airtable portait la donnée : c'est le mapping qui ne l'écrivait
+  pas. Regarder `src/lib/sync/mapping.ts` avant d'accuser la source.
 - **`next build` casse le serveur de dev en cours** : les deux partagent le dossier `.next`, et
   l'app se retrouve sans CSS (assets en 404). Relancer `npm run dev` après toute vérification
   par build. C'est arrivé plusieurs fois.

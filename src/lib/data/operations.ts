@@ -1,5 +1,6 @@
 import "server-only";
 import { createClient } from "@/lib/supabase/server";
+import { EXCLUDE_CLOSED } from "@/lib/enrollment-status";
 
 /**
  * Opérations pédagogiques — the coordinator's weekly priorized task queue
@@ -16,12 +17,10 @@ export const SERVER_ALERT_DAYS = 30;
 /** Stronger (red) threshold. */
 export const SERVER_URGENT_DAYS = 7;
 
-// PostgREST ANDs every top-level filter, and `.or(...)` is just one more
-// predicate in that AND — so `.eq("org_id", …).or(excludeFinished)` means
-// `org_id = … AND (status IS NULL OR status <> 'Terminé')`. The `.or` never
-// overrides the org scope; keep org_id (and any other filter) as separate
-// chained calls, not inside this string.
-const excludeFinished = "status.is.null,status.neq.Terminé";
+// Le filtre d'exclusion des dossiers clos vit dans `@/lib/enrollment-status`
+// (ainsi que le piège OU/ET qu'il désamorce). Rappel de portée : `.or(...)` est
+// un prédicat de plus dans le ET de PostgREST, il n'élargit jamais le cadrage
+// par organisme — garder `org_id` en appel chaîné séparé.
 const dateOnly = (d: Date) => d.toISOString().slice(0, 10);
 
 type LearnerEmbed = { first_name: string | null; last_name: string | null; email: string } | null;
@@ -129,7 +128,7 @@ export async function getServersToFree(orgId: string, program?: string): Promise
     .eq("org_id", orgId)
     .gte("access_end_date", dateOnly(today))
     .lte("access_end_date", dateOnly(horizon))
-    .or(excludeFinished)
+    .or(EXCLUDE_CLOSED)
     .order("access_end_date", { ascending: true });
   if (program) q = q.eq("program", program);
   const { data, error } = await q;
@@ -160,7 +159,7 @@ export async function getLateLearners(orgId: string, program?: string): Promise<
     .select("id, learner_id, program, status, late_days, learner:learners_ro(first_name, last_name, email)")
     .eq("org_id", orgId)
     .gt("late_days", 0)
-    .or(excludeFinished)
+    .or(EXCLUDE_CLOSED)
     .order("late_days", { ascending: false })
     .limit(100);
   if (program) q = q.eq("program", program);
@@ -187,7 +186,7 @@ export async function getPendingReports(orgId: string, program?: string): Promis
     .select("id, learner_id, program, pending_reports, learner:learners_ro(first_name, last_name, email)")
     .eq("org_id", orgId)
     .gt("pending_reports", 0)
-    .or(excludeFinished)
+    .or(EXCLUDE_CLOSED)
     .order("pending_reports", { ascending: false })
     .limit(100);
   if (program) q = q.eq("program", program);
@@ -212,7 +211,7 @@ export async function operationsPrograms(orgId: string): Promise<string[]> {
     .from("enrollments_ro")
     .select("program")
     .eq("org_id", orgId)
-    .or(excludeFinished)
+    .or(EXCLUDE_CLOSED)
     .limit(2000);
   return [...new Set((data ?? []).map((r) => r.program).filter(Boolean) as string[])].sort();
 }
