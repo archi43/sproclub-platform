@@ -31,6 +31,16 @@ export const OTP_VERIFY_LIMIT: RateLimit = { bucket: "otp-verify", windowSeconds
 export const OTP_VERIFY_EMAIL_LIMIT: RateLimit = { bucket: "otp-verify-email", windowSeconds: 15 * 60, max: 5 };
 
 /**
+ * Synchronisation déclenchée à la main, par organisme : 4 par 15 minutes.
+ *
+ * Le cadrage n'est pas la sécurité (l'action est déjà derrière une garde de
+ * rôle) mais le coût : un passage complet dure une trentaine de secondes et
+ * consomme du quota Airtable. Quatre par quart d'heure laisse enchaîner
+ * « je corrige dans Airtable, je resynchronise » sans permettre de marteler.
+ */
+export const MANUAL_SYNC_LIMIT: RateLimit = { bucket: "manual-sync", windowSeconds: 15 * 60, max: 4 };
+
+/**
  * Derive a stable client identifier from proxy-aware headers. On Vercel the real
  * client IP is exposed via `x-real-ip` (set by the platform, not the caller), so
  * we prefer it over `x-forwarded-for` (whose leftmost entry can be spoofed by the

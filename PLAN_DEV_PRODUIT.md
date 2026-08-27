@@ -273,6 +273,30 @@ coordination du jury. Base Supabase UE, Cal.eu branché.
   explicitement au lieu d'un lien mort : domaine sans organisme résolu, et compte sans aucun rôle
   dans l'organisme. `test:roles` complété de **6** tests purs (couverture de tous les rôles,
   arbitrage multi-rôles, absence de rôle).
+- ✅ **INC-25** (fraîcheur des données) : « peut-on avoir du temps réel ? ». Deux notions se
+  cachaient derrière : la **fraîcheur** (à quel point la donnée est récente) et la **réactivité**
+  (l'écran se met à jour sans rafraîchir). Le goulot était la fraîcheur — la donnée naît dans
+  Airtable et la synchronisation ne passait qu'une fois par jour. Brancher Supabase Realtime
+  par-dessus n'aurait rien gagné : l'écran aurait réagi instantanément à un changement quotidien.
+  Mesure préalable : un passage complet dure **33 s** (537 commandes + 2 264 soumissions Fillout),
+  très en deçà des quotas Airtable (5 req/s par base). D'où le workflow
+  **`sync-airtable-quarterly`** — GitHub Actions **toutes les 15 minutes**, le plan Vercel Hobby
+  n'autorisant que du quotidien — avec `concurrency` pour interdire deux passages simultanés qui
+  se disputeraient les mêmes lignes. Le cron Vercel de 5 h reste un filet. **Fraîcheur ramenée de
+  24 h à 15 min.**
+  **Bouton « Synchroniser maintenant »** sur l'écran Exploitation, pour le cas « je viens de
+  corriger une commande dans Airtable » : action serveur derrière garde direction/coordinator, le
+  client service-role n'étant construit **qu'après** la garde ; déclenchement journalisé avec son
+  auteur ; cadencé à 4 par 15 min et par organisme — ce cadrage vise le coût, pas la sécurité,
+  l'action étant déjà gardée. `revalidatePath` sur les écrans-listes, faute de quoi le rendu
+  serveur resterait sur l'ancienne donnée malgré la mise à jour.
+  La séquence de synchronisation est extraite dans `src/lib/sync/pipeline.ts` et partagée par le
+  cron et le bouton : la dupliquer aurait garanti qu'ils divergent.
+  **Écartés, avec leurs raisons** : *Supabase Realtime* (aucun gain tant que la donnée ne bouge
+  qu'à la synchronisation ; à reconsidérer pour les écrans où deux personnes agissent en même
+  temps, affectation du jury et modération d'offres) ; *webhooks Airtable* (vrai push, mais
+  endpoint public, enregistrement à renouveler tous les 7 jours et gestion de curseur — à
+  reprendre seulement si 15 minutes ne suffisent pas).
   **Prochaine étape : Étape 7** (ouverture à d'autres organismes).
 
 Suite `main` : **branche → PR → CI verte → merge → déploiement** (previews Vercel actifs).

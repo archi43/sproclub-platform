@@ -229,7 +229,8 @@ le claim JWT `app_metadata.org_id` (robuste avec le pooling PostgREST).
   tables que la migration crée ; l'ordre inverse casse la production.
 - **`npm test` est sérialisé** (`--test-concurrency=1`). Le rate-limit d'authentification
   Supabase rend la suite instable en parallèle : ne pas paralléliser pour gagner du temps.
-- **7 crons Vercel** + un workflow GitHub Actions horaire `sync-l360-hourly`. Le plan Vercel
+- **7 crons Vercel** + **deux workflows GitHub Actions** : `sync-l360-hourly` (horaire) et
+  `sync-airtable-quarterly` (**toutes les 15 min**, INC-25). Le plan Vercel
   Hobby n'autorise que des crons quotidiens, l'horaire passe donc par Actions (secret
   `CRON_SECRET` à poser dans GitHub).
 - Dépôt **public**, merge bloqué sans CI verte (ruleset `main-ci-required`). La CI monte un

@@ -1,17 +1,16 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { timingSafeEqual } from "node:crypto";
 import { adminClient } from "@/lib/supabase/admin";
-import { fetchCommandes, fetchSoutenanceCommandeMap, AirtableNotConfiguredError } from "@/lib/sync/airtable-source";
-import { syncCommandes } from "@/lib/sync/run";
-import { fetchFilloutSubmissions } from "@/lib/sync/fillout-source";
-import { syncFillout } from "@/lib/sync/fillout";
-import { pushCoachingReports } from "@/lib/sync/airtable-writeback";
-import { logOpsEvent } from "@/lib/data/ops";
+import { runAirtableSync } from "@/lib/sync/pipeline";
 
 /**
- * Airtable → Postgres sync trigger (cron / manual). Trusted server job with the
- * service-role client, protected by CRON_SECRET. Accepts Vercel Cron (GET +
- * Authorization Bearer) and manual calls (x-cron-secret). Airtable is read-only.
+ * Déclencheur Airtable → Postgres (cron). Job serveur de confiance, client
+ * service-role, protégé par `CRON_SECRET`. Accepte le cron Vercel (GET +
+ * Authorization Bearer) et l'appel manuel (`x-cron-secret`). Airtable est lu
+ * seul ; le seul retour sortant est le write-back en création.
+ *
+ * La séquence elle-même vit dans `@/lib/sync/pipeline` : l'écran Exploitation
+ * la déclenche par le même chemin, derrière une garde de rôle.
  */
 function secretMatches(provided: string | null, expected: string): boolean {
   if (!provided) return false;
@@ -45,57 +44,7 @@ async function runSync(request: NextRequest) {
   const { data: org } = await admin.from("organizations").select("id").eq("slug", slug).single();
   if (!org) return NextResponse.json({ error: `org '${slug}' not found` }, { status: 404 });
 
-  try {
-    const source = await fetchCommandes();
-    const stats = await syncCommandes(admin, org.id as string, source);
-
-    // INC-14 — Fillout → coaching_reports (non-fatal : le pull Commandes prime).
-    let fillout: unknown = { skipped: "non configuré" };
-    try {
-      const submissions = await fetchFilloutSubmissions();
-      if (submissions.length > 0) {
-        // Map Soutenance → Commande (best-effort) : résout les formulaires
-        // d'évaluation/soutenance dont le picker vise la table Soutenances.
-        let soutenanceMap = new Map<string, string>();
-        try {
-          soutenanceMap = await fetchSoutenanceCommandeMap();
-        } catch (err) {
-          const message = err instanceof Error ? err.message : "soutenance map failed";
-          await logOpsEvent({ orgId: org.id as string, level: "warn", source: "cron.sync", message: "Map Soutenance→Commande indisponible (jointure partielle)", detail: message });
-        }
-        fillout = await syncFillout(admin, org.id as string, submissions, soutenanceMap);
-      }
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "fillout sync failed";
-      fillout = { error: message };
-      await logOpsEvent({ orgId: org.id as string, level: "error", source: "cron.sync", message: "Échec du pull Fillout", detail: message });
-    }
-
-    // INC-14 — write-back CR → Airtable (non-fatal ; inactif tant que
-    // AIRTABLE_WRITEBACK_ENABLED n'est pas posé avec un token en écriture).
-    let writeback: unknown;
-    try {
-      writeback = await pushCoachingReports(admin, org.id as string);
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "writeback failed";
-      writeback = { error: message };
-      await logOpsEvent({ orgId: org.id as string, level: "error", source: "cron.sync", message: "Échec du write-back Airtable", detail: message });
-    }
-
-    return NextResponse.json({ ok: true, org: slug, stats, fillout, writeback });
-  } catch (err) {
-    if (err instanceof AirtableNotConfiguredError) {
-      return NextResponse.json({ ok: false, error: err.message }, { status: 503 });
-    }
-    const message = err instanceof Error ? err.message : "sync failed";
-    // Best-effort failure log for observability (domain log + unified ops feed).
-    await admin.from("sync_log").insert({
-      entity: "commandes_formation",
-      direction: "airtable_to_pg",
-      status: "error",
-      detail: message,
-    });
-    await logOpsEvent({ orgId: org.id as string, level: "error", source: "cron.sync", message: "Échec de la synchronisation Airtable", detail: message });
-    return NextResponse.json({ ok: false, error: message }, { status: 502 });
-  }
+  const result = await runAirtableSync(admin, org.id as string, slug, "cron");
+  if (result.ok) return NextResponse.json(result);
+  return NextResponse.json(result, { status: result.notConfigured ? 503 : 502 });
 }

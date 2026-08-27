@@ -14,7 +14,9 @@ Migrations **0001→0027** + seed appliqués. Suite de tests **207/207** verte c
 `test:design` 17, `test:roles` 12). Exécution **sérialisée**
 (`npm test` → `--test-concurrency=1`) pour éviter la flakiness de rate-limit auth sous concurrence.
 **7 crons Vercel** (sync 05:00, sync 360L filet quotidien 05:45, agendas 06:00, miroir 06:30,
-export BPF lundi 07:00, purge rétention 03:15, relances 08:00) + **workflow GitHub Actions horaire** `sync-l360-hourly`
+export BPF lundi 07:00, purge rétention 03:15, relances 08:00) + **deux workflows GitHub Actions** :
+`sync-l360-hourly` (horaire) et `sync-airtable-quarterly` (**toutes les 15 min**) — les crons Vercel de 5 h
+et 5 h 45 restent des filets quotidiens
 (le plan Vercel Hobby n'autorise que des crons quotidiens ; l'horaire passe par Actions,
 activé en posant le secret `CRON_SECRET` dans GitHub). Note déploiement :
 appliquer chaque migration **avant** le code (0012 : garde de rôle lit `memberships.deactivated_at` ;
@@ -266,6 +268,22 @@ Incréments livrés (voir `PLAN_DEV_PRODUIT.md`) :
   **le plus large** décide, car un coach est souvent aussi évaluateur et le portail jury est plus
   étroit que le sien. Les deux cas limites sont traités explicitement plutôt que par un lien mort :
   domaine sans organisme, et compte sans aucun rôle. `test:roles` complété de **6** tests purs.
+- **INC-25 (fraîcheur des données)** : la donnée naît dans Airtable et la synchro tournait **une
+  fois par jour**. Le vrai goulot n'était donc pas l'interface mais la cadence de la source —
+  brancher du temps réel sur une synchro quotidienne n'aurait rien gagné. Mesure faite : un
+  passage complet dure **33 s** (537 commandes + 2 264 soumissions Fillout), très en deçà des
+  quotas Airtable. D'où **`sync-airtable-quarterly`** : GitHub Actions toutes les 15 minutes
+  (le plan Vercel Hobby n'autorise que du quotidien), avec `concurrency` pour interdire deux
+  passages simultanés, et le cron Vercel de 5 h conservé comme filet. Fraîcheur ramenée de 24 h
+  à 15 min. **Bouton « Synchroniser maintenant »** sur l'écran Exploitation pour le cas « je
+  viens de corriger dans Airtable » : action serveur derrière garde direction/coordinator,
+  client service-role construit **après** la garde, déclenchement journalisé avec son auteur,
+  cadencé à 4 par 15 min par organisme (le coût, pas la sécurité), et `revalidatePath` sur les
+  écrans-listes sans quoi le rendu serveur resterait sur l'ancienne donnée. La séquence est
+  extraite dans `src/lib/sync/pipeline.ts`, partagée par le cron et le bouton : la dupliquer
+  aurait garanti qu'ils divergent. **Non retenu** : Supabase Realtime (aucun gain tant que la
+  donnée ne bouge qu'à la synchro) et les webhooks Airtable (vrai push, mais enregistrement à
+  renouveler tous les 7 jours et gestion de curseur — à reconsidérer si 15 min ne suffit pas).
 
   **Vérifié en réel** : rendu de `coordination/apprenants` sous session staff (coque navy,
   marqueur actif, tuiles alimentées par les dossiers réels).
