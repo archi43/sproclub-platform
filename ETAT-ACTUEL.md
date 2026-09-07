@@ -7,10 +7,10 @@ sont restes dans `CLAUDE.md`.
 
 Produit **en ligne** (staging) et prouvé en réel. Base Supabase UE (`zbvohktqfgwajjvnpets`,
 `eu-north-1`) ; app déployée sur **Vercel région `fra1`** : **https://sproclub-platform.vercel.app**.
-Migrations **0001→0028** + seed appliqués. Suite de tests **228/228** verte contre la vraie base
+Migrations **0001→0028** + seed appliqués. Suite de tests **231/231** verte contre la vraie base
 (vérifié le 2026-08-26, 0 sauté ; inclut `test:rgpd` 10, `test:observability` 6,
 `test:notifications` 8, `test:nav` 5, `test:members` 3, `test:l360` 13, `tests/inc14` 7,
-`test:talent` 12, `test:jobs` 11, `test:availability` 29, `test:journey` 9, `test:search` 6,
+`test:talent` 12, `test:jobs` 11, `test:availability` 32, `test:journey` 9, `test:search` 6,
 `test:design` 17, `test:roles` 12, `test:sync` 23). Exécution **sérialisée**
 (`npm test` → `--test-concurrency=1`) pour éviter la flakiness de rate-limit auth sous concurrence.
 **7 crons Vercel** (sync 05:00, sync 360L filet quotidien 05:45, agendas 06:00, miroir 06:30,
@@ -324,6 +324,22 @@ Incréments livrés (voir `PLAN_DEV_PRODUIT.md`) :
   **Reste avant activation** : appliquer `0028`, poser un token Airtable en écriture et
   `AIRTABLE_WRITEBACK_ENABLED=true`. À vide aujourd'hui : les deux seules soutenances en base
   sont sur des dossiers de test sans commande Airtable, donc écartées par la garde.
+- **INC-27 (l'agenda ne porte plus que l'invitation)** : décision d'architecture — la
+  **plateforme** porte la disponibilité, Cal.eu ne sert plus qu'à créer l'événement et envoyer
+  les invitations. Constat qui l'a motivée : **aucun agenda Google n'est connecté à Cal.eu**
+  (`connectedCalendars: 0`, aucune destination d'écriture), et surtout `bookSlot` ne créait un
+  événement que pour les créneaux du **miroir** (`cal:`) — une soutenance réservée sur une plage
+  déclarée par un coach (`self:`) n'arrivait donc dans l'agenda de **personne**. Corrigé :
+  `bookingStartRef` (règle pure) ramène les deux origines à la même heure ISO, le préfixe `cal:`
+  encapsulant déjà une heure ; `bookSlot` appelle désormais le fournisseur dans les deux cas.
+  **L'échec d'invitation devient non bloquant** : l'agenda n'arbitrant plus, une panne Cal.eu ne
+  doit pas empêcher de réserver — elle est journalisée en `warn` pour que l'absence d'invitation
+  soit visible plutôt que silencieuse. Conséquence pratique : **un seul compte Cal.eu suffit**,
+  coachs et jury n'en ont pas besoin — ils déclarent leurs plages dans la plateforme (INC-19) et
+  reçoivent l'invitation en tant qu'invités. `test:availability` complété de **3** tests purs.
+  **Différé** : le miroir `cal:` reste actif tant que les coachs n'ont pas publié leurs plages
+  (688 créneaux du miroir contre 0 déclaré aujourd'hui) ; l'éteindre maintenant ne laisserait
+  aucun créneau réservable. À couper une fois la déclaration adoptée.
 
   **Vérifié en réel** : rendu de `coordination/apprenants` sous session staff (coque navy,
   marqueur actif, tuiles alimentées par les dossiers réels).

@@ -4,6 +4,8 @@ import type { Availability, BookingKind, Reservation } from "@/lib/types";
 import { createReservation } from "@/lib/data/reservations";
 import { getBookingProvider } from "@/lib/booking/calcom";
 import { ProviderNotConfiguredError, type BookingProvider } from "@/lib/booking/provider";
+import { bookingStartRef } from "@/lib/availability-rules";
+import { logOpsEvent } from "@/lib/data/ops";
 
 /**
  * Booking orchestration: create the provider (Cal.com) booking first, then
@@ -37,19 +39,35 @@ function resolveProvider(): BookingProvider | null {
 export async function bookSlot(supabase: SupabaseClient, input: BookSlotInput): Promise<Reservation> {
   const { availability } = input;
   const provider = resolveProvider();
-  const calBacked = availability.calcom_ref?.startsWith("cal:") ?? false;
 
+  // INC-27 — la plateforme porte la disponibilité ; Cal.eu ne sert plus qu'à
+  // créer l'événement et porter les invitations. Un créneau déclaré par un
+  // coach (`self:`) donne donc lieu à une invitation comme un créneau du
+  // miroir : sans cela, personne ne verrait le rendez-vous dans son agenda.
   let calcomBookingId: string | undefined;
-  if (provider && calBacked) {
-    const booking = await provider.createBooking({
-      slotRef: availability.calcom_ref!.slice("cal:".length),
-      kind: input.kind,
-      learnerEmail: input.learnerEmail,
-      // Jury guests are added when coordination assigns evaluators, not at booking.
-      inviteeEmails: [],
-      metadata: { orgId: input.orgId, enrollmentId: input.enrollmentId },
-    });
-    calcomBookingId = booking.providerBookingId;
+  if (provider) {
+    try {
+      const booking = await provider.createBooking({
+        slotRef: bookingStartRef(availability.calcom_ref, availability.starts_at),
+        kind: input.kind,
+        learnerEmail: input.learnerEmail,
+        // Jury guests are added when coordination assigns evaluators, not at booking.
+        inviteeEmails: [],
+        metadata: { orgId: input.orgId, enrollmentId: input.enrollmentId },
+      });
+      calcomBookingId = booking.providerBookingId;
+    } catch (err) {
+      // L'agenda n'arbitre plus : un échec d'invitation ne doit pas empêcher de
+      // réserver. On le journalise pour que l'absence d'invitation soit visible
+      // plutôt que silencieuse.
+      await logOpsEvent({
+        orgId: input.orgId,
+        level: "warn",
+        source: "booking.calendar",
+        message: "Réservation enregistrée sans invitation d'agenda",
+        detail: err instanceof Error ? err.message : "createBooking failed",
+      });
+    }
   }
 
   try {
