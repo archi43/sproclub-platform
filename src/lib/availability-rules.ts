@@ -47,6 +47,28 @@ export interface Slot {
 
 /** Préfixe des créneaux issus d'une déclaration personnelle (INC-19). */
 export const SELF_SLOT_PREFIX = "self:";
+export const MIRROR_SLOT_PREFIX = "cal:";
+
+/**
+ * Heure de début à envoyer au fournisseur d'agenda (INC-27).
+ *
+ * Décision : la **plateforme** porte la disponibilité, Cal.eu ne sert plus qu'à
+ * créer l'événement et envoyer les invitations. Un créneau déclaré par un coach
+ * (`self:`) doit donc produire une invitation au même titre qu'un créneau issu
+ * du miroir (`cal:`) — sans quoi ni l'apprenant ni le jury ne voient le
+ * rendez-vous dans leur agenda.
+ *
+ * Le préfixe `cal:` encapsule déjà une heure ISO : les deux cas convergent donc
+ * vers la même valeur, et c'est `starts_at` qui fait foi partout ailleurs.
+ */
+export function bookingStartRef(calcomRef: string | null, startsAt: string): string {
+  if (calcomRef?.startsWith(MIRROR_SLOT_PREFIX)) {
+    const ref = calcomRef.slice(MIRROR_SLOT_PREFIX.length);
+    // Un miroir vide ne doit pas produire une réservation à l'heure « rien ».
+    return ref || startsAt;
+  }
+  return startsAt;
+}
 
 export interface BookableSlot {
   host_id: string;

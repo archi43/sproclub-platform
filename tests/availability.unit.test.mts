@@ -10,6 +10,7 @@ import {
   localToUtc,
   weekdayOf,
   filterBookableSlots,
+  bookingStartRef,
   type AvailabilityRule,
 } from "../src/lib/availability-rules.ts";
 
@@ -210,4 +211,29 @@ test("un créneau produit deux fois n'apparaît qu'une fois", () => {
     now: NOW,
   });
   assert.equal(slots.length, 3, "règles identiques → pas de doublon");
+});
+
+// --- INC-27 : la plateforme porte la disponibilité, Cal.eu porte l'invitation ---
+
+test("un créneau déclaré par un coach produit bien une invitation", () => {
+  // Avant INC-27, seuls les créneaux du miroir déclenchaient un événement :
+  // une soutenance réservée sur une plage déclarée n'arrivait dans l'agenda de
+  // personne. C'est le défaut que ce choix corrige.
+  assert.equal(
+    bookingStartRef("self:abc-123:2026-09-09T08:00:00.000Z", "2026-09-09T08:00:00.000Z"),
+    "2026-09-09T08:00:00.000Z"
+  );
+  assert.equal(bookingStartRef(null, "2026-09-09T08:00:00.000Z"), "2026-09-09T08:00:00.000Z");
+});
+
+test("un créneau du miroir garde la référence Cal.eu qu'il encapsule", () => {
+  assert.equal(
+    bookingStartRef("cal:2026-09-09T10:30:00.000Z", "2026-09-09T10:30:00.000Z"),
+    "2026-09-09T10:30:00.000Z"
+  );
+});
+
+test("un miroir vide retombe sur l'heure du créneau, jamais sur rien", () => {
+  // `cal:` sans suite produirait une réservation à l'heure « chaîne vide ».
+  assert.equal(bookingStartRef("cal:", "2026-09-09T08:00:00.000Z"), "2026-09-09T08:00:00.000Z");
 });
