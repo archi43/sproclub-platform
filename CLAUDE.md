@@ -198,6 +198,10 @@ La carte fichier par fichier est dans `STRUCTURE.md`. En cas de doute, `ls -R sr
 - **Les formulaires Fillout SproCLUB n'ont pas d'e-mail** (l'apprenant est un RecordPicker).
   La jointure passe par recordID : Commande directe, ou via la table Soutenances.
 - **`0024` (enum) doit précéder `0025`** (policies qui utilisent la valeur `partner`).
+- **`0028` doit précéder le write-back des soutenances** : `pushDefenses` écrit
+  `reservations.airtable_record_id`, colonne créée par cette migration. Le write-back étant
+  coupé par défaut (`AIRTABLE_WRITEBACK_ENABLED`), l'oubli ne se voit qu'au moment où on
+  l'active — donc appliquer la migration AVANT de poser le drapeau.
 - **`.or(a,b)` de PostgREST est un OU, pas un ET.** Enchaîner deux exclusions au premier niveau
   (`status.neq.X,status.neq.Y`) ne filtre plus rien : « ≠ X OU ≠ Y » est toujours vrai. Vérifié
   en réel — la forme naïve retenait 530 dossiers sur 530. Dès la deuxième valeur, grouper dans

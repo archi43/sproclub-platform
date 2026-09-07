@@ -7,11 +7,11 @@ sont restes dans `CLAUDE.md`.
 
 Produit **en ligne** (staging) et prouvé en réel. Base Supabase UE (`zbvohktqfgwajjvnpets`,
 `eu-north-1`) ; app déployée sur **Vercel région `fra1`** : **https://sproclub-platform.vercel.app**.
-Migrations **0001→0027** + seed appliqués. Suite de tests **220/220** verte contre la vraie base
+Migrations **0001→0028** + seed appliqués. Suite de tests **228/228** verte contre la vraie base
 (vérifié le 2026-08-26, 0 sauté ; inclut `test:rgpd` 10, `test:observability` 6,
 `test:notifications` 8, `test:nav` 5, `test:members` 3, `test:l360` 13, `tests/inc14` 7,
 `test:talent` 12, `test:jobs` 11, `test:availability` 29, `test:journey` 9, `test:search` 6,
-`test:design` 17, `test:roles` 12, `test:sync` 15). Exécution **sérialisée**
+`test:design` 17, `test:roles` 12, `test:sync` 23). Exécution **sérialisée**
 (`npm test` → `--test-concurrency=1`) pour éviter la flakiness de rate-limit auth sous concurrence.
 **7 crons Vercel** (sync 05:00, sync 360L filet quotidien 05:45, agendas 06:00, miroir 06:30,
 export BPF lundi 07:00, purge rétention 03:15, relances 08:00) + **deux workflows GitHub Actions** :
@@ -300,6 +300,30 @@ Incréments livrés (voir `PLAN_DEV_PRODUIT.md`) :
   aurait garanti qu'ils divergent. **Non retenu** : Supabase Realtime (aucun gain tant que la
   donnée ne bouge qu'à la synchro) et les webhooks Airtable (vrai push, mais enregistrement à
   renouveler tous les 7 jours et gestion de curseur — à reconsidérer si 15 min ne suffit pas).
+- **INC-26 (write-back des soutenances)** : décision produit — les soutenances doivent naître
+  dans la plateforme et alimenter Airtable, sans passer par Make. Enquête préalable sur les
+  inventaires d'automatisation (datés du 6-7 juillet) : **174 automatisations sur deux moteurs**
+  (131 Make + 43 natives Airtable), 20 cassées, 13 doublons, **9 domaines fonctionnels présents
+  dans les deux moteurs**. Sur les soutenances : 14 scénarios Make dont **3 actifs**, dont
+  **deux doublons exacts** tournant à l'heure ; les 4 chaînes `[Soutenance] Google Form →
+  Airtable` sont **invalides**, ainsi que « Mise à jour Airtable lorsque soutenance annulée ».
+  La chaîne supposée existante est donc largement cassée, ce qui **infirme** l'idée — que j'avais
+  d'abord avancée — de la réutiliser telle quelle. Sur les attestations : le scénario Make est
+  coupé en deux dont la seconde moitié est **en pause**, et l'archivage aussi, ce qui explique
+  exactement la mesure faite en base (79 % de cases « envoyée » cochées, 4-6 % d'URL renseignées).
+  **Constat structurant** : « Soutenances formation » est un **miroir de Google Agenda** (Title,
+  Start, End, Attendees, Event ID…). La plateforme peut l'écrire directement, et mieux que Make :
+  elle part de la réservation, donc elle **connaît déjà** la commande, le projet et les
+  évaluateurs, là où Make doit les deviner — d'où son scénario de réconciliation en double.
+  Livré : migration `0028` (`reservations.airtable_record_id` + index unique partiel, pour
+  l'idempotence et la future propagation d'annulation), module `sync/soutenance-writeback.ts` sur
+  le patron exact du write-back des comptes rendus (création seule, idempotent, coupé par défaut),
+  résolution du jury par e-mail via « Team SproCLUB », branchement **non fatal** dans le pipeline.
+  `test:sync` complété de **8** tests purs, dont l'absence de champ jury vide (qui écraserait un
+  rattachement posé à la main) et le refus d'écrire un champ calculé.
+  **Reste avant activation** : appliquer `0028`, poser un token Airtable en écriture et
+  `AIRTABLE_WRITEBACK_ENABLED=true`. À vide aujourd'hui : les deux seules soutenances en base
+  sont sur des dossiers de test sans commande Airtable, donc écartées par la garde.
 
   **Vérifié en réel** : rendu de `coordination/apprenants` sous session staff (coque navy,
   marqueur actif, tuiles alimentées par les dossiers réels).

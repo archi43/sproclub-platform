@@ -5,6 +5,7 @@ import { syncCommandes } from "@/lib/sync/run";
 import { fetchFilloutSubmissions } from "@/lib/sync/fillout-source";
 import { syncFillout } from "@/lib/sync/fillout";
 import { pushCoachingReports } from "@/lib/sync/airtable-writeback";
+import { pushDefenses } from "@/lib/sync/soutenance-writeback";
 import { logOpsEvent } from "@/lib/data/ops";
 
 /**
@@ -29,6 +30,8 @@ export interface SyncOutcome {
   fillout?: unknown;
   /** Résultat du write-back des comptes rendus — non fatal lui aussi. */
   writeback?: unknown;
+  /** Résultat du write-back des soutenances (INC-26) — non fatal. */
+  defenses?: unknown;
   error?: string;
   /** `true` quand l'échec vient d'une configuration absente, pas d'une panne. */
   notConfigured?: boolean;
@@ -82,7 +85,19 @@ export async function runAirtableSync(
       await logOpsEvent({ orgId, level: "error", source, message: "Échec du write-back Airtable", detail: message });
     }
 
-    return { ok: true, org: slug, stats, fillout, writeback };
+    // Write-back des soutenances nées dans la plateforme. Non fatal lui aussi :
+    // une panne d'écriture ne doit jamais invalider le pull, qui est la source
+    // de vérité des dossiers.
+    let defenses: unknown;
+    try {
+      defenses = await pushDefenses(admin, orgId);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "defense writeback failed";
+      defenses = { error: message };
+      await logOpsEvent({ orgId, level: "error", source, message: "Échec du write-back des soutenances", detail: message });
+    }
+
+    return { ok: true, org: slug, stats, fillout, writeback, defenses };
   } catch (err) {
     if (err instanceof AirtableNotConfiguredError) {
       return { ok: false, org: slug, error: err.message, notConfigured: true };
