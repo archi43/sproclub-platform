@@ -7,10 +7,10 @@ sont restes dans `CLAUDE.md`.
 
 Produit **en ligne** (staging) et prouvé en réel. Base Supabase UE (`zbvohktqfgwajjvnpets`,
 `eu-north-1`) ; app déployée sur **Vercel région `fra1`** : **https://sproclub-platform.vercel.app**.
-Migrations **0001→0028** + seed appliqués. Suite de tests **231/231** verte contre la vraie base
+Migrations **0001→0030** + seed appliqués. Suite de tests **250/250** verte contre la vraie base
 (vérifié le 2026-08-26, 0 sauté ; inclut `test:rgpd` 10, `test:observability` 6,
 `test:notifications` 8, `test:nav` 5, `test:members` 3, `test:l360` 13, `tests/inc14` 7,
-`test:talent` 12, `test:jobs` 11, `test:availability` 32, `test:journey` 9, `test:search` 6,
+`test:talent` 12, `test:jobs` 11, `test:availability` 32, `test:jury` 19, `test:journey` 9, `test:search` 6,
 `test:design` 17, `test:roles` 12, `test:sync` 23). Exécution **sérialisée**
 (`npm test` → `--test-concurrency=1`) pour éviter la flakiness de rate-limit auth sous concurrence.
 **7 crons Vercel** (sync 05:00, sync 360L filet quotidien 05:45, agendas 06:00, miroir 06:30,
@@ -340,6 +340,32 @@ Incréments livrés (voir `PLAN_DEV_PRODUIT.md`) :
   **Différé** : le miroir `cal:` reste actif tant que les coachs n'ont pas publié leurs plages
   (688 créneaux du miroir contre 0 déclaré aujourd'hui) ; l'éteindre maintenant ne laisserait
   aucun créneau réservable. À couper une fois la déclaration adoptée.
+- **INC-28 (notation par le jury)** : le portail jury n'avait **aucune surface d'évaluation** —
+  il ne contenait que « Mes disponibilités ». Les notes arrivaient toutes par Fillout (1 487 sur
+  1 488 comptes rendus notés), la plateforme les affichait sans jamais les collecter. Livré :
+  écran `/jury/evaluations` où l'évaluateur voit les soutenances où il siège et dépose sa note et
+  son appréciation. Règles pures `jury-rules.ts` : barème 0 à 4 **au demi-point** (aligné sur
+  « Note globale ( sur 4 ) » d'Airtable), note et appréciation obligatoires, et une soutenance ne
+  se note **qu'après** avoir eu lieu — la note porte sur une prestation observée.
+  **Migration `0029`** : helpers `is_evaluator_of_{reservation,enrollment,learner}` (SECURITY
+  DEFINER, EXECUTE révoqué à `anon`/`authenticated` — piège de `0019`), policy de notation bornée
+  aux affectations, et **resserrement** de `reservations_staff_read` : un évaluateur lisait
+  **toutes** les réservations de l'organisme, donc l'agenda de coaching de chaque apprenant, alors
+  que son portail ne montrait que ses créneaux. En contrepartie, ouverture minimale du dossier et
+  de l'apprenant qu'il évalue. **`0030`** corrige l'index d'unicité de `0029`, posé en *partiel* :
+  un index partiel ne peut pas être cible d'un `ON CONFLICT`, et le prédicat était superflu
+  puisque Postgres traite les `NULL` comme distincts.
+  **Choix de conception** : deux membres d'un même jury **ne se lisent pas**, pour que leurs avis
+  restent indépendants. Une seule note par évaluateur et par soutenance : un second envoi corrige,
+  un double clic ne peut pas fausser une moyenne.
+  `test:jury` **19** (11 pur + 8 intégration : dépôt légitime, note hors jury refusée, usurpation
+  d'auteur refusée, cloisonnement entre membres du jury, correction sans doublon, périmètre de
+  lecture, isolation inter-organismes).
+  **Deux défauts trouvés par les tests eux-mêmes** : `parseGrade` transformait une saisie
+  d'espaces en **zéro** (`Number("  ") === 0`), ce qui aurait condamné un apprenant au lieu de
+  signaler l'oubli ; et mes premiers tests d'intégration étaient verts pour la mauvaise raison —
+  j'avais oublié l'invariant de `0004` (un évaluateur doit appartenir au vivier du programme),
+  donc **personne n'était affecté** et les tests négatifs passaient sans rien prouver.
 
   **Vérifié en réel** : rendu de `coordination/apprenants` sous session staff (coque navy,
   marqueur actif, tuiles alimentées par les dossiers réels).
