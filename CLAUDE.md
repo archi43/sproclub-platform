@@ -198,6 +198,15 @@ La carte fichier par fichier est dans `STRUCTURE.md`. En cas de doute, `ls -R sr
 - **Les formulaires Fillout SproCLUB n'ont pas d'e-mail** (l'apprenant est un RecordPicker).
   La jointure passe par recordID : Commande directe, ou via la table Soutenances.
 - **`0024` (enum) doit précéder `0025`** (policies qui utilisent la valeur `partner`).
+- **Un index unique PARTIEL ne peut pas être cible d'un `ON CONFLICT`** (donc d'un `upsert`
+  PostgREST) : la requête devrait répéter le même prédicat, ce qu'elle ne fait pas. Et le
+  prédicat `where <col> is not null` est de toute façon inutile — Postgres traite déjà les `NULL`
+  comme distincts. Coûté une migration corrective (`0030`).
+- **Un test d'intégration peut être vert pour la mauvaise raison.** Les tests de jury passaient
+  alors qu'aucun évaluateur n'était affecté : j'avais oublié l'invariant de `0004` (l'évaluateur
+  doit appartenir au vivier du programme), l'affectation échouait en silence, et les tests
+  *négatifs* validaient donc un refus dû à l'absence de données. Toujours vérifier l'erreur d'une
+  insertion de fixture, et faire échouer le test si elle survient.
 - **`0028` doit précéder le write-back des soutenances** : `pushDefenses` écrit
   `reservations.airtable_record_id`, colonne créée par cette migration. Le write-back étant
   coupé par défaut (`AIRTABLE_WRITEBACK_ENABLED`), l'oubli ne se voit qu'au moment où on

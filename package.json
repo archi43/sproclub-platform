@@ -32,7 +32,8 @@
     "test:availability": "node --env-file-if-exists=.env.local --test-concurrency=1 --test tests/availability.unit.test.mts tests/ics.unit.test.mts tests/availability.integration.test.mts",
     "test:journey": "node --test tests/journey.unit.test.mts",
     "test:search": "node --test tests/search.unit.test.mts",
-    "test:design": "node --test tests/contrast.unit.test.mts tests/list-summary.unit.test.mts"
+    "test:design": "node --test tests/contrast.unit.test.mts tests/list-summary.unit.test.mts",
+    "test:jury": "node --env-file-if-exists=.env.local --test-concurrency=1 --test tests/jury.unit.test.mts tests/jury.integration.test.mts"
   },
   "dependencies": {
     "@supabase/ssr": "^0.5.1",

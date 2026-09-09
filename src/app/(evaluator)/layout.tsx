@@ -4,6 +4,7 @@ import { requireOrgRole } from "@/lib/auth";
 import { AppShell, PageContainer, type NavItem } from "@/components/app-shell";
 
 const nav: NavItem[] = [
+  { href: "/jury/evaluations", label: "Mes soutenances", icon: "defense" },
   { href: "/jury", label: "Mes disponibilités", icon: "coaching" },
 ];
 
