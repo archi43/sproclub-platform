@@ -319,6 +319,28 @@ coordination du jury. Base Supabase UE, Cal.eu branché.
   temps, affectation du jury et modération d'offres) ; *webhooks Airtable* (vrai push, mais
   endpoint public, enregistrement à renouveler tous les 7 jours et gestion de curseur — à
   reprendre seulement si 15 minutes ne suffisent pas).
+- ✅ **INC-26** (write-back des soutenances vers Airtable) : les soutenances naissent dans la
+  plateforme et alimentent « Soutenances formation » sans passer par Make — enquête préalable sur
+  174 automatisations (131 Make + 43 natives) qui a montré la chaîne supposée existante largement
+  cassée. Migration `0028` (`reservations.airtable_record_id`), module
+  `sync/soutenance-writeback.ts` sur le patron du write-back des comptes rendus (CREATE-only,
+  idempotent, coupé par défaut), résolution du jury par e-mail, branchement non fatal dans le
+  pipeline ; `test:sync` +8 purs. **Reste avant activation** : token Airtable en écriture +
+  `AIRTABLE_WRITEBACK_ENABLED=true`.
+- ✅ **INC-27** (l'agenda ne porte plus que l'invitation) : la plateforme porte la disponibilité,
+  Cal.eu ne crée plus que l'événement et les invitations. Corrige un trou réel — `bookSlot` ne
+  créait d'événement que pour les créneaux du miroir (`cal:`), donc une soutenance posée sur une
+  plage déclarée par un coach (`self:`) n'arrivait dans l'agenda de personne. `bookingStartRef`
+  (règle pure) ramène les deux origines à la même heure ISO ; l'échec d'invitation devient non
+  bloquant et journalisé en `warn`. Un seul compte Cal.eu suffit désormais. `test:availability` +3.
+  **Différé** : couper le miroir `cal:` quand les coachs auront publié leurs plages.
+- ✅ **INC-28** (notation par le jury) : écran `/jury/evaluations` — le portail jury n'avait aucune
+  surface d'évaluation, les notes arrivaient toutes par Fillout. Barème 0 à 4 au demi-point
+  (`jury-rules.ts`), note et appréciation obligatoires, notation possible seulement après la
+  soutenance. Migration `0029` (helpers `is_evaluator_of_*` SECURITY DEFINER avec EXECUTE révoqué,
+  policy de notation bornée aux affectations) + **resserrement** de `reservations_staff_read`, un
+  évaluateur lisant jusque-là tout l'agenda de l'organisme ; `0030` corrige l'index d'unicité posé
+  en partiel. Deux membres d'un même jury ne se lisent pas. `test:jury` **19**.
   **Prochaine étape : Étape 7** (ouverture à d'autres organismes).
 
 Suite `main` : **branche → PR → CI verte → merge → déploiement** (previews Vercel actifs).
