@@ -160,8 +160,12 @@ test("isolation : rien d'un autre organisme", { skip }, async () => {
 test("la coordination lit les accès de son organisme ; le coach et l'anonyme rien", { skip }, async () => {
   assert.equal((await labels(clients.coord)).length, 5);
   assert.deepEqual(await labels(clients.coach), []);
+  // L'anonyme n'a plus aucun droit SELECT sur la table (droits par colonne,
+  // 0032) : refus explicite, plus fort qu'une liste vide filtrée par la RLS.
   const anonClient = createClient(url!, anon!, { auth: { persistSession: false } });
-  assert.deepEqual(await labels(anonClient), []);
+  const { data, error } = await anonClient.from("resource_assignments").select("resource_label");
+  assert.ok(error || (data ?? []).length === 0, "rien pour l'anonyme");
+  assert.match(error?.message ?? "", /permission denied/, "refus au niveau des droits, pas seulement de la RLS");
 });
 
 test("aucune écriture hors service-role, même sur ses propres lignes", { skip }, async () => {
