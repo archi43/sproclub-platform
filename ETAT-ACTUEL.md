@@ -419,6 +419,16 @@ Incréments livrés (voir `PLAN_DEV_PRODUIT.md`) :
   porte pas.
   `test:access` **33** (24 purs + 9 d'intégration RLS) ; non-régression isolation, réservation,
   rôles, membres et sync vertes.
+  **Activé en production le 2026-10-08, premier passage vérifié en réel** : 103 habilitations
+  effectives → **102 comptes créés** (84 apprenant, 18 coach), **0 échec**, **1 écart** tracé et
+  légitime (une habilitation de coach porte l'adresse d'un compte de service préexistant : la
+  règle a laissé la ligne manuelle intacte au lieu d'en créer une seconde). Les 10 comptes
+  manuels sont restés intacts, aucune désactivation. Les 112 comptes d'authentification portent
+  tous le claim `app_metadata.org_id` et un e-mail confirmé, donc la connexion par lien
+  fonctionne sans autre intervention. Aucun e-mail n'a été envoyé.
+  **Point d'attention relevé au passage** : ce compte de service coach survivra à l'expiration de
+  son habilitation, puisque la synchronisation ne touche jamais une ligne `manual`. Le supprimer
+  ferait repasser ce coach sous le pilotage de l'annuaire, comme les 18 autres.
   **Armé explicitement** : `ACCESS_SYNC_ENABLED=true`, sur le patron du write-back (INC-14). Le
   premier passage réel ouvre 103 accès et peut en couper d'autres : le moment est une décision de
   direction, pas un effet de bord du déploiement. Coupé, l'annuaire n'est même pas lu.
@@ -430,7 +440,7 @@ Incréments livrés (voir `PLAN_DEV_PRODUIT.md`) :
 
   **Vérifié en réel** : rendu de `coordination/apprenants` sous session staff (coque navy,
   marqueur actif, tuiles alimentées par les dossiers réels).
-  Reste : appliquer `0031`, puis Étape 7 (ouverture à d'autres organismes).
+  Reste : Étape 7 (ouverture à d'autres organismes).
 
 Comptes de test : apprenant, coach, coordinateur, 3 évaluateurs, hôte Cal.eu — identifiants
 hors dépôt (dépôt public), voir `SETUP.md` et le gestionnaire de secrets.

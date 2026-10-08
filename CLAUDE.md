@@ -310,9 +310,9 @@ Reste : planification cron du miroir, écran d'affectation du jury, mise à jour
 **Tous les incréments INC-0 → INC-29 sont livrés** (migrations `0001→0031` appliquées). Prochaine grande étape : **Étape 7** —
 ouverture à d'autres organismes (onboarding par paramétrage, image de marque et domaine par organisme,
 audit de sécurité externe). Le socle multi-locataire est déjà en place : c'est une extension, pas une refonte.
-Restes différés : INC-29 activation du rapprochement des accès [`ACCESS_SYNC_ENABLED=true`, ouvre
-103 accès au premier passage] + extension du single-select « Rôle applicatif » aux rôles Évaluateur /
-Coordination / Direction ; INC-3 serveurs SAP + planning S1.2 ; INC-4 remontée Airtable des CR [token write] +
+Restes différés : INC-29 extension du single-select « Rôle applicatif » aux rôles Évaluateur /
+Coordination / Direction (sans quoi ces rôles restent des comptes de service) ;
+INC-3 serveurs SAP + planning S1.2 ; INC-4 remontée Airtable des CR [token write] +
 dispos multi-coach ; INC-12 exécution réelle du test de restauration en staging ; INC-26 activation du
 write-back des soutenances [token write + `AIRTABLE_WRITEBACK_ENABLED`] ; INC-27 extinction du miroir
 `cal:` quand les coachs auront publié leurs plages ; INC-7 credential
