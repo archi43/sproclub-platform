@@ -14,6 +14,13 @@ lancement** (SproCLUB d'abord).
   Les soutenances ne sont PAS poussées (la table Airtable est alimentée via Google Agenda,
   que Cal.eu remplit déjà — éviter les doublons). **Fillout = source d'évaluations connectée**
   au natif (mêmes tables, `source` tracée). Supabase reste le **socle produit assumé**.
+- **Airtable est la seule surface de saisie des identités et des rôles** (décision INC-29,
+  validée) : `Contacts` + `Habilitations` décident qui a un compte et avec quel rôle, la plateforme
+  s'y aligne à chaque synchronisation (création, réactivation, coupure). Les apprenants, coachs et
+  évaluateurs ne se créent plus dans l'écran Administration ; n'y restent que les **comptes de
+  service** (direction, coordination) et les entreprises partenaires, qui n'appartiennent pas à
+  l'annuaire. `memberships.source` porte la frontière, et la RLS (`0031`) interdit de modifier à la
+  main ce qui vient de l'annuaire.
 - **Cloisonnement en pool** : une base partagée, chaque ligne porte `org_id`,
   isolation par Row Level Security (`is_member(org_id)`), option base dédiée plus tard.
 - **Stack** : Next.js (App Router, TypeScript) + Supabase (Auth, Postgres, RLS, Storage)
@@ -226,6 +233,20 @@ La carte fichier par fichier est dans `STRUCTURE.md`. En cas de doute, `ls -R sr
 - **`next build` casse le serveur de dev en cours** : les deux partagent le dossier `.next`, et
   l'app se retrouve sans CSS (assets en 404). Relancer `npm run dev` après toute vérification
   par build. C'est arrivé plusieurs fois.
+- **Côté accès, lire `Rôle effectif` et jamais `Rôle applicatif`.** La formule Airtable
+  `Effectif` recalcule la fenêtre Début/Fin à la date du jour ; 20 des 123 habilitations réelles
+  sont marquées Actif mais hors fenêtre. Le rôle brut aurait ouvert 20 accès indus.
+- **Toute synchronisation qui peut DÉSACTIVER doit distinguer sa propre production.** C'est le rôle
+  de `memberships.source` (`0031`) : sans lui, le premier passage aurait coupé les comptes de
+  service absents de l'annuaire — dont la direction — et verrouillé la plateforme de l'extérieur.
+  Même raisonnement pour toute source future : ne jamais couper ce qu'on n'a pas créé.
+- **Une policy de provenance a besoin du `with check`, pas seulement du `using`.** Le premier
+  empêche de modifier une ligne marquée `airtable` ; sans le second, un coordinateur pourrait en
+  **fabriquer** une et se rendre lui-même intouchable.
+- **Toute nouvelle table nominative doit entrer dans `eraseLearner` ET dans la purge de rétention.**
+  `access_sync_log` porte des adresses e-mail : oubliée, elle aurait survécu 12 mois à un effacement.
+  Symétriquement, une synchronisation doit consulter `data_erasures` avant de recréer un compte,
+  sinon elle annule un droit exercé au passage suivant.
 - **Une couleur de texte ne se choisit pas à l'œil** : `#B8860B` (warning) plafonnait à 3,25:1
   sur blanc et était **déjà en production** sur quatre écrans ; `#2E7D32` (success) tombait à
   4,47:1 sur sa propre teinte. Les deux ont désormais une variante `-ink`. Tout nouveau couple
@@ -286,7 +307,7 @@ avec compensation (annulation) si l'insert échoue ; dégradation propre si Cal.
 Reste : planification cron du miroir, écran d'affectation du jury, mise à jour du jury sur Cal.eu.
 
 ## Backlog immédiat (suite du `PLAN_DEV_PRODUIT.md`)
-**Tous les incréments INC-0 → INC-28 sont livrés** (migrations `0001→0030` appliquées). Prochaine grande étape : **Étape 7** —
+**Tous les incréments INC-0 → INC-29 sont livrés** (migrations `0001→0030` appliquées ; **`0031` à appliquer**). Prochaine grande étape : **Étape 7** —
 ouverture à d'autres organismes (onboarding par paramétrage, image de marque et domaine par organisme,
 audit de sécurité externe). Le socle multi-locataire est déjà en place : c'est une extension, pas une refonte.
 Restes différés : INC-3 serveurs SAP + planning S1.2 ; INC-4 remontée Airtable des CR [token write] +

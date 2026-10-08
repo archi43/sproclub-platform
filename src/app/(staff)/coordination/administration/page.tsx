@@ -1,14 +1,16 @@
 import { getOrgContext } from "@/lib/tenant";
 import { getRolesForOrg } from "@/lib/auth";
 import { listMembers } from "@/lib/data/members";
+import { listAccessDecisions } from "@/lib/data/access";
 import { listEvaluatorPool, listEvaluatorCandidates } from "@/lib/data/evaluators";
 import { listPartnerCompanies } from "@/lib/data/talent";
 import { listPrograms } from "@/lib/data/programs";
 import { PageHeader, EmptyState } from "@/components/ui/page-header";
 import { Card, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Alert } from "@/components/ui/alert";
 import { Table, THead, TBody, Tr, Th, Td } from "@/components/ui/table";
-import { ROLE_ORDER } from "@/lib/roles";
+import { MANUAL_INVITE_ROLES } from "@/lib/roles";
 import type { AppRole } from "@/lib/types";
 import {
   InviteForm,
@@ -20,22 +22,43 @@ import {
   PartnerCompanyForm,
 } from "./admin-ui";
 
+/** Libellés des décisions du rapprochement d'accès (INC-29). */
+const ACCESS_LABELS: Record<string, string> = {
+  create: "Compte créé",
+  grant: "Rôle ajouté",
+  reactivate: "Accès rétabli",
+  deactivate: "Accès coupé",
+  skip: "Écartée",
+};
+
+/** Tons : la coupure et l'écart doivent se voir, l'ouverture est une routine. */
+const ACCESS_TONES: Record<string, "neutral" | "brand" | "success" | "warning" | "danger"> = {
+  create: "success",
+  grant: "success",
+  reactivate: "success",
+  deactivate: "danger",
+  skip: "warning",
+};
+
 /**
- * INC-10 — user & role management (direction / coordinator). Invite and
- * deactivate accounts, grant / revoke per-org roles, and administer the
- * evaluator pool that feeds jury assignment. RLS is the authoritative guard.
+ * INC-10 — user & role management (direction / coordinator), remanié par INC-29 :
+ * l'annuaire Airtable décide des identités et des rôles, cet écran ne gère plus
+ * que les comptes de service, le vivier d'évaluateurs et les entreprises
+ * partenaires. Il rend compte des décisions de la synchronisation. La RLS reste
+ * le garde-fou autoritaire (0012 pour les rôles, 0031 pour la provenance).
  */
 export default async function AdministrationPage() {
   const org = await getOrgContext();
   if (!org) return <p className="text-muted">Organisme introuvable.</p>;
 
-  const [members, pool, candidates, programs, roles, partnerCompanies] = await Promise.all([
+  const [members, pool, candidates, programs, roles, partnerCompanies, decisions] = await Promise.all([
     listMembers(org.id),
     listEvaluatorPool(org.id),
     listEvaluatorCandidates(org.id),
     listPrograms(org.id),
     getRolesForOrg(org.id),
     listPartnerCompanies(org.id),
+    listAccessDecisions(org.id),
   ]);
   const isDirection = roles.includes("direction");
   const programNames = programs.map((p) => p.name);
@@ -45,13 +68,22 @@ export default async function AdministrationPage() {
       <div className="space-y-6">
         <PageHeader
           title="Utilisateurs et rôles"
-          description="Invitez, désactivez et gérez les rôles des membres de l'organisme."
+          description="Les apprenants, coachs et évaluateurs reflètent les habilitations du back office. Cet écran gère les comptes de service et le vivier."
         />
 
+        <Alert tone="info">
+          Les accès des apprenants, des coachs et des évaluateurs se déclarent dans Airtable
+          («&nbsp;Contacts&nbsp;» et «&nbsp;Habilitations&nbsp;»). La plateforme s'y aligne à chaque
+          synchronisation&nbsp;: un rôle accordé y ouvre l'accès, une habilitation expirée le coupe.
+          Les comptes marqués «&nbsp;Airtable&nbsp;» ci-dessous ne se modifient donc pas ici.
+        </Alert>
+
         <Card>
-          <CardTitle>Inviter un utilisateur</CardTitle>
+          <CardTitle>Créer un compte de service</CardTitle>
           <p className="mb-3 text-sm text-muted">
-            Un compte est créé et la personne se connecte via le lien e-mail. Le rôle définit son périmètre d'accès.
+            Réservé aux comptes qui n'appartiennent pas à l'annuaire&nbsp;: pilotage (direction,
+            coordination) et entreprise partenaire. Un compte de pilotage reste nécessaire pour que
+            la plateforme demeure administrable si l'annuaire est indisponible.
           </p>
           <InviteForm canCreateDirection={isDirection} partnerCompanies={partnerCompanies.filter((c) => c.active)} />
         </Card>
@@ -70,7 +102,7 @@ export default async function AdministrationPage() {
             </THead>
             <TBody>
               {members.map((m) => {
-                const available: AppRole[] = ROLE_ORDER.filter(
+                const available: AppRole[] = MANUAL_INVITE_ROLES.filter(
                   // partner : jamais via l'ajout de rôle générique — uniquement
                   // l'invitation dédiée avec entreprise (revérifié côté action).
                   (r) => !m.roles.includes(r) && (isDirection || r !== "direction") && r !== "partner"
@@ -89,27 +121,82 @@ export default async function AdministrationPage() {
                             profileId={m.profileId}
                             role={r}
                             tone={r === "direction" ? "brand" : "neutral"}
-                            removable={isDirection || r !== "direction"}
+                            // Un rôle issu d'une habilitation ne se retire pas ici :
+                            // la RLS (0031) le refuserait, et le retirer à l'écran
+                            // laisserait croire que la décision a été prise.
+                            removable={
+                              !m.syncedRoles.includes(r) && (isDirection || r !== "direction")
+                            }
                           />
                         ))}
                       </div>
-                      {m.active && (
+                      {m.active && !m.managedByAirtable && (
                         <div className="mt-2">
                           <AddRoleForm profileId={m.profileId} available={available} />
                         </div>
                       )}
                     </Td>
                     <Td>
-                      <Badge tone={m.active ? "success" : "warning"}>{m.active ? "Actif" : "Désactivé"}</Badge>
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        <Badge tone={m.active ? "success" : "warning"}>{m.active ? "Actif" : "Désactivé"}</Badge>
+                        <Badge tone={m.managedByAirtable ? "brand" : "neutral"}>
+                          {m.managedByAirtable ? "Airtable" : "Compte de service"}
+                        </Badge>
+                      </div>
                     </Td>
                     <Td>
                       <div className="flex justify-end">
-                        <AccountToggle profileId={m.profileId} active={m.active} />
+                        {m.managedByAirtable ? (
+                          <span className="text-xs text-muted">Géré dans le back office</span>
+                        ) : (
+                          <AccountToggle profileId={m.profileId} active={m.active} />
+                        )}
                       </div>
                     </Td>
                   </Tr>
                 );
               })}
+            </TBody>
+          </Table>
+        )}
+      </div>
+
+      <div className="space-y-6">
+        <PageHeader
+          title="Décisions d'accès"
+          description="Ce que la synchronisation a décidé depuis les habilitations du back office, le plus récent d'abord."
+        />
+
+        {decisions.length === 0 ? (
+          <EmptyState
+            title="Aucun mouvement d'accès"
+            description="La synchronisation n'a encore ouvert ni coupé aucun accès. Un passage sans effet ne laisse pas de trace."
+          />
+        ) : (
+          <Table>
+            <THead>
+              <Tr>
+                <Th>Décision</Th>
+                <Th>Personne</Th>
+                <Th>Rôle</Th>
+                <Th>Motif</Th>
+                <Th>Date</Th>
+              </Tr>
+            </THead>
+            <TBody>
+              {decisions.map((d, i) => (
+                <Tr key={`${d.at}:${d.email}:${d.role}:${i}`}>
+                  <Td>
+                    <Badge tone={ACCESS_TONES[d.action]}>{ACCESS_LABELS[d.action]}</Badge>
+                  </Td>
+                  <Td className="text-xs text-muted">{d.email || "—"}</Td>
+                  <Td>{d.role}</Td>
+                  <Td className="text-sm text-muted">{d.reason ?? "—"}</Td>
+                  <Td className="whitespace-nowrap text-sm text-muted">
+                    {new Date(d.at).toLocaleString("fr-FR", { dateStyle: "short", timeStyle: "short" })}
+                  </Td>
+                </Tr>
+              ))}
             </TBody>
           </Table>
         )}

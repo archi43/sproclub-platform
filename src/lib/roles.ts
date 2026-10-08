@@ -18,6 +18,29 @@ export function roleLabel(role: AppRole): string {
 }
 
 /**
+ * Rôles encore attribuables **à la main** depuis l'écran Administration (INC-29).
+ *
+ * Depuis qu'Airtable est la seule surface de saisie des identités, apprenant,
+ * coach et évaluateur n'y figurent plus : ils reflètent une habilitation du back
+ * office, et les créer ici recréerait la double saisie qu'on vient de supprimer.
+ *
+ * Restent trois cas qui n'appartiennent pas à l'annuaire :
+ * - `direction` et `coordinator` : comptes de **service**, qui doivent survivre à
+ *   une panne d'Airtable — sans eux, un incident sur l'annuaire nous enfermerait
+ *   dehors.
+ * - `partner` : une entreprise partenaire naît dans la plateforme (vivier de
+ *   talents, INC-17) et exige un rattachement à une société que la table
+ *   `Habilitations` ne porte pas.
+ *
+ * `direction` et `coordinator` figurent donc dans **les deux** listes, celle-ci et
+ * `SYNCED_ROLES` : Airtable peut les déclarer, et la plateforme peut quand même en
+ * créer en propre. Le chevauchement est assumé ; `decideAccessSync` écarte le cas
+ * de la personne décrite par les deux sources, et un test fige l'invariant qui
+ * compte : apprenant, coach et évaluateur ne sont attribuables que par Airtable.
+ */
+export const MANUAL_INVITE_ROLES: AppRole[] = ["direction", "coordinator", "partner"];
+
+/**
  * Écran d'accueil de chaque rôle — première page de son portail, telle que
  * définie par la navigation du route group correspondant.
  *

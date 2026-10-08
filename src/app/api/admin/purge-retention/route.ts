@@ -12,6 +12,7 @@ import { logOpsEvent } from "@/lib/data/ops";
  *   - ops_events       : 90 days
  *   - notifications    : 90 days (le journal de relances contient nom/e-mail)
  *   - rate_limit_events: 2 days (well beyond any active window)
+ *   - access_sync_log  : 12 months (justifie une ouverture / coupure d'accès)
  * Anonymized learner rows are NOT touched (retention of Qualiopi/BPF evidence is
  * a separate, longer policy handled elsewhere).
  */
@@ -50,6 +51,9 @@ async function run(request: NextRequest) {
     { table: "ops_events", column: "at", cutoff: new Date(now - 90 * DAY).toISOString() },
     { table: "notifications", column: "created_at", cutoff: new Date(now - 90 * DAY).toISOString() },
     { table: "rate_limit_events", column: "at", cutoff: new Date(now - 2 * DAY).toISOString() },
+    // Journal des accès rapprochés (INC-29) : même durée que `audit_log`, car il
+    // justifie une ouverture ou une coupure d'accès et nomme la personne.
+    { table: "access_sync_log", column: "at", cutoff: new Date(now - 365 * DAY).toISOString() },
   ];
 
   const purged: Record<string, number> = {};

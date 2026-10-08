@@ -341,6 +341,63 @@ coordination du jury. Base Supabase UE, Cal.eu branché.
   policy de notation bornée aux affectations) + **resserrement** de `reservations_staff_read`, un
   évaluateur lisant jusque-là tout l'agenda de l'organisme ; `0030` corrige l'index d'unicité posé
   en partiel. Deux membres d'un même jury ne se lisent pas. `test:jury` **19**.
+- ✅ **INC-29** (Airtable, seule surface de saisie des identités et des rôles) : décision d'architecture,
+  prise après avoir mesuré l'écart réel. La plateforme portait **555 dossiers** et **10 comptes**,
+  tous de test ; l'annuaire Airtable, lui, désignait déjà **103 personnes** devant avoir un accès.
+  Le produit était fonctionnellement complet jusqu'à INC-28 et personne de réel n'y avait de compte.
+  Deux tables du back office le disaient déjà : `Contacts` (966 fiches, e-mail normalisé, statut,
+  dédoublonnage) et `Habilitations` (123 lignes, rôle applicatif, case Actif, fenêtre Début/Fin,
+  périmètre), avec deux formules qui font le travail — `Accès interface` côté contact et
+  `Rôle effectif` côté habilitation.
+  **La synchronisation lit `Rôle effectif`, jamais `Rôle applicatif`** : mesuré en réel, 20 des 123
+  habilitations sont marquées Actif mais hors fenêtre (12 à fin dépassée, 8 case décochée). Lire le
+  rôle brut aurait ouvert **20 accès indus**. Les deux filtres sont évalués côté Airtable, ce qui
+  ramène la lecture à **4 appels** (2 + 2) sur un budget dur de 5 requêtes par seconde et par base,
+  partagé avec les 174 automatisations du back office.
+  Livré : `access-rules.ts` (**pur, sans import**) qui calcule un plan depuis deux photos (l'état
+  désiré, l'état courant) ; `sync/access-source.ts` pour la lecture ; `sync/access-sync.ts` pour
+  l'application sous service-role ; branchement **non fatal mais bruyant** dans le pipeline ;
+  `data/access.ts` pour la lecture du journal sous RLS. La pagination et la détection de credential
+  manquant sont extraites dans `sync/airtable-rest.ts`, partagées avec la source des Commandes.
+  **Migration `0031`** : `memberships.source` (`manual`/`airtable`) + `airtable_habilitation_id`
+  (index unique **non partiel**, pour rester cible d'un `on conflict` — leçon de `0030`), et
+  **`membership_manage` resserrée aux lignes manuelles**, dans le `using` *et* le `with check` :
+  sans le second, un coordinateur pourrait fabriquer une ligne marquée `airtable` et se rendre
+  lui-même intouchable. Table `access_sync_log` (lecture direction/coordination, **aucune policy
+  d'écriture** : seul le service-role insère, une trace réécrite par son sujet ne vaut rien).
+  **Trois garde-fous que les tests figent** :
+  1. *La provenance évite l'auto-verrouillage.* Sans la distinction manuel/Airtable, le premier
+     passage aurait désactivé les comptes de service — dont la direction, absente de l'annuaire —
+     et nous aurait enfermés dehors. Les comptes `manual` sont hors périmètre, jamais coupés.
+  2. *Le dernier compte de direction actif survit.* Le trigger `trg_last_direction` (0012) refusait
+     déjà la coupure, **service-role inclus** ; l'anticiper dans la règle pure évite une exception à
+     chaque passage et laisse une trace lisible du refus.
+  3. *Un effacement RGPD ne se défait pas.* L'habilitation subsistant dans l'annuaire, le passage
+     suivant aurait recréé le compte et son adresse. `decideAccessSync` consulte donc la liste de
+     suppression (`data_erasures`), comme la sync des Commandes, et une **lecture en échec de cette
+     liste est fatale** — mieux vaut ne rien faire et réessayer dans 15 minutes que risquer
+     d'annuler un droit exercé. `eraseLearner` purge en plus `access_sync_log`, qui porte l'adresse
+     en clair.
+  **Côté écran** : Administration ne crée plus d'apprenant, de coach ni d'évaluateur (ils reflètent
+  une habilitation) ; `MANUAL_INVITE_ROLES` ne laisse que direction, coordination et entreprise
+  partenaire. Les comptes issus d'Airtable portent un badge de provenance et ne sont plus
+  modifiables — ni rôle retiré, ni désactivation — avec un message qui **nomme** le refus plutôt que
+  de laisser remonter un 42501. Une nouvelle section « Décisions d'accès » rend compte de ce que la
+  synchronisation a décidé, et pourquoi.
+  **Chevauchement assumé** : direction et coordination sont à la fois synchronisables et créables à
+  la main, parce qu'un compte de pilotage doit survivre à une panne de l'annuaire. L'invariant que
+  le test fige n'est donc pas l'absence de chevauchement, mais que les rôles de terrain (apprenant,
+  coach, évaluateur) ne soient attribuables **que** par Airtable.
+  **Hors périmètre, à dessein** : `partner`. Une entreprise partenaire naît dans la plateforme
+  (vivier, INC-17) et son membership exige un rattachement à une société que `Habilitations` ne
+  porte pas.
+  `test:access` **24 tests purs** + 10 d'intégration RLS ; non-régression isolation, réservation,
+  rôles, membres et sync vertes.
+  **Reste avant effet** : appliquer `0031`, et étendre le single-select « Rôle applicatif » aux
+  rôles Évaluateur / Coordination / Direction si l'on veut qu'ils viennent aussi de l'annuaire (le
+  jeton du projet est en lecture seule sur le schéma, c'est une action manuelle de 10 secondes).
+  À l'état actuel, la synchronisation ouvrira **84 accès apprenant et 19 accès coach**, et fermera
+  automatiquement les **39 habilitations** qui arrivent à échéance dans les 90 prochains jours.
   **Prochaine étape : Étape 7** (ouverture à d'autres organismes).
 
 Suite `main` : **branche → PR → CI verte → merge → déploiement** (previews Vercel actifs).

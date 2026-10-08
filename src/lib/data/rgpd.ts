@@ -162,6 +162,14 @@ export async function eraseLearner(
   await admin.from("notifications").delete().eq("org_id", orgId).eq("recipient_email", email);
   await admin.from("notification_prefs").delete().eq("org_id", orgId).eq("email", email);
 
+  // 3b bis) Purger le journal des accès rapprochés (INC-29) : il porte l'adresse
+  //     e-mail en clair pour justifier une ouverture ou une coupure d'accès.
+  //     Après effacement, cette justification n'a plus de sujet à protéger, et la
+  //     conserver reviendrait à garder une trace nominative d'une personne
+  //     effacée. La liste de suppression (étape 1) empêche par ailleurs la
+  //     synchronisation de recréer le compte au passage suivant.
+  await admin.from("access_sync_log").delete().eq("org_id", orgId).eq("email", email);
+
   // 3c) Retirer du vivier de talents (INC-17) : le consentement s'éteint avec
   //     l'effacement — la ligne disparaît, la vue partenaire ne les liste plus
   //     (ceinture : la vue exclut aussi tout e-mail présent dans data_erasures).

@@ -15,7 +15,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input, Select, Field } from "@/components/ui/form";
 import { Alert } from "@/components/ui/alert";
-import { ROLE_ORDER, roleLabel } from "@/lib/roles";
+import { MANUAL_INVITE_ROLES, roleLabel } from "@/lib/roles";
 import type { AppRole } from "@/lib/types";
 import type { EvaluatorCandidate } from "@/lib/data/evaluators";
 
@@ -44,8 +44,13 @@ function Msg({ state }: { state: ActionState }) {
   );
 }
 
-/** Invite / provision a user with an initial role. `canCreateDirection` hides the
- *  direction option for a coordinator (also enforced server-side + by RLS). */
+/**
+ * Créer un compte **de service** (INC-29). Les apprenants, coachs et évaluateurs
+ * ne passent plus par ici : ils reflètent une habilitation Airtable. Ne restent
+ * que les comptes qui n'appartiennent pas à l'annuaire — pilotage, et entreprise
+ * partenaire. `canCreateDirection` masque l'option direction à un coordinateur
+ * (revérifié côté serveur, et par la RLS).
+ */
 export function InviteForm({
   canCreateDirection,
   partnerCompanies,
@@ -54,7 +59,7 @@ export function InviteForm({
   partnerCompanies: { id: string; name: string }[];
 }) {
   const [state, action] = useFormState(inviteMemberAction, initial);
-  const roles = ROLE_ORDER.filter((r) => canCreateDirection || r !== "direction");
+  const roles = MANUAL_INVITE_ROLES.filter((r) => canCreateDirection || r !== "direction");
   return (
     <form action={action} className="grid gap-3 sm:grid-cols-2">
       <Field label="Adresse e-mail" htmlFor="invite-email">
@@ -64,7 +69,7 @@ export function InviteForm({
         <Input id="invite-name" name="fullName" placeholder="Prénom Nom" autoComplete="off" />
       </Field>
       <Field label="Rôle" htmlFor="invite-role">
-        <Select id="invite-role" name="role" defaultValue="coach" required>
+        <Select id="invite-role" name="role" defaultValue="coordinator" required>
           {roles.map((r) => (
             <option key={r} value={r}>{roleLabel(r)}</option>
           ))}

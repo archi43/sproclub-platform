@@ -13,6 +13,7 @@ import {
 import { addToPool, removeFromPool } from "@/lib/data/evaluators";
 import { createPartnerCompany } from "@/lib/data/talent";
 import { inviteMember } from "@/lib/members/provision";
+import { MANUAL_INVITE_ROLES } from "@/lib/roles";
 import type { AppRole } from "@/lib/types";
 
 export type ActionState = { ok: boolean; message: string };
@@ -65,6 +66,16 @@ export async function inviteMemberAction(_prev: ActionState, formData: FormData)
   const partnerCompanyId = String(formData.get("partnerCompanyId") ?? "").trim() || null;
   if (!email) return { ok: false, message: "L'adresse e-mail est requise." };
   if (!role) return { ok: false, message: "Rôle invalide." };
+  // INC-29 : apprenant, coach et évaluateur viennent des habilitations Airtable.
+  // Les créer ici rétablirait la double saisie, et la ligne créée serait de
+  // provenance 'manual', donc invisible pour la synchronisation : elle ne serait
+  // jamais coupée à l'expiration de l'habilitation.
+  if (!MANUAL_INVITE_ROLES.includes(role)) {
+    return {
+      ok: false,
+      message: "Ce rôle est piloté par Airtable : créez l'habilitation du contact dans le back office.",
+    };
+  }
   // Only a director may create another director.
   if (role === "direction" && !ctx.isDirection) {
     return { ok: false, message: "Seule la direction peut créer un compte de direction." };
@@ -108,6 +119,12 @@ export async function grantRoleAction(_prev: ActionState, formData: FormData): P
   const role = parseRole(formData.get("role"));
   if (!profileId) return { ok: false, message: "Membre introuvable." };
   if (!role) return { ok: false, message: "Rôle invalide." };
+  if (!MANUAL_INVITE_ROLES.includes(role)) {
+    return {
+      ok: false,
+      message: "Ce rôle est piloté par Airtable : ajoutez l'habilitation du contact dans le back office.",
+    };
+  }
   if (role === "direction" && !ctx.isDirection) {
     return { ok: false, message: "Seule la direction peut attribuer le rôle de direction." };
   }

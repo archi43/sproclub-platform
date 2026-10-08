@@ -33,7 +33,8 @@
     "test:journey": "node --test tests/journey.unit.test.mts",
     "test:search": "node --test tests/search.unit.test.mts",
     "test:design": "node --test tests/contrast.unit.test.mts tests/list-summary.unit.test.mts",
-    "test:jury": "node --env-file-if-exists=.env.local --test-concurrency=1 --test tests/jury.unit.test.mts tests/jury.integration.test.mts"
+    "test:jury": "node --env-file-if-exists=.env.local --test-concurrency=1 --test tests/jury.unit.test.mts tests/jury.integration.test.mts",
+    "test:access": "node --env-file-if-exists=.env.local --test-concurrency=1 --test tests/access.unit.test.mts tests/access.integration.test.mts"
   },
   "dependencies": {
     "@supabase/ssr": "^0.5.1",
