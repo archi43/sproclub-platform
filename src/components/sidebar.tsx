@@ -6,7 +6,7 @@ import { usePathname } from "next/navigation";
 import {
   LayoutDashboard, ListChecks, Scale, GraduationCap, ShieldCheck, BarChart3,
   BookOpen, Briefcase, Settings, Bell, Activity, Route, FolderOpen, FileText,
-  CalendarClock, Presentation, Eye, Users, Sparkles, Menu, X,
+  CalendarClock, Presentation, Eye, Users, Sparkles, KeyRound, Menu, X,
   type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -20,7 +20,7 @@ export type IconName =
   | "dashboard" | "operations" | "jury" | "learners" | "compliance" | "reporting"
   | "programs" | "recruitment" | "admin" | "notifications" | "ops" | "path"
   | "dossier" | "deliverables" | "coaching" | "defense" | "jobs" | "visibility"
-  | "talent" | "needs" | "students";
+  | "talent" | "needs" | "students" | "access";
 
 const ICONS: Record<IconName, LucideIcon> = {
   dashboard: LayoutDashboard, operations: ListChecks, jury: Scale,
@@ -29,7 +29,7 @@ const ICONS: Record<IconName, LucideIcon> = {
   notifications: Bell, ops: Activity, path: Route, dossier: FolderOpen,
   deliverables: FileText, coaching: CalendarClock, defense: Presentation,
   jobs: Briefcase, visibility: Eye, talent: Sparkles, needs: GraduationCap,
-  students: Users,
+  students: Users, access: KeyRound,
 };
 
 export interface NavItem {

@@ -169,6 +169,7 @@ function JourneyCard({ journey: j }: { journey: Journey }) {
       <p className="text-sm text-muted">
         Vos cours et vos dépôts de projet se passent sur 360Learning.{" "}
         <Link href="/mon-parcours/livrables">Voir mes livrables</Link> ·{" "}
+        <Link href="/mon-parcours/acces">Mes accès et identifiants</Link> ·{" "}
         <Link href="/mon-parcours/dossier">Mon dossier et mes documents</Link>
       </p>
     </section>

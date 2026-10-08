@@ -8,6 +8,7 @@ import { TalentStatusForm } from "./talent-ui";
 import { listReportsForLearner } from "@/lib/data/coaching";
 import { listEmissions, type Emission } from "@/lib/data/documents-admin";
 import { learnerAuditTrail, logDossierAccess } from "@/lib/data/rgpd";
+import { getEnrollmentResources, type ResourceAccess } from "@/lib/data/resources";
 import { getRolesForOrg } from "@/lib/auth";
 import { PageHeader } from "@/components/ui/page-header";
 import { Card } from "@/components/ui/card";
@@ -18,6 +19,11 @@ import { EraseLearner } from "./rgpd-ui";
 
 const pct = (v: unknown) => (typeof v === "number" ? `${Math.round(v * 100)}%` : "—");
 const val = (v: unknown) => (v === null || v === undefined || v === "" ? "—" : String(v));
+const resourceDateFmt = new Intl.DateTimeFormat("fr-FR", { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" });
+const resourceDate = (iso: string | null) => (iso ? resourceDateFmt.format(new Date(`${iso}T00:00:00Z`)) : "sans borne");
+const RESOURCE_STATUS: Record<ResourceAccess["status"], string> = {
+  active: "en cours", upcoming: "à venir", expired: "terminé",
+};
 const bool = (v: unknown) => (v === true ? "Oui" : v === false ? "Non" : "—");
 
 function Field({ label, value }: { label: string; value: string }) {
@@ -57,7 +63,12 @@ export default async function FicheApprenant({ params }: { params: { id: string 
 
   const { learner, enrollments } = sheet;
   const name = [learner.first_name, learner.last_name].filter(Boolean).join(" ") || learner.email;
-  const emissionsByEnrollment = await Promise.all(enrollments.map((e) => listEmissions(org.id, String(e.id))));
+  const [emissionsByEnrollment, resources] = await Promise.all([
+    Promise.all(enrollments.map((e) => listEmissions(org.id, String(e.id)))),
+    getEnrollmentResources(org.id, enrollments.map((e) => String(e.id))),
+  ]);
+  const resourcesOf = (enrollmentId: string): ResourceAccess[] =>
+    resources.filter((r) => r.enrollmentId === enrollmentId);
 
   // RGPD: audit this dossier access; load the trail + the caller's roles. Skip a
   // Next.js router prefetch (hovering the list) — it is not a real consultation
@@ -105,6 +116,20 @@ export default async function FicheApprenant({ params }: { params: { id: string 
             <Field label="Retard (jours)" value={val(e.late_days)} />
             <Field label="Projets validés / obligatoires" value={`${val(e.projects_validated)} / ${val(e.projects_required)}`} />
             <Field label="Note globale (sur 4)" value={val(e.global_grade)} />
+          </Section>
+
+          <Section title="Accès aux ressources">
+            {resourcesOf(String(e.id)).length === 0 ? (
+              <span className="text-muted">Aucun accès affecté (saisie dans Airtable, « Affectation ressources »).</span>
+            ) : (
+              resourcesOf(String(e.id)).map((r) => (
+                <Field
+                  key={r.id}
+                  label={r.type ?? "Accès"}
+                  value={`${r.label} · ${RESOURCE_STATUS[r.status]} · du ${resourceDate(r.startsOn)} au ${resourceDate(r.endsOn)}`}
+                />
+              ))
+            )}
           </Section>
 
           <Section title="Certification">

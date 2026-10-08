@@ -7,6 +7,7 @@ import { syncFillout } from "@/lib/sync/fillout";
 import { pushCoachingReports } from "@/lib/sync/airtable-writeback";
 import { pushDefenses } from "@/lib/sync/soutenance-writeback";
 import { syncAccess } from "@/lib/sync/access-sync";
+import { syncResourceAssignments } from "@/lib/sync/resource-sync";
 import { logOpsEvent } from "@/lib/data/ops";
 
 /**
@@ -35,6 +36,8 @@ export interface SyncOutcome {
   defenses?: unknown;
   /** Rapprochement des accès depuis Contacts + Habilitations (INC-29) — non fatal. */
   access?: unknown;
+  /** Reflet des affectations de ressources (INC-30) — non fatal. */
+  resources?: unknown;
   error?: string;
   /** `true` quand l'échec vient d'une configuration absente, pas d'une panne. */
   notConfigured?: boolean;
@@ -66,6 +69,17 @@ export async function runAirtableSync(
         message: "Échec du rapprochement des accès",
         detail: message,
       });
+    }
+
+    // Affectations de ressources (INC-30). Non fatal, et après les Commandes :
+    // une affectation se rattache à un dossier qui doit déjà exister.
+    let resources: unknown;
+    try {
+      resources = await syncResourceAssignments(admin, orgId);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "resource sync failed";
+      resources = { error: message };
+      await logOpsEvent({ orgId, level: "error", source, message: "Échec du reflet des accès aux ressources", detail: message });
     }
 
     // Fillout → coaching_reports. Non fatal : une panne côté formulaires ne doit
@@ -117,7 +131,7 @@ export async function runAirtableSync(
       await logOpsEvent({ orgId, level: "error", source, message: "Échec du write-back des soutenances", detail: message });
     }
 
-    return { ok: true, org: slug, stats, fillout, writeback, defenses, access };
+    return { ok: true, org: slug, stats, fillout, writeback, defenses, access, resources };
   } catch (err) {
     if (err instanceof AirtableNotConfiguredError) {
       return { ok: false, org: slug, error: err.message, notConfigured: true };
