@@ -1,4 +1,4 @@
-import type { ButtonHTMLAttributes, ComponentProps } from "react";
+import { forwardRef, type ButtonHTMLAttributes, type ComponentProps } from "react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 
@@ -40,9 +40,14 @@ export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   size?: Size;
 }
 
-export function Button({ className, variant = "primary", size = "md", type = "button", ...props }: ButtonProps) {
-  return <button type={type} className={buttonClasses({ variant, size, className })} {...props} />;
-}
+/** Transmet sa `ref` : un composant qui remplace le bouton cliqué doit pouvoir y
+ *  ramener le focus clavier (RGAA), ce qu'une fonction simple interdit en React 18. */
+export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button(
+  { className, variant = "primary", size = "md", type = "button", ...props },
+  ref
+) {
+  return <button ref={ref} type={type} className={buttonClasses({ variant, size, className })} {...props} />;
+});
 
 export type ButtonLinkProps = ComponentProps<typeof Link> & { variant?: Variant; size?: Size };
 

@@ -3,7 +3,7 @@
 import { getOrgContext } from "@/lib/tenant";
 import { getCurrentUser } from "@/lib/auth";
 import { revealMyResourcePassword } from "@/lib/data/resources";
-import { checkRateLimit, logOpsEvent } from "@/lib/data/ops";
+import { checkRateLimitStrict, logOpsEvent } from "@/lib/data/ops";
 import { RESOURCE_REVEAL_LIMIT } from "@/lib/ratelimit-rules";
 
 export type RevealState =
@@ -28,7 +28,8 @@ export async function revealPasswordAction(assignmentId: string): Promise<Reveal
   const user = await getCurrentUser();
   if (!org || !user) return { ok: false, message: "Votre session a expiré. Reconnectez-vous." };
 
-  if (!(await checkRateLimit(RESOURCE_REVEAL_LIMIT, user.id))) {
+  // Fail-closed : sur un secret, une panne du limiteur refuse plutôt que d'ouvrir.
+  if (!(await checkRateLimitStrict(RESOURCE_REVEAL_LIMIT, user.id))) {
     return { ok: false, message: "Trop de demandes en peu de temps. Réessayez dans quelques minutes." };
   }
 

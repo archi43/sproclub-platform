@@ -71,6 +71,17 @@ create policy resource_assignments_staff_read on resource_assignments
 
 -- Aucune policy insert/update/delete : seul le service-role écrit.
 
+-- `airtable_resource_id` est la clé qui permet de lire le mot de passe. Seule
+-- `reveal_resource_assignment` doit la rendre : on retire donc la lecture de la
+-- colonne aux clients. Un `revoke` de colonne est sans effet tant que le droit
+-- SELECT existe sur la table entière : il faut retirer celui-ci, puis rendre les
+-- colonnes une à une. La fonction, SECURITY DEFINER, lit en tant que propriétaire.
+revoke select on resource_assignments from anon, authenticated;
+grant select (
+  id, org_id, enrollment_id, airtable_record_id, resource_label, resource_type,
+  resource_category, starts_on, ends_on, synced_at
+) on resource_assignments to authenticated;
+
 -- -----------------------------------------------------------------------------
 -- Révélation du mot de passe : la base est le garde, pas l'écran.
 --
@@ -84,7 +95,11 @@ create policy resource_assignments_staff_read on resource_assignments
 --      autre apprenant, alors que la policy staff lui laisserait lire la ligne ;
 --   3. que la date du jour (Europe/Paris) est dans la période, bornes incluses
 --      — même définition que `assignmentStatus` dans `resource-rules.ts` ;
--- puis journalise la révélation dans `audit_log` avant de rendre l'identifiant.
+-- puis journalise la demande dans `audit_log` avant de rendre l'identifiant.
+-- L'action s'appelle `resource.password_request`, et non « reveal » : l'entrée
+-- est écrite AVANT la lecture Airtable, qui peut encore échouer (panne, champ
+-- vide). En cas de contestation, le journal prouve une demande autorisée, pas un
+-- affichage — il ne doit pas prétendre davantage.
 -- Refus = aucune ligne rendue, et rien n'est journalisé.
 -- -----------------------------------------------------------------------------
 create or replace function reveal_resource_assignment(p_assignment uuid)
@@ -120,7 +135,7 @@ begin
   end if;
 
   insert into audit_log (org_id, actor_id, action, subject_type, subject_id, detail)
-  values (v_org, auth.uid(), 'resource.password_reveal', 'learner', v_learner, 'Ressource ' || v_label);
+  values (v_org, auth.uid(), 'resource.password_request', 'learner', v_learner, 'Ressource ' || v_label);
 
   return query select v_res, v_label;
 end;

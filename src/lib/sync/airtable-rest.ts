@@ -13,6 +13,8 @@ import "server-only";
  * `fetch` ne se justifie pas.
  */
 
+const ERROR_BODY_MAX = 200;
+
 export class AirtableNotConfiguredError extends Error {
   constructor() {
     super("Airtable source is not configured (missing AIRTABLE_API_KEY / AIRTABLE_BASE_ID).");
@@ -73,9 +75,14 @@ export async function fetchAllRecords(
   let offset: string | undefined;
   do {
     const url = `${base}?pageSize=100&${query}${filter}${offset ? `&offset=${encodeURIComponent(offset)}` : ""}`;
-    const res = await fetch(url, { headers: { Authorization: `Bearer ${apiKey}` } });
+    // `no-store` : le Data Cache de Next mettrait sinon en cache une lecture GET
+    // côté serveur. Pour une synchronisation ce serait une donnée périmée ; pour
+    // un mot de passe (INC-30), un secret stocké hors de toute maîtrise.
+    const res = await fetch(url, { headers: { Authorization: `Bearer ${apiKey}` }, cache: "no-store" });
     if (!res.ok) {
-      throw new Error(`Airtable fetch failed (${tableId}): ${res.status} ${await res.text()}`);
+      // Corps tronqué : il finit dans `ops_events` (minimisation, patron du client 360L).
+      const body = (await res.text()).slice(0, ERROR_BODY_MAX);
+      throw new Error(`Airtable fetch failed (${tableId}): ${res.status} ${body}`);
     }
     const page = (await res.json()) as AirtablePage;
     for (const r of page.records) out.push({ id: r.id, fields: r.fields });

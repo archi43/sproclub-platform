@@ -452,8 +452,11 @@ Incréments livrés (voir `PLAN_DEV_PRODUIT.md`) :
   **La base est le garde, pas l'écran** : le serveur n'obtient l'identifiant Airtable du compte que
   par `reveal_resource_assignment` (SECURITY DEFINER, EXECUTE verrouillé comme en `0019`), qui
   vérifie dans la même transaction le rôle apprenant, la propriété (e-mail du profil), la période
-  (date de Paris, bornes incluses) et **journalise la révélation dans `audit_log`**, visible sur la
-  fiche apprenant de la coordination. Une action serveur étant appelable hors de son écran, la
+  (date de Paris, bornes incluses) et **journalise la demande dans `audit_log`**
+  (`resource.password_request` : écrite avant la lecture Airtable, elle prouve une demande
+  autorisée, pas un affichage), visible sur la fiche apprenant de la coordination. La colonne
+  `airtable_resource_id` est retirée en lecture aux clients (droits par colonne) : seule la
+  fonction la rend. Une action serveur étant appelable hors de son écran, la
   garde ne pouvait pas vivre dans l'action. Un compte qui cumule apprenant et coordination lit
   toutes les lignes (policy staff) mais n'obtient le secret que des siennes.
   Livré : `resource-rules.ts` (**pur, sans import** : plan de reflet avec motifs d'écart comptés,
@@ -463,10 +466,13 @@ Incréments livrés (voir `PLAN_DEV_PRODUIT.md`) :
   source ne porte plus, sûr puisque la table est produite entièrement par la sync) ; branchement
   non fatal dans le pipeline ; `data/resources.ts` ; écran **« Mes accès »** (`/mon-parcours/acces`,
   afficher / copier / masquer, masquage automatique après deux minutes, plafond de 20 révélations
-  par quart d'heure) ; section « Accès aux ressources » sur la fiche apprenant (sans mot de passe).
+  par quart d'heure, refus si le limiteur est en panne) ; section « Accès aux ressources » sur la fiche apprenant (sans mot de passe).
   **RGPD** : export sans mot de passe ; `eraseLearner` retire les affectations ; la sync écarte les
   dossiers effacés (`isErasedEmail`, `rgpd-rules.ts`). Une affectation expirée reste visible
   30 jours (sans mot de passe) puis sort du reflet : l'historique reste dans le back office.
+  Revue de sécurité intégrée : lectures Airtable en `cache: "no-store"` (le Data Cache de Next
+  aurait sinon pu stocker un mot de passe), corps d'erreur tronqué, garde-fou « une source vide ne
+  vide pas le reflet », focus clavier et annonces `aria-live` sur l'affichage du mot de passe.
   **Point de vigilance hors périmètre** : les mots de passe restent en clair dans Airtable, et le
   lookup `Mot de passe (à partir de Ressources)` les recopie dans `Affectation ressources`.
 

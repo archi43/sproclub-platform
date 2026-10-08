@@ -13,6 +13,7 @@ import {
   planResourceAssignments,
   staleAssignmentIds,
   sortForDisplay,
+  shouldApplyRemovals,
   type PlanInput,
   type SourceAssignment,
 } from "../src/lib/resource-rules.ts";
@@ -132,4 +133,10 @@ test("affichage : en cours, puis à venir, puis expirés ; fin la plus proche d'
     { id: "act-sans-fin", status: "active" as const, endsOn: null },
   ]);
   assert.deepEqual(sorted.map((s) => s.id), ["act-tot", "act-tard", "act-sans-fin", "venir", "exp"]);
+});
+
+test("miroir : une source vide ne vide pas un reflet existant", () => {
+  assert.equal(shouldApplyRemovals(0, 61), false, "incident probable : on ne coupe rien");
+  assert.equal(shouldApplyRemovals(0, 0), true, "rien à retirer, rien à craindre");
+  assert.equal(shouldApplyRemovals(58, 61), true, "lecture normale : les fins d'accès s'appliquent");
 });

@@ -181,6 +181,13 @@ test("aucune écriture hors service-role, même sur ses propres lignes", { skip 
   assert.equal(still!.ends_on, shift(-1));
 });
 
+test("la clé du compte Airtable n'est lisible que par la fonction de révélation", { skip }, async () => {
+  const { error } = await clients.alice.from("resource_assignments").select("airtable_resource_id");
+  assert.ok(error, "colonne refusée à l'apprenant");
+  const { error: coordErr } = await clients.coord.from("resource_assignments").select("airtable_resource_id");
+  assert.ok(coordErr, "colonne refusée à la coordination");
+});
+
 const reveal = async (c: SupabaseClient, id: string) => {
   const { data, error } = await c.rpc("reveal_resource_assignment", { p_assignment: id });
   assert.ok(!error, error?.message);
@@ -189,11 +196,11 @@ const reveal = async (c: SupabaseClient, id: string) => {
 
 const auditCount = async (actorId: string) => {
   const { data } = await admin.from("audit_log").select("action, detail, subject_id")
-    .eq("org_id", org.a).eq("actor_id", actorId).eq("action", "resource.password_reveal");
+    .eq("org_id", org.a).eq("actor_id", actorId).eq("action", "resource.password_request");
   return data ?? [];
 };
 
-test("révélation : l'apprenant propriétaire, pendant la période, bornes incluses, journalisé", { skip }, async () => {
+test("révélation : l'apprenant propriétaire, pendant la période, bornes incluses, demande journalisée", { skip }, async () => {
   const active = await reveal(clients.alice, assignment.aliceActive);
   assert.equal(active.length, 1);
   assert.equal(active[0].resource_label, "P2W-aliceActive");
@@ -205,7 +212,7 @@ test("révélation : l'apprenant propriétaire, pendant la période, bornes incl
   assert.equal(sansBornes.length, 1, "une affectation sans dates est active");
 
   const entries = await auditCount(users.alice.id);
-  assert.equal(entries.length, 2, "une entrée par révélation");
+  assert.equal(entries.length, 2, "une entrée par demande autorisée");
   assert.equal(entries[0].subject_id, learner.alice, "rattachée au dossier de l'apprenant");
   assert.ok(entries.every((e) => (e.detail as string).startsWith("Ressource P2W-")), "le détail nomme l'identifiant, jamais un secret");
 });

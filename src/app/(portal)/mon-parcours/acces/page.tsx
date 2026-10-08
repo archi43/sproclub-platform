@@ -15,6 +15,9 @@ import { PasswordReveal } from "./password-reveal";
  * passe ne figure jamais dans la page rendue par le serveur.
  */
 
+// Le statut dépend de la date du jour : jamais de rendu statique ni de cache.
+export const dynamic = "force-dynamic";
+
 const dateFmt = new Intl.DateTimeFormat("fr-FR", { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" });
 const fmt = (iso: string) => dateFmt.format(new Date(`${iso}T00:00:00Z`));
 

@@ -163,3 +163,14 @@ export function sortForDisplay<T extends { status: AssignmentStatus; endsOn: str
     return (a.endsOn ?? "9999-12-31").localeCompare(b.endsOn ?? "9999-12-31");
   });
 }
+
+/**
+ * Garde-fou du miroir : une lecture qui ne rend **aucune** affectation alors que
+ * le reflet en porte ressemble davantage à un incident (filtre cassé, table
+ * renommée, vue vidée) qu'à la fin simultanée de tous les accès. Dans ce cas on
+ * ne retire rien : laisser une ligne quelques heures de trop coûte moins que
+ * couper d'un coup les accès de toute une promotion.
+ */
+export function shouldApplyRemovals(readCount: number, existingCount: number): boolean {
+  return readCount > 0 || existingCount === 0;
+}

@@ -19,6 +19,8 @@ import { EraseLearner } from "./rgpd-ui";
 
 const pct = (v: unknown) => (typeof v === "number" ? `${Math.round(v * 100)}%` : "—");
 const val = (v: unknown) => (v === null || v === undefined || v === "" ? "—" : String(v));
+const resourceDateFmt = new Intl.DateTimeFormat("fr-FR", { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" });
+const resourceDate = (iso: string | null) => (iso ? resourceDateFmt.format(new Date(`${iso}T00:00:00Z`)) : "sans borne");
 const RESOURCE_STATUS: Record<ResourceAccess["status"], string> = {
   active: "en cours", upcoming: "à venir", expired: "terminé",
 };
@@ -124,7 +126,7 @@ export default async function FicheApprenant({ params }: { params: { id: string 
                 <Field
                   key={r.id}
                   label={r.type ?? "Accès"}
-                  value={`${r.label} · ${RESOURCE_STATUS[r.status]} · ${val(r.startsOn)} → ${val(r.endsOn)}`}
+                  value={`${r.label} · ${RESOURCE_STATUS[r.status]} · du ${resourceDate(r.startsOn)} au ${resourceDate(r.endsOn)}`}
                 />
               ))
             )}

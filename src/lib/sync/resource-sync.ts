@@ -1,7 +1,7 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { fetchResourceSource, type ResourceSource } from "@/lib/sync/resource-source";
-import { planResourceAssignments, staleAssignmentIds, type AssignmentSkipReason } from "@/lib/resource-rules";
+import { planResourceAssignments, shouldApplyRemovals, staleAssignmentIds, type AssignmentSkipReason } from "@/lib/resource-rules";
 import { isErasedEmail } from "@/lib/rgpd-rules";
 
 /**
@@ -68,6 +68,12 @@ export async function syncResourceAssignments(
     .eq("org_id", orgId);
   if (exErr) throw new Error(`resource sync: existing: ${exErr.message}`);
 
+  const removalsAllowed = shouldApplyRemovals(source.assignments.length, (existing ?? []).length);
+  if (!removalsAllowed) {
+    throw new Error(
+      `resource sync: la source ne rend aucune affectation alors que ${(existing ?? []).length} sont reflétées ; rien n'est retiré`
+    );
+  }
   const stale = staleAssignmentIds(existing ?? [], plan.rows);
   if (stale.length > 0) {
     const { error } = await admin.from("resource_assignments").delete().eq("org_id", orgId).in("id", stale);
