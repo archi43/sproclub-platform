@@ -13,7 +13,7 @@ Migrations **0001→0030** + seed appliqués. Suite de tests **250/250** verte c
 `test:talent` 12, `test:jobs` 11, `test:availability` 32, `test:jury` 19, `test:journey` 9, `test:search` 6,
 `test:design` 17, `test:roles` 12, `test:sync` 23). Exécution **sérialisée**
 (`npm test` → `--test-concurrency=1`) pour éviter la flakiness de rate-limit auth sous concurrence.
-**7 crons Vercel** (sync 05:00, sync 360L filet quotidien 05:45, agendas 06:00, miroir 06:30,
+**6 crons Vercel** (sync 05:00, sync 360L filet quotidien 05:45, agendas 06:00, ~~miroir 06:30~~ retiré le 2026-10-08,
 export BPF lundi 07:00, purge rétention 03:15, relances 08:00) + **deux workflows GitHub Actions** :
 `sync-l360-hourly` (horaire) et `sync-airtable-quarterly` (**toutes les 15 min**) — les crons Vercel de 5 h
 et 5 h 45 restent des filets quotidiens

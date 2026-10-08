@@ -71,7 +71,7 @@ manuel pour confirmer (`curl -H "x-cron-secret: <CRON_SECRET>" .../api/admin/syn
 | Cron | Horaire (UTC) | Rôle |
 |---|---|---|
 | `/api/admin/sync-airtable` | `0 5 * * *` | Sync Airtable → Postgres (lecture seule) |
-| `/api/admin/mirror-availabilities` | `30 6 * * *` | Miroir des créneaux Cal.eu |
+| ~~`/api/admin/mirror-availabilities`~~ | retiré le 2026-10-08 | Miroir Cal.eu éteint (hôte de test) ; la route répond 410 tant que `AVAILABILITY_MIRROR_ENABLED` n'est pas `true` |
 | `/api/admin/export-bpf` | `0 7 * * 1` (lundi) | Export réglementaire (Module 5) |
 | `/api/admin/purge-retention` | `15 3 * * *` | Purge de rétention (RGPD/observabilité) |
 | `/api/admin/run-notifications` | `0 8 * * *` | Relances e-mail (INC-7) |
