@@ -2,7 +2,7 @@ import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
 import { adminClient } from "@/lib/supabase/admin";
-import { decideAccountErasure } from "@/lib/rgpd-rules";
+import { decideAccountErasure, erasedTombstoneEmail } from "@/lib/rgpd-rules";
 
 /**
  * RGPD (INC-11): audit trail, personal-data export, and right-to-erasure.
@@ -83,7 +83,7 @@ export async function exportPersonalData(orgId: string, learnerId: string): Prom
   const enrollmentIds = (enrollmentsRes.data ?? []).map((e) => (e as { id: string }).id);
 
   const learnerEmail = (learner as { email: string }).email;
-  const [reservations, deliverables, reports, emissions, notifications] = await Promise.all([
+  const [reservations, deliverables, reports, emissions, notifications, resources] = await Promise.all([
     supabase.from("reservations").select("id, kind, project_number, starts_at, status").eq("org_id", orgId).eq("learner_id", learnerId),
     enrollmentIds.length
       ? supabase.from("project_deliverables").select("id, enrollment_id, project_number, deliverable_submitted, submitted_at").eq("org_id", orgId).in("enrollment_id", enrollmentIds)
@@ -93,6 +93,11 @@ export async function exportPersonalData(orgId: string, learnerId: string): Prom
       : Promise.resolve({ data: [] as unknown[] }),
     supabase.from("document_emissions").select("kind, storage_path, generated_at").eq("org_id", orgId).eq("learner_email", learnerEmail),
     supabase.from("notifications").select("kind, subject, status, sent_at, created_at").eq("org_id", orgId).eq("recipient_email", learnerEmail),
+    // Accès aux ressources (INC-30) : identifiant et période, jamais le mot de passe,
+    // qui n'est pas une donnée de l'apprenant mais un secret du compte partagé.
+    enrollmentIds.length
+      ? supabase.from("resource_assignments").select("enrollment_id, resource_label, resource_type, starts_on, ends_on").eq("org_id", orgId).in("enrollment_id", enrollmentIds)
+      : Promise.resolve({ data: [] as unknown[] }),
   ]);
 
   return {
@@ -105,6 +110,7 @@ export async function exportPersonalData(orgId: string, learnerId: string): Prom
     coachingReports: reports.data ?? [],
     documents: emissions.data ?? [],
     notifications: notifications.data ?? [],
+    resourceAccess: resources.data ?? [],
   };
 }
 
@@ -141,7 +147,7 @@ export async function eraseLearner(
   if (supErr) throw new RgpdError(supErr.message);
 
   // 2) Anonymize the learner row in place (identifiers removed, id kept).
-  const tombstone = `erased-${learnerId}@erased.invalid`;
+  const tombstone = erasedTombstoneEmail(learnerId);
   const { error: anonErr } = await admin
     .from("learners_ro")
     .update({ first_name: "Anonymisé", last_name: null, email: tombstone, phone: null, city: null })
@@ -169,6 +175,21 @@ export async function eraseLearner(
   //     effacée. La liste de suppression (étape 1) empêche par ailleurs la
   //     synchronisation de recréer le compte au passage suivant.
   await admin.from("access_sync_log").delete().eq("org_id", orgId).eq("email", email);
+
+  // 3b ter) Retirer les affectations de ressources (INC-30). Elles ne portent pas
+  //     d'identité, mais relient encore un compte serveur nommé à cette
+  //     personne ; aucune obligation ne justifie de les garder. La
+  //     synchronisation ne les recrée pas : elle écarte les dossiers effacés.
+  {
+    const { data: enr, error: enrErr } = await admin
+      .from("enrollments_ro").select("id").eq("org_id", orgId).eq("learner_id", learnerId);
+    if (enrErr) throw new RgpdError(enrErr.message);
+    const ids = (enr ?? []).map((e) => (e as { id: string }).id);
+    if (ids.length > 0) {
+      const { error: raErr } = await admin.from("resource_assignments").delete().eq("org_id", orgId).in("enrollment_id", ids);
+      if (raErr) throw new RgpdError(raErr.message);
+    }
+  }
 
   // 3c) Retirer du vivier de talents (INC-17) : le consentement s'éteint avec
   //     l'effacement — la ligne disparaît, la vue partenaire ne les liste plus

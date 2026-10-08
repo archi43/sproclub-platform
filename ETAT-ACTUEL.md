@@ -438,6 +438,38 @@ Incréments livrés (voir `PLAN_DEV_PRODUIT.md`) :
   À l'état actuel, la synchronisation ouvrira **84 accès apprenant et 19 accès coach**, et fermera
   automatiquement les **39 habilitations** qui arrivent à échéance dans les 90 prochains jours.
 
+- ✅ **INC-30** (accès aux ressources : chaque apprenant retrouve ses accès et leur mot de passe) :
+  demande de la direction, le 2026-10-08. Les accès techniques (serveur SAP P2W/S4H, Learning Hub,
+  BTP, SuccessFactors, Odoo…) sont tenus dans Airtable : `Affectation ressources` relie une commande
+  à un ou plusieurs comptes de `Ressources`, pour une période (`Start date`/`End Date`). Une
+  soixantaine d'affectations sont en cours ou à venir.
+  **Décision de sécurité : le mot de passe n'entre pas dans Postgres.** `resource_assignments`
+  (migration `0032`) ne reflète que l'affectation : identifiant de connexion, type, catégorie,
+  période. Le secret est lu **à la demande** dans Airtable, côté serveur, par l'apprenant
+  propriétaire et pendant la période seulement. Copier les mots de passe aurait doublé la surface
+  d'exposition (sauvegardes, exports, réplicas) et créé une seconde vérité qui dérive dès qu'un mot
+  de passe change dans le back office.
+  **La base est le garde, pas l'écran** : le serveur n'obtient l'identifiant Airtable du compte que
+  par `reveal_resource_assignment` (SECURITY DEFINER, EXECUTE verrouillé comme en `0019`), qui
+  vérifie dans la même transaction le rôle apprenant, la propriété (e-mail du profil), la période
+  (date de Paris, bornes incluses) et **journalise la révélation dans `audit_log`**, visible sur la
+  fiche apprenant de la coordination. Une action serveur étant appelable hors de son écran, la
+  garde ne pouvait pas vivre dans l'action. Un compte qui cumule apprenant et coordination lit
+  toutes les lignes (policy staff) mais n'obtient le secret que des siennes.
+  Livré : `resource-rules.ts` (**pur, sans import** : plan de reflet avec motifs d'écart comptés,
+  statut d'une affectation, règle de révélation, ordre d'affichage) ; `sync/resource-source.ts`
+  (trois tables, filtre de période côté Airtable, champ « Mot de passe » **absent** de la liste
+  lue par la synchronisation) ; `sync/resource-sync.ts` (miroir complet, retrait des lignes que la
+  source ne porte plus, sûr puisque la table est produite entièrement par la sync) ; branchement
+  non fatal dans le pipeline ; `data/resources.ts` ; écran **« Mes accès »** (`/mon-parcours/acces`,
+  afficher / copier / masquer, masquage automatique après deux minutes, plafond de 20 révélations
+  par quart d'heure) ; section « Accès aux ressources » sur la fiche apprenant (sans mot de passe).
+  **RGPD** : export sans mot de passe ; `eraseLearner` retire les affectations ; la sync écarte les
+  dossiers effacés (`isErasedEmail`, `rgpd-rules.ts`). Une affectation expirée reste visible
+  30 jours (sans mot de passe) puis sort du reflet : l'historique reste dans le back office.
+  **Point de vigilance hors périmètre** : les mots de passe restent en clair dans Airtable, et le
+  lookup `Mot de passe (à partir de Ressources)` les recopie dans `Affectation ressources`.
+
   **Vérifié en réel** : rendu de `coordination/apprenants` sous session staff (coque navy,
   marqueur actif, tuiles alimentées par les dossiers réels).
   Reste : Étape 7 (ouverture à d'autres organismes).

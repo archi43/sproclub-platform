@@ -171,7 +171,7 @@ Chaque domaine métier suit le même triplet, sans exception :
 - `src/lib/<domaine>-rules.ts` : règles **pures**, sans base ni horloge, testées hors DB
   (`compliance-rules`, `reporting-rules`, `rgpd-rules`, `ratelimit-rules`, `notification-rules`,
   `l360-rules`, `talent-rules`, `job-rules`, `availability-rules`, `journey-rules`,
-  `search-rules`, `contrast-rules`, `list-summary-rules`, `nav-active`).
+  `search-rules`, `contrast-rules`, `list-summary-rules`, `nav-active`, `resource-rules`).
   **Ces modules n'importent rien** : `node --test` ne résout pas l'alias `@/`, donc un
   cross-import entre règles pures casserait la suite. Si deux domaines ont besoin de la même
   transformation, c'est l'appelant qui la compose (ex. `progressPercent` appliqué avant
@@ -247,6 +247,10 @@ La carte fichier par fichier est dans `STRUCTURE.md`. En cas de doute, `ls -R sr
   `access_sync_log` porte des adresses e-mail : oubliée, elle aurait survécu 12 mois à un effacement.
   Symétriquement, une synchronisation doit consulter `data_erasures` avant de recréer un compte,
   sinon elle annule un droit exercé au passage suivant.
+- **Un mot de passe de ressource ne transite jamais par Postgres** (INC-30). Il est lu à la demande
+  dans Airtable, après que `reveal_resource_assignment` a vérifié rôle, propriété et période et
+  journalisé. Ne jamais ajouter « Mot de passe » aux champs lus par une synchronisation, ni le
+  journaliser, ni le rendre dans une page serveur.
 - **Une couleur de texte ne se choisit pas à l'œil** : `#B8860B` (warning) plafonnait à 3,25:1
   sur blanc et était **déjà en production** sur quatre écrans ; `#2E7D32` (success) tombait à
   4,47:1 sur sa propre teinte. Les deux ont désormais une variante `-ink`. Tout nouveau couple
@@ -307,7 +311,7 @@ avec compensation (annulation) si l'insert échoue ; dégradation propre si Cal.
 Reste : planification cron du miroir, écran d'affectation du jury, mise à jour du jury sur Cal.eu.
 
 ## Backlog immédiat (suite du `PLAN_DEV_PRODUIT.md`)
-**Tous les incréments INC-0 → INC-29 sont livrés** (migrations `0001→0031` appliquées). Prochaine grande étape : **Étape 7** —
+**Tous les incréments INC-0 → INC-30 sont livrés** (migrations `0001→0032` appliquées). Prochaine grande étape : **Étape 7** —
 ouverture à d'autres organismes (onboarding par paramétrage, image de marque et domaine par organisme,
 audit de sécurité externe). Le socle multi-locataire est déjà en place : c'est une extension, pas une refonte.
 Restes différés : INC-29 extension du single-select « Rôle applicatif » aux rôles Évaluateur /

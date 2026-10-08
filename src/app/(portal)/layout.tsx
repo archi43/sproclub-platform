@@ -7,6 +7,7 @@ const nav: NavItem[] = [
   { href: "/mon-parcours", label: "Mon parcours", icon: "path" },
   { href: "/mon-parcours/dossier", label: "Mon dossier", icon: "dossier" },
   { href: "/mon-parcours/livrables", label: "Mes livrables", icon: "deliverables" },
+  { href: "/mon-parcours/acces", label: "Mes accès", icon: "access" },
   { href: "/mon-parcours/reservation", label: "Coaching", icon: "coaching" },
   { href: "/mon-parcours/soutenance", label: "Soutenance", icon: "defense" },
   { href: "/mon-parcours/offres", label: "Offres d'emploi", icon: "jobs" },
