@@ -1,5 +1,6 @@
 "use server";
 
+import { isBookableSlot } from "@/lib/availability-rules";
 import { revalidatePath } from "next/cache";
 import { getOrgContext } from "@/lib/tenant";
 import { createClient } from "@/lib/supabase/server";
@@ -28,7 +29,7 @@ export async function bookCoachingAction(
     data: { user },
   } = await supabase.auth.getUser();
   const slot = await getAvailabilityById(supabase, org.id, availabilityId);
-  if (!slot || slot.kind !== "coaching") {
+  if (!slot || slot.kind !== "coaching" || !isBookableSlot(slot.starts_at, new Date())) {
     return { ok: false, message: "Ce créneau n'est plus disponible." };
   }
 

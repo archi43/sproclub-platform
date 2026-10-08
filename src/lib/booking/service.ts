@@ -4,7 +4,7 @@ import type { Availability, BookingKind, Reservation } from "@/lib/types";
 import { createReservation } from "@/lib/data/reservations";
 import { getBookingProvider } from "@/lib/booking/calcom";
 import { ProviderNotConfiguredError, type BookingProvider } from "@/lib/booking/provider";
-import { bookingStartRef } from "@/lib/availability-rules";
+import { bookingStartRef, isBookableSlot } from "@/lib/availability-rules";
 import { logOpsEvent } from "@/lib/data/ops";
 
 /**
@@ -36,8 +36,17 @@ function resolveProvider(): BookingProvider | null {
   }
 }
 
-export async function bookSlot(supabase: SupabaseClient, input: BookSlotInput): Promise<Reservation> {
+export async function bookSlot(
+  supabase: SupabaseClient,
+  input: BookSlotInput,
+  now: Date = new Date()
+): Promise<Reservation> {
   const { availability } = input;
+  // L'écran ne liste plus les créneaux passés, mais une action serveur reste
+  // appelable directement : le refus doit vivre ici, pas dans l'affichage.
+  if (!isBookableSlot(availability.starts_at, now)) {
+    throw new Error("Ce créneau est déjà passé. Choisissez un créneau à venir.");
+  }
   const provider = resolveProvider();
 
   // INC-27 — la plateforme porte la disponibilité ; Cal.eu ne sert plus qu'à

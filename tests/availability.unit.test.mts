@@ -6,6 +6,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
+  isBookableSlot,
   generateSlots,
   localToUtc,
   weekdayOf,
@@ -236,4 +237,12 @@ test("un créneau du miroir garde la référence Cal.eu qu'il encapsule", () => 
 test("un miroir vide retombe sur l'heure du créneau, jamais sur rien", () => {
   // `cal:` sans suite produirait une réservation à l'heure « chaîne vide ».
   assert.equal(bookingStartRef("cal:", "2026-09-09T08:00:00.000Z"), "2026-09-09T08:00:00.000Z");
+});
+
+test("créneau réservable : strictement à venir, jamais une date illisible", () => {
+  const now = new Date("2026-10-08T12:00:00Z");
+  assert.equal(isBookableSlot("2026-10-08T12:30:00Z", now), true);
+  assert.equal(isBookableSlot("2026-10-08T12:00:00Z", now), false, "l'instant présent n'est plus réservable");
+  assert.equal(isBookableSlot("2026-07-01T09:00:00Z", now), false, "créneau passé du miroir");
+  assert.equal(isBookableSlot("pas une date", now), false);
 });
