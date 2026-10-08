@@ -46,6 +46,15 @@ async function runMirror(request: NextRequest) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
 
+  // Miroir éteint le 2026-10-08 (fin d'INC-27) : il recopiait les disponibilités
+  // d'un hôte Cal.eu de test, et les apprenants voyaient ces créneaux fictifs.
+  // Les créneaux viennent désormais des plages publiées par les coachs. Le cron
+  // est retiré de `vercel.json` ; ce drapeau empêche en plus qu'un appel manuel
+  // ne le relance par erreur.
+  if (process.env.AVAILABILITY_MIRROR_ENABLED !== "true") {
+    return NextResponse.json({ ok: false, skipped: "miroir Cal.eu désactivé (AVAILABILITY_MIRROR_ENABLED)" }, { status: 410 });
+  }
+
   const hostProfileId = process.env.CALCOM_HOST_PROFILE_ID;
   if (!hostProfileId) {
     return NextResponse.json({ error: "CALCOM_HOST_PROFILE_ID not configured" }, { status: 500 });

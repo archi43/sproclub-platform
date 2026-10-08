@@ -251,6 +251,9 @@ La carte fichier par fichier est dans `STRUCTURE.md`. En cas de doute, `ls -R sr
   dans Airtable, après que `reveal_resource_assignment` a vérifié rôle, propriété et période et
   journalisé. Ne jamais ajouter « Mot de passe » aux champs lus par une synchronisation, ni le
   journaliser, ni le rendre dans une page serveur.
+- **Le token Airtable du projet écrit les enregistrements, pas le schéma** (vérifié dans l'interface
+  le 2026-10-08). Ce qui retient un write-back, c'est son drapeau et la décision de l'activer, pas
+  le credential ; créer un champ reste une action manuelle.
 - **Une couleur de texte ne se choisit pas à l'œil** : `#B8860B` (warning) plafonnait à 3,25:1
   sur blanc et était **déjà en production** sur quatre écrans ; `#2E7D32` (success) tombait à
   4,47:1 sur sa propre teinte. Les deux ont désormais une variante `-ink`. Tout nouveau couple
@@ -279,7 +282,7 @@ le claim JWT `app_metadata.org_id` (robuste avec le pooling PostgREST).
   tables que la migration crée ; l'ordre inverse casse la production.
 - **`npm test` est sérialisé** (`--test-concurrency=1`). Le rate-limit d'authentification
   Supabase rend la suite instable en parallèle : ne pas paralléliser pour gagner du temps.
-- **7 crons Vercel** + **deux workflows GitHub Actions** : `sync-l360-hourly` (horaire) et
+- **6 crons Vercel** (miroir Cal.eu retiré le 2026-10-08) + **deux workflows GitHub Actions** : `sync-l360-hourly` (horaire) et
   `sync-airtable-quarterly` (**toutes les 15 min**, INC-25). Le plan Vercel
   Hobby n'autorise que des crons quotidiens, l'horaire passe donc par Actions (secret
   `CRON_SECRET` à poser dans GitHub).
@@ -304,11 +307,14 @@ jamais le coach référent, évaluateurs issus du vivier du programme, cohérenc
 Domaine TS : `src/lib/data/reservations.ts` (client injecté), port `src/lib/booking/provider.ts`,
 adaptateur `src/lib/booking/calcom.ts` (instance **Cal.eu**, validé en réel). Miroir des créneaux
 `src/lib/booking/mirror.ts` + route `POST /api/admin/mirror-availabilities` (secret `CRON_SECRET`)
-→ remplit `availabilities` (préfixe ref `cal:`). Types d'événement Coaching/Soutenance créés.
+→ remplissait `availabilities` (préfixe ref `cal:`). **Miroir éteint le 2026-10-08** : il recopiait un
+hôte Cal.eu de test (1 000 créneaux fictifs proposés aux apprenants). Cron retiré, route gardée par
+`AVAILABILITY_MIRROR_ENABLED` (absent = éteint, réponse 410), créneaux `cal:` supprimés. Les créneaux
+viennent désormais des plages publiées par les coachs (INC-27). Types d'événement Coaching/Soutenance créés.
 Les actions de réservation (coaching/soutenance) passent par `src/lib/booking/service.ts`
 (`bookSlot`) : crée l'événement Cal.eu puis enregistre la réservation avec `calcom_booking_id`,
 avec compensation (annulation) si l'insert échoue ; dégradation propre si Cal.com non configuré.
-Reste : planification cron du miroir, écran d'affectation du jury, mise à jour du jury sur Cal.eu.
+Reste : écran d'affectation du jury, mise à jour du jury sur Cal.eu.
 
 ## Backlog immédiat (suite du `PLAN_DEV_PRODUIT.md`)
 **Tous les incréments INC-0 → INC-30 sont livrés** (migrations `0001→0032` appliquées). Prochaine grande étape : **Étape 7** —
@@ -316,10 +322,10 @@ ouverture à d'autres organismes (onboarding par paramétrage, image de marque e
 audit de sécurité externe). Le socle multi-locataire est déjà en place : c'est une extension, pas une refonte.
 Restes différés : INC-29 extension du single-select « Rôle applicatif » aux rôles Évaluateur /
 Coordination / Direction (sans quoi ces rôles restent des comptes de service) ;
-INC-3 serveurs SAP + planning S1.2 ; INC-4 remontée Airtable des CR [token write] +
+INC-3 serveurs SAP + planning S1.2 ; INC-4 remontée Airtable des CR [décision d'activation] +
 dispos multi-coach ; INC-12 exécution réelle du test de restauration en staging ; INC-26 activation du
-write-back des soutenances [token write + `AIRTABLE_WRITEBACK_ENABLED`] ; INC-27 extinction du miroir
-`cal:` quand les coachs auront publié leurs plages ; INC-7 credential
+write-back des soutenances [`AIRTABLE_WRITEBACK_ENABLED`] ; INC-27 publication des plages par les
+coachs (un seul l'a fait au 2026-10-08, le miroir étant éteint) ; INC-7 credential
 Resend (`RESEND_API_KEY`/`NOTIF_FROM`) pour l'envoi réel + échéances CPF — en attente d'extension sync / credential.
 
 ## Documents de référence
