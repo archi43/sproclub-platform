@@ -6,6 +6,7 @@ import { fetchFilloutSubmissions } from "@/lib/sync/fillout-source";
 import { syncFillout } from "@/lib/sync/fillout";
 import { pushCoachingReports } from "@/lib/sync/airtable-writeback";
 import { pushDefenses } from "@/lib/sync/soutenance-writeback";
+import { syncAccess } from "@/lib/sync/access-sync";
 import { logOpsEvent } from "@/lib/data/ops";
 
 /**
@@ -32,6 +33,8 @@ export interface SyncOutcome {
   writeback?: unknown;
   /** Résultat du write-back des soutenances (INC-26) — non fatal. */
   defenses?: unknown;
+  /** Rapprochement des accès depuis Contacts + Habilitations (INC-29) — non fatal. */
+  access?: unknown;
   error?: string;
   /** `true` quand l'échec vient d'une configuration absente, pas d'une panne. */
   notConfigured?: boolean;
@@ -47,6 +50,23 @@ export async function runAirtableSync(
   try {
     const commandes = await fetchCommandes();
     const stats = await syncCommandes(admin, orgId, commandes);
+
+    // Accès et rôles depuis Contacts + Habilitations (INC-29). Non fatal : un
+    // incident sur l'annuaire ne doit pas invalider le pull des Commandes. En
+    // revanche l'échec doit être BRUYANT — un rapprochement d'accès muet
+    // laisserait des comptes ouverts après la fin d'une habilitation.
+    let access: unknown;
+    try {
+      access = await syncAccess(admin, orgId);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "access sync failed";
+      access = { error: message };
+      await logOpsEvent({
+        orgId, level: "error", source,
+        message: "Échec du rapprochement des accès",
+        detail: message,
+      });
+    }
 
     // Fillout → coaching_reports. Non fatal : une panne côté formulaires ne doit
     // pas invalider le pull des Commandes, qui est la source de vérité.
@@ -97,7 +117,7 @@ export async function runAirtableSync(
       await logOpsEvent({ orgId, level: "error", source, message: "Échec du write-back des soutenances", detail: message });
     }
 
-    return { ok: true, org: slug, stats, fillout, writeback, defenses };
+    return { ok: true, org: slug, stats, fillout, writeback, defenses, access };
   } catch (err) {
     if (err instanceof AirtableNotConfiguredError) {
       return { ok: false, org: slug, error: err.message, notConfigured: true };

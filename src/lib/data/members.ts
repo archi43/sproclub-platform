@@ -36,6 +36,13 @@ export interface MemberSummary {
   active: boolean;
   /** Earliest grant date across the member's roles. */
   since: string;
+  /**
+   * Rôles qui reflètent une habilitation Airtable (INC-29). Ni l'écran ni la RLS
+   * ne les laissent modifier à la main : ils se gèrent dans le back office.
+   */
+  syncedRoles: AppRole[];
+  /** Vrai dès qu'un rôle est piloté par Airtable : le compte n'est plus à nous. */
+  managedByAirtable: boolean;
 }
 
 type Row = {
@@ -43,6 +50,7 @@ type Row = {
   role: AppRole;
   created_at: string;
   deactivated_at: string | null;
+  source: string | null;
   profile: { email: string; full_name: string | null } | null;
 };
 
@@ -55,15 +63,17 @@ export async function listMembers(orgId: string): Promise<MemberSummary[]> {
     // Disambiguate the embed: memberships has THREE FKs to profiles since 0012
     // (profile_id, invited_by, deactivated_by). Name the intended constraint so
     // PostgREST doesn't error on the ambiguity.
-    .select("profile_id, role, created_at, deactivated_at, profile:profiles!memberships_profile_id_fkey(email, full_name)")
+    .select("profile_id, role, created_at, deactivated_at, source, profile:profiles!memberships_profile_id_fkey(email, full_name)")
     .eq("org_id", orgId);
   if (error) throw new Error(`Failed to load members: ${error.message}`);
 
   const byProfile = new Map<string, MemberSummary>();
   for (const r of (data ?? []) as unknown as Row[]) {
+    const synced = r.source === "airtable";
     const existing = byProfile.get(r.profile_id);
     if (existing) {
       existing.roles.push(r.role);
+      if (synced) existing.syncedRoles.push(r.role);
       if (r.deactivated_at === null) existing.active = true;
       if (r.created_at < existing.since) existing.since = r.created_at;
     } else {
@@ -74,11 +84,18 @@ export async function listMembers(orgId: string): Promise<MemberSummary[]> {
         roles: [r.role],
         active: r.deactivated_at === null,
         since: r.created_at,
+        syncedRoles: synced ? [r.role] : [],
+        managedByAirtable: synced,
       });
     }
   }
   return [...byProfile.values()]
-    .map((m) => ({ ...m, roles: [...new Set(m.roles)].sort() }))
+    .map((m) => ({
+      ...m,
+      roles: [...new Set(m.roles)].sort(),
+      syncedRoles: [...new Set(m.syncedRoles)].sort(),
+      managedByAirtable: m.syncedRoles.length > 0,
+    }))
     .sort((a, b) => a.email.localeCompare(b.email));
 }
 
@@ -116,6 +133,41 @@ async function ensureManageable(orgId: string, profileId: string, actorIsDirecti
   }
 }
 
+/**
+ * Rôles pilotés par Airtable sur ce compte (INC-29).
+ *
+ * La policy `membership_manage` (0031) refuse déjà toute écriture sur ces lignes :
+ * ce garde ne la remplace pas, il **nomme** le refus. Sans lui, l'écran afficherait
+ * « Erreur inattendue » (42501) là où la bonne action est d'aller modifier
+ * l'habilitation dans le back office.
+ *
+ * Il ferme aussi un piège de désactivation : `deactivateMember` tamponne toutes
+ * les lignes actives d'un compte, mais la RLS n'en laisserait passer que les
+ * manuelles. Un compte mixte serait donc désactivé **à moitié**, et garderait son
+ * accès par le rôle synchronisé, sans que rien ne le signale.
+ */
+async function syncedRolesOf(orgId: string, profileId: string): Promise<AppRole[]> {
+  const supabase = createClient();
+  const { data, error } = await supabase
+    .from("memberships")
+    .select("role")
+    .eq("org_id", orgId)
+    .eq("profile_id", profileId)
+    .eq("source", "airtable");
+  if (error) throw new Error(`Failed to read membership source: ${error.message}`);
+  return ((data ?? []) as { role: AppRole }[]).map((r) => r.role);
+}
+
+const SYNCED_HINT =
+  "Ce rôle vient de l'habilitation Airtable : modifiez-la dans le back office, la plateforme s'alignera au prochain passage.";
+
+/** Refuse une écriture manuelle sur un rôle piloté par Airtable. */
+async function ensureNotSynced(orgId: string, profileId: string, role: AppRole): Promise<void> {
+  if ((await syncedRolesOf(orgId, profileId)).includes(role)) {
+    throw new MemberError(SYNCED_HINT);
+  }
+}
+
 /** Grant a role to an existing member. `grantedBy` is recorded for the audit
  *  trail (CA-T3). RLS refuses the write for anyone but direction / coordinator
  *  (and a coordinator granting `direction`). */
@@ -150,6 +202,7 @@ export async function revokeRole(
   actorIsDirection: boolean
 ): Promise<void> {
   await ensureManageable(orgId, profileId, actorIsDirection);
+  await ensureNotSynced(orgId, profileId, role);
   if (role === "direction" && (await countActiveDirections(orgId)) <= 1) {
     throw new MemberError("Impossible de retirer le dernier compte de direction actif.");
   }
@@ -179,6 +232,12 @@ export async function deactivateMember(
     throw new MemberError("Vous ne pouvez pas désactiver votre propre compte.");
   }
   await ensureManageable(orgId, profileId, actorIsDirection);
+  const synced = await syncedRolesOf(orgId, profileId);
+  if (synced.length > 0) {
+    throw new MemberError(
+      "Ce compte est piloté par Airtable : retirez son habilitation dans le back office pour lui couper l'accès."
+    );
+  }
   if ((await holdsDirectionRole(orgId, profileId)) && (await countActiveDirections(orgId)) <= 1) {
     throw new MemberError("Impossible de désactiver le dernier compte de direction actif.");
   }
@@ -202,6 +261,11 @@ export async function reactivateMember(
   actorIsDirection: boolean
 ): Promise<void> {
   await ensureManageable(orgId, profileId, actorIsDirection);
+  if ((await syncedRolesOf(orgId, profileId)).length > 0) {
+    throw new MemberError(
+      "Ce compte est piloté par Airtable : réactivez son habilitation dans le back office."
+    );
+  }
   const supabase = createClient();
   const { error } = await supabase
     .from("memberships")

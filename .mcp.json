@@ -1,11 +1,11 @@
 {
   "mcpServers": {
     "airtable": {
-      "command": "npx",
-      "args": ["-y", "airtable-mcp-server"],
-      "env": {
-        "AIRTABLE_API_KEY": "${AIRTABLE_PAT}"
-      }
+      "command": "bash",
+      "args": [
+        "-c",
+        "export AIRTABLE_API_KEY=$(grep -m1 '^AIRTABLE_API_KEY=' .env.local | cut -d= -f2- | tr -d '\"'); exec npx -y airtable-mcp-server"
+      ]
     }
   }
 }

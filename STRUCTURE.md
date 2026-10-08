@@ -94,12 +94,25 @@ etaient noyees ont ete remontees dans `CLAUDE.md`.
   d'une sélection de dossiers, avancement inconnu exclu de la moyenne).
   Coque à deux tons dans `src/components/sidebar.tsx` (`ShellTone` navy/light) ; primitives
   `src/components/ui/stat.tsx` (`StatTile`/`StatGrid`).
-- `supabase/migrations/0001` → `0027` ; seed `supabase/seed/sproclub_bootstrap.sql`.
+- `src/lib/access-rules.ts` (INC-29, pur, sans import : normalisation des libellés Airtable vers
+  les rôles de la plateforme, et `decideAccessSync` qui calcule créations / réactivations /
+  coupures — garde-fou anti-verrouillage, comptes de service hors périmètre, liste de suppression
+  RGPD respectée) + `src/lib/sync/access-source.ts` (lecture de « Contacts » et « Habilitations »,
+  filtres évalués côté Airtable) + `src/lib/sync/access-sync.ts` (application du plan sous
+  service-role, journal `access_sync_log`) + `src/lib/data/access.ts` (lecture du journal sous RLS).
+  `src/lib/sync/airtable-rest.ts` factorise la pagination et la détection de credential manquant,
+  partagées avec la source des Commandes. Branché non fatal dans `sync/pipeline.ts`, **armé par `ACCESS_SYNC_ENABLED`**.
+  `MANUAL_INVITE_ROLES` (`src/lib/roles.ts`) borne ce qui reste créable à la main.
+- `supabase/migrations/0001` → `0031` ; seed `supabase/seed/sproclub_bootstrap.sql`.
   (`0004` invariants réservation, `0005` normalisation e-mails minuscules à l'écriture,
   `0012` gestion utilisateurs/rôles : désactivation qui coupe l'accès + policies de gestion,
   `0013` `enrollments_ro.pending_reports` pour la file d'opérations, `0014` portail coach :
   périmètre coach resserré (RLS) + table `coaching_reports`, `0016` `document_emissions`,
   `0017` RGPD (`audit_log`/`log_access`, `data_erasures`/`is_erased`), `0018`/`0019` lockdown `is_erased`,
   `0020` exploitation (`ops_events` + `rate_limit_events`/`rate_limit_touch`),
-  `0021` notifications (`notifications` + `notification_prefs`).)
+  `0021` notifications (`notifications` + `notification_prefs`),
+  `0029`/`0030` notation du jury (helpers `is_evaluator_of_*`, resserrement de la lecture des
+  réservations, index d'unicité corrigé),
+  `0031` provenance des memberships (`source`/`airtable_habilitation_id`, `membership_manage`
+  resserrée aux lignes manuelles, journal `access_sync_log` en lecture staff seule).)
 

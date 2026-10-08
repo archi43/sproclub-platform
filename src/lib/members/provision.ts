@@ -21,9 +21,18 @@ export interface InviteInput {
   email: string;
   fullName?: string | null;
   role: AppRole;
-  invitedBy: string;
+  /** Auteur humain, ou `null` quand c'est la synchronisation qui agit (INC-29). */
+  invitedBy: string | null;
   /** Requis pour le rôle `partner` : société de rattachement (INC-17). */
   partnerCompanyId?: string | null;
+  /**
+   * Provenance de la ligne (INC-29). `'airtable'` la place sous la
+   * responsabilité de la synchronisation, et la RLS (0031) interdit alors de la
+   * modifier à la main. Défaut : `'manual'`, un compte de service.
+   */
+  source?: "manual" | "airtable";
+  /** recordID de l'habilitation reflétée, quand `source` vaut `'airtable'`. */
+  airtableHabilitationId?: string | null;
 }
 
 export interface InviteResult {
@@ -113,6 +122,8 @@ export async function inviteMember(input: InviteInput): Promise<InviteResult> {
     role: input.role,
     invited_by: input.invitedBy,
     partner_company_id: input.role === "partner" ? input.partnerCompanyId : null,
+    source: input.source ?? "manual",
+    airtable_habilitation_id: input.airtableHabilitationId ?? null,
   });
   if (memErr) {
     if (memErr.code === "23505") {

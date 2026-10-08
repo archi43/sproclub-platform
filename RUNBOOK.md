@@ -139,6 +139,36 @@ Déclenchement manuel : `curl -H "x-cron-secret: <CRON_SECRET>" https://<host>/a
 - **Anti-doublon** : les CR `source='fillout'` ne repartent JAMAIS vers Airtable via le
   write-back (les formulaires Fillout créent déjà leur record côté Airtable).
 
+## 7quinquies. Accès et rôles depuis l'annuaire (INC-29)
+- **Source de vérité** : Airtable `Contacts` + `Habilitations`. La plateforme s'y aligne à
+  chaque passage de la synchronisation (toutes les 15 min) : création de compte, ajout de rôle,
+  réactivation, **coupure**. Les apprenants, coachs et évaluateurs ne se créent plus dans
+  l'écran Administration.
+- **Armement** : `ACCESS_SYNC_ENABLED=true` (Vercel env). **Coupé par défaut** : le premier
+  passage réel ouvre 103 accès et peut en couper d'autres, le moment est une décision de
+  direction. Coupé, l'annuaire n'est même pas lu (aucun appel API consommé).
+- **Lit `Rôle effectif`, jamais `Rôle applicatif`** : la formule Airtable recalcule la fenêtre
+  Début/Fin à la date du jour. 20 des 123 habilitations réelles sont Actives mais hors fenêtre ;
+  le rôle brut ouvrirait autant d'accès indus.
+- **Ce que la synchronisation ne touche jamais** : les lignes `memberships.source = 'manual'`,
+  c'est-à-dire les comptes de service (direction, coordination) et les comptes partenaires. Sans
+  cette frontière, le premier passage couperait la direction, absente de l'annuaire. La RLS
+  (`0031`) interdit symétriquement de modifier à la main une ligne `source = 'airtable'`.
+- **Couper l'accès de quelqu'un** : décocher « Actif » ou poser une date de Fin sur son
+  habilitation dans Airtable. L'accès tombe au passage suivant (≤ 15 min). Le faire depuis la
+  plateforme est refusé, volontairement.
+- **Rouvrir un accès** : rétablir l'habilitation ; la synchronisation lève la désactivation.
+- **Garde-fous** : le dernier compte de direction actif n'est jamais coupé (trigger
+  `trg_last_direction` de `0012`, anticipé par la règle pure) ; une personne inscrite sur la
+  liste de suppression RGPD (`data_erasures`) n'est **jamais** recréée, et un échec de lecture
+  de cette liste interrompt le passage plutôt que de risquer d'annuler un effacement.
+- **Que s'est-il passé, et pourquoi** : écran `coordination/administration`, section « Décisions
+  d'accès » (lit `access_sync_log`, direction/coordination seules, conservé 12 mois). Les
+  compteurs par passage vont dans le journal d'exploitation, source `sync.access`.
+- **Rôles non encore déclarables dans Airtable** : le single-select « Rôle applicatif » ne
+  propose qu'Apprenant et Coach. Ajouter « Évaluateur », « Coordination », « Direction » suffit
+  pour qu'ils viennent aussi de l'annuaire : le code les reconnaît déjà, accentués ou non.
+
 ## 7. Déploiement (rappel)
 Appliquer chaque **migration avant le code** (`supabase db push`). La CI exécute la vraie
 suite d'intégration contre un Supabase local jetable ; le merge sur `main` est bloqué tant

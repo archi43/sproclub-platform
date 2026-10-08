@@ -25,9 +25,20 @@ rétention des données personnelles des apprenants et les mécanismes légaux i
 | Journal d'exploitation (`ops_events`) | **90 jours** | observabilité |
 | Journal de relances (`notifications`) | **90 jours** | minimisation (nom/e-mail en clair) |
 | Compteur de débit (`rate_limit_events`) | **2 jours** | technique (anti-abus) |
+| Journal des accès rapprochés (`access_sync_log`) | **12 mois** glissants | justifier une ouverture ou une coupure d'accès |
 | Comptes utilisateurs inactifs (memberships désactivés) | purge après **24 mois** | minimisation |
 
 Les durées sont indicatives et à valider avec le DPO.
+
+**Accès pilotés par l'annuaire (INC-29)** : depuis qu'Airtable est la seule surface de saisie des
+identités, l'ouverture et la coupure des accès se décident à partir des tables « Contacts » et
+« Habilitations ». `access_sync_log` conserve **ce que la plateforme a décidé, et pourquoi** (nom de
+rôle, adresse e-mail, motif, horodatage), parce que la formule Airtable qui fonde la décision
+s'appuie sur la date du jour et ne se rejoue pas. Base légale : intérêt légitime (gestion des accès)
+et obligation de traçabilité en contexte certifiant. Lecture réservée à la direction et à la
+coordination (RLS), **aucune écriture possible depuis l'application** : seul le compte de service
+insère, pour qu'une trace ne puisse pas être réécrite par son sujet. Le journal d'exploitation
+(`ops_events`), lui, ne reçoit que des **compteurs**, jamais une adresse e-mail.
 
 **Données techniques (sécurité)** : `ops_events.detail` et `rate_limit_events.key` peuvent
 contenir une **adresse IP** client (logs de connexion / anti-abus). Base légale : intérêt
@@ -36,7 +47,8 @@ légitime (sécurité, prévention de la fraude). Conservation courte : `ops_eve
 
 **Purge automatique (INC-12)** : le cron `/api/admin/purge-retention` (quotidien, 03:15 UTC,
 protégé par `CRON_SECRET`) supprime les données opérationnelles expirées — `audit_log` > 12 mois,
-`ops_events` > 90 jours, `notifications` > 90 jours, `rate_limit_events` > 2 jours — et journalise un
+`ops_events` > 90 jours, `notifications` > 90 jours, `rate_limit_events` > 2 jours,
+`access_sync_log` > 12 mois — et journalise un
 résumé dans le journal d'exploitation. Le droit à l'oubli (`eraseLearner`) purge en plus immédiatement
 le journal de relances et les préférences de la personne effacée. Les dossiers de formation et documents (preuves Qualiopi/BPF, 3 ans) ne sont
 **pas** concernés par cette purge. Voir `RUNBOOK.md`.
