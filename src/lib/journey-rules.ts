@@ -123,3 +123,20 @@ export function progressPercent(progress: number | null): number | null {
   const value = progress <= 1 ? progress * 100 : progress;
   return Math.max(0, Math.min(100, Math.round(value)));
 }
+
+/**
+ * Projets pour lesquels l'apprenant peut réserver une soutenance : livrable
+ * déposé, **pas encore validé par le jury**, et aucune soutenance déjà en cours
+ * (en attente ou confirmée) pour ce projet.
+ *
+ * Sans la condition de validation, l'écran proposait de re-soutenir des projets
+ * déjà validés : constaté en production le 2026-10-08 sur un dossier dont les
+ * projets 1 à 5 étaient validés et seul le 6 restait à soutenir.
+ */
+export function defenseEligibleDeliverables<
+  T extends { project_number: number; deliverable_submitted: boolean; validated_at: string | null }
+>(deliverables: readonly T[], activeDefenseProjects: ReadonlySet<number | null>): T[] {
+  return deliverables.filter(
+    (d) => d.deliverable_submitted && !d.validated_at && !activeDefenseProjects.has(d.project_number)
+  );
+}
