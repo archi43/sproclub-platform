@@ -57,7 +57,12 @@ export async function listDossiers(orgId: string, filters: DossierFilters = {}):
     .from("enrollments_ro")
     .select(`id, learner_id, program, specialty, financer, status, progress, late_days, ${learnerJoin}`)
     .eq("org_id", orgId)
-    .order("status", { ascending: true })
+    // Par récence d'entrée, et non par statut : trier alphabétiquement sur le
+    // statut plaçait « Abandon » et « Annulée » en tête, soit 62 dossiers morts
+    // avant le premier dossier actif. L'écran s'ouvrait sur ce qui ne demande
+    // aucune action. `start_date` est renseignée sur 550 des 555 dossiers ; les
+    // rares sans date finissent en bas plutôt qu'en haut.
+    .order("start_date", { ascending: false, nullsFirst: false })
     .limit(1000);
 
   if (term) {
