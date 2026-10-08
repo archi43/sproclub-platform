@@ -101,7 +101,7 @@ etaient noyees ont ete remontees dans `CLAUDE.md`.
   filtres évalués côté Airtable) + `src/lib/sync/access-sync.ts` (application du plan sous
   service-role, journal `access_sync_log`) + `src/lib/data/access.ts` (lecture du journal sous RLS).
   `src/lib/sync/airtable-rest.ts` factorise la pagination et la détection de credential manquant,
-  partagées avec la source des Commandes. Branché non fatal dans `sync/pipeline.ts`.
+  partagées avec la source des Commandes. Branché non fatal dans `sync/pipeline.ts`, **armé par `ACCESS_SYNC_ENABLED`**.
   `MANUAL_INVITE_ROLES` (`src/lib/roles.ts`) borne ce qui reste créable à la main.
 - `supabase/migrations/0001` → `0031` ; seed `supabase/seed/sproclub_bootstrap.sql`.
   (`0004` invariants réservation, `0005` normalisation e-mails minuscules à l'écriture,

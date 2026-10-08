@@ -25,13 +25,26 @@ import { logOpsEvent } from "@/lib/data/ops";
  */
 
 export interface AccessSyncResult {
+  /** Faux tant que `ACCESS_SYNC_ENABLED` n'est pas posé : rien n'est lu ni écrit. */
+  enabled: boolean;
   /** Décompte par type d'action : create, grant, reactivate, deactivate, skip. */
   summary: Record<string, number>;
   /** Échecs d'application, action par action — jamais avalés. */
   failures: { email: string; role: string; error: string }[];
 }
 
+const EMPTY_SUMMARY: Record<string, number> = {
+  create: 0, grant: 0, reactivate: 0, deactivate: 0, skip: 0,
+};
+
 export async function syncAccess(admin: SupabaseClient, orgId: string): Promise<AccessSyncResult> {
+  // Armé explicitement, comme le write-back (INC-14). Le premier passage réel
+  // ouvre 103 accès et peut en couper d'autres : c'est à la direction de choisir
+  // le moment, pas au déploiement du code. Coupé, on ne lit même pas l'annuaire.
+  if (process.env.ACCESS_SYNC_ENABLED !== "true") {
+    return { enabled: false, summary: { ...EMPTY_SUMMARY }, failures: [] };
+  }
+
   const [desired, current, erasedEmails] = await Promise.all([
     fetchDesiredAccess(),
     loadCurrentMemberships(admin, orgId),
@@ -64,7 +77,7 @@ export async function syncAccess(admin: SupabaseClient, orgId: string): Promise<
     });
   }
 
-  return { summary, failures };
+  return { enabled: true, summary, failures };
 }
 
 /** État courant, service-role : on doit voir aussi les lignes désactivées. */

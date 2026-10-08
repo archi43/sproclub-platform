@@ -417,9 +417,12 @@ Incréments livrés (voir `PLAN_DEV_PRODUIT.md`) :
   **Hors périmètre, à dessein** : `partner`. Une entreprise partenaire naît dans la plateforme
   (vivier, INC-17) et son membership exige un rattachement à une société que `Habilitations` ne
   porte pas.
-  `test:access` **24 tests purs** + 10 d'intégration RLS ; non-régression isolation, réservation,
+  `test:access` **33** (24 purs + 9 d'intégration RLS) ; non-régression isolation, réservation,
   rôles, membres et sync vertes.
-  **Reste avant effet** : appliquer `0031`, et étendre le single-select « Rôle applicatif » aux
+  **Armé explicitement** : `ACCESS_SYNC_ENABLED=true`, sur le patron du write-back (INC-14). Le
+  premier passage réel ouvre 103 accès et peut en couper d'autres : le moment est une décision de
+  direction, pas un effet de bord du déploiement. Coupé, l'annuaire n'est même pas lu.
+  **Reste avant effet** : poser le drapeau, et étendre le single-select « Rôle applicatif » aux
   rôles Évaluateur / Coordination / Direction si l'on veut qu'ils viennent aussi de l'annuaire (le
   jeton du projet est en lecture seule sur le schéma, c'est une action manuelle de 10 secondes).
   À l'état actuel, la synchronisation ouvrira **84 accès apprenant et 19 accès coach**, et fermera
