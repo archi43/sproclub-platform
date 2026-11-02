@@ -493,6 +493,17 @@ Incréments livrés (voir `PLAN_DEV_PRODUIT.md`) :
   que `tailwind-merge` prenait pour des couleurs ; les chiffres des tuiles n'avaient jamais eu
   leur taille. Fixé par `extendTailwindMerge`, figé par `tests/utils.unit.test.mts`.
 
+- 🔧 **Correctif 360L : cours de rendu** (2026-11-02). La règle d'INC-15 prenait le dernier cours
+  du parcours pour le rendu ; c'était le questionnaire de satisfaction partagé « Votre avis nous
+  intéresse » dans 67 correspondances sur 71. Un questionnaire rempli marquait tous les projets de
+  l'apprenant « déposés » : 2 047 livrables sur 2 058 partageaient leur date de dépôt, 413 non
+  validés sans dépôt avéré, et la réservation de soutenance s'ouvrait sur ce faux signal. Nouvelle
+  règle (`l360-rules.ts`, testée sur la forme réelle) : dernier cours nommé « Projet … », sinon dernier
+  cours non transverse ; tentative retenue seulement dans son parcours (`pathId`, présent sur 230
+  tentatives sur 234). La sync répare les correspondances qui pointent un cours transverse et
+  compte, sans les modifier, les dépôts que plus rien ne confirme (`unconfirmedDeposits`) : leur
+  réparation est une décision à part. Vérifié aussi : l'API 360L n'expose pas les fichiers déposés.
+
   **Vérifié en réel** : rendu de `coordination/apprenants` sous session staff (coque navy,
   marqueur actif, tuiles alimentées par les dossiers réels).
   Reste : Étape 7 (ouverture à d'autres organismes).

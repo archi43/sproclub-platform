@@ -223,6 +223,13 @@ La carte fichier par fichier est dans `STRUCTURE.md`. En cas de doute, `ls -R sr
   Administration casse en production. C'est déjà arrivé.
 - **Sémantique 360Learning validée en réel** : `onTime` plafonne à 97 %, `successful` vaut 100.
   On n'écrit **jamais** un downgrade : seuls les dépôts avérés sont reflétés.
+- **Le dernier cours d'un parcours 360L n'est PAS le cours de rendu** (constaté le 2026-11-02).
+  33 parcours sur 35 finissent par « Votre avis nous intéresse », questionnaire partagé par tous
+  les projets : un seul questionnaire rempli marquait **tous** les projets « déposés » (2 047
+  livrables sur 2 058 à la même date). Le rendu est le dernier cours nommé « Projet … », à défaut
+  le dernier cours non partagé entre projets de numéros différents, et une tentative ne compte que
+  si son `pathId` est celui du parcours. **L'API 360L ne donne aucun accès aux fichiers déposés**
+  (vérifié dans l'index officiel des routes v2) : elle ne renvoie que des statistiques.
 - **Les formulaires Fillout SproCLUB n'ont pas d'e-mail** (l'apprenant est un RecordPicker).
   La jointure passe par recordID : Commande directe, ou via la table Soutenances.
 - **`0024` (enum) doit précéder `0025`** (policies qui utilisent la valeur `partner`).

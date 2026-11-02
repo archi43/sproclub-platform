@@ -11,6 +11,10 @@ import {
   extractProjectNumber,
   latestStatPerUser,
   pickDepositCourseId,
+  crossProjectCourseIds,
+  shouldRepairDepositCourse,
+  attemptBelongsToPath,
+  unconfirmedDepositKeys,
   type L360PathStatRecord,
 } from "../src/lib/l360-rules.ts";
 
@@ -30,7 +34,7 @@ test("extractProjectNumber écarte regroupements et libellés sans numéro", () 
   assert.equal(extractProjectNumber("Projet n°0: invalide"), null, "un numéro de projet est strictement positif");
 });
 
-test("pickDepositCourseId prend le dernier cours du parcours", () => {
+test("pickDepositCourseId : sans contexte, le dernier cours (repli historique)", () => {
   const steps = [
     { id: "c1", type: "course" },
     { id: "e1", type: "email" },
@@ -40,6 +44,59 @@ test("pickDepositCourseId prend le dernier cours du parcours", () => {
   assert.equal(pickDepositCourseId(steps), "c2", "dernier pas de type course, pas le dernier pas tout court");
   assert.equal(pickDepositCourseId([{ id: "a1", type: "assessment" }]), null, "aucun cours → pas de signal de dépôt");
   assert.equal(pickDepositCourseId([]), null);
+});
+
+// Forme réelle constatée le 2026-11-02 : 33 parcours sur 35 finissent par le
+// questionnaire « Votre avis nous intéresse », partagé par tous les projets.
+const SURVEY = "survey";
+const realPaths = [
+  { name: "Projet n°2: former un utilisateur", steps: [{ id: "intro2", type: "course" }, { id: "rendu2", type: "course" }, { id: SURVEY, type: "course" }] },
+  { name: "Projet n°3: rédiger une spécification", steps: [{ id: "rendu3", type: "course" }, { id: SURVEY, type: "course" }] },
+  // Même cours de rendu, numéroté 8 dans un programme et 5 dans l'autre.
+  { name: "Projet n°8: Analyser un besoin - F2M", steps: [{ id: "fit", type: "course" }, { id: SURVEY, type: "course" }] },
+  { name: "Projet 5 : Analyser un besoin (no-code)", steps: [{ id: "fit", type: "course" }, { id: SURVEY, type: "course" }] },
+  // Cours de rendu qui ne suit pas la convention de nommage.
+  { name: "Projet 1 : Analyser les besoins d'une organisation", steps: [{ id: "cas1", type: "course" }, { id: SURVEY, type: "course" }] },
+];
+const names = new Map([
+  ["intro2", "Processus métier"], ["rendu2", "Projet : Former un utilisateur"],
+  ["rendu3", "Projet : Rédiger une spécification"], ["fit", "Projet : Analyser un besoin : fit to standard"],
+  ["cas1", "Cas 1 : Desko Inc. — Diagnostic"], [SURVEY, "Votre avis nous intéresse"],
+]);
+
+test("crossProjectCourseIds : le questionnaire et le rendu réutilisé sont transverses", () => {
+  const cross = crossProjectCourseIds(realPaths);
+  assert.ok(cross.has(SURVEY), "présent dans des projets de numéros différents");
+  assert.ok(cross.has("fit"), "le rendu réutilisé l'est aussi : d'où la priorité au nom");
+  assert.ok(!cross.has("rendu2") && !cross.has("cas1"));
+});
+
+test("pickDepositCourseId : jamais le questionnaire, le nom prime, le partage sert de repli", () => {
+  const ctx = { courseNames: names, crossProjectCourseIds: crossProjectCourseIds(realPaths) };
+  const [p2, p3, p8, p5, p1] = realPaths.map((p) => pickDepositCourseId(p.steps, ctx));
+  assert.equal(p2, "rendu2", "le dernier cours nommé « Projet … », pas le dernier cours");
+  assert.equal(p3, "rendu3");
+  assert.equal(p8, "fit", "un rendu partagé reste choisi grâce à son nom");
+  assert.equal(p5, "fit");
+  assert.equal(p1, "cas1", "sans nom conventionnel : le dernier cours non transverse");
+  assert.ok(![p2, p3, p8, p5, p1].includes(SURVEY));
+  assert.equal(pickDepositCourseId([{ id: SURVEY, type: "course" }], ctx), null, "seul un cours transverse : aucun signal plutôt qu'un faux");
+});
+
+test("shouldRepairDepositCourse : corrige l'erreur, respecte une correction manuelle", () => {
+  const cross = new Set([SURVEY]);
+  assert.equal(shouldRepairDepositCourse(SURVEY, "rendu2", cross), true, "questionnaire → vrai rendu");
+  assert.equal(shouldRepairDepositCourse(SURVEY, null, cross), true, "parcours plus listé : on retire le faux signal");
+  assert.equal(shouldRepairDepositCourse(null, "rendu2", cross), true, "pas de cours → le cours calculé");
+  assert.equal(shouldRepairDepositCourse("manuel", "rendu2", cross), false, "un cours propre choisi à la main reste");
+  assert.equal(shouldRepairDepositCourse("rendu2", "rendu2", cross), false);
+  assert.equal(shouldRepairDepositCourse(null, null, cross), false);
+});
+
+test("attemptBelongsToPath : seule une tentative faite dans ce parcours compte", () => {
+  assert.equal(attemptBelongsToPath("p3", "p3"), true);
+  assert.equal(attemptBelongsToPath("p-autre", "p3"), false, "même cours, autre parcours");
+  assert.equal(attemptBelongsToPath(null, "p3"), false, "tentative hors parcours (4 sur 234 en réel, toutes anciennes)");
 });
 
 test("latestStatPerUser garde l'inscription la plus récente par apprenant", () => {
@@ -97,4 +154,13 @@ test("decideDeliverableState : parcours sans cours de rendu validé → la valid
   });
   assert.equal(state.submitted, true);
   assert.equal(state.submittedAt, "2026-06-01T10:00:00Z", "repli sur la date de validation");
+});
+
+test("unconfirmedDepositKeys : les dépôts non validés que rien ne confirme plus", () => {
+  const existing = [
+    { enrollment_id: "e1", project_number: 1, validated_at: null },
+    { enrollment_id: "e1", project_number: 2, validated_at: null },
+    { enrollment_id: "e1", project_number: 3, validated_at: "2026-06-01T00:00:00Z" },
+  ];
+  assert.deepEqual(unconfirmedDepositKeys(existing, new Set(["e1:1"])), ["e1:2"], "un validé n'est jamais compté");
 });

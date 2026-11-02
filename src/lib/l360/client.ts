@@ -43,7 +43,14 @@ export interface L360PathStat {
 export interface L360CourseStat {
   userId: string;
   courseId: string;
+  /** Parcours dans lequel la tentative a eu lieu (absent sur de rares tentatives anciennes). */
+  pathId: string | null;
   completedAt: string | null;
+}
+
+export interface L360Course {
+  id: string;
+  name: string;
 }
 
 export interface L360User {
@@ -56,6 +63,7 @@ export interface L360Client {
   listPaths(): Promise<L360Path[]>;
   listPathStats(pathId: string): Promise<L360PathStat[]>;
   listCourseStats(courseId: string): Promise<L360CourseStat[]>;
+  listCourses(): Promise<L360Course[]>;
   listUsers(): Promise<L360User[]>;
 }
 
@@ -144,8 +152,14 @@ export function l360Client(): L360Client {
       return raw.map((r) => ({
         userId: String(r.userId),
         courseId: String(r.courseId),
+        pathId: str(r.pathId),
         completedAt: str(r.completedAt),
       }));
+    },
+
+    async listCourses() {
+      const raw = await fetchAll("/courses");
+      return raw.map((c) => ({ id: String(c._id), name: str(c.name) ?? "" }));
     },
 
     async listUsers() {
