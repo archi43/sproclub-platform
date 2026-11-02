@@ -6,12 +6,13 @@ type Variant = "primary" | "accent" | "secondary" | "ghost" | "danger" | "shell"
 type Size = "sm" | "md" | "lg";
 
 const base =
-  "inline-flex items-center justify-center gap-2 rounded-lg text-sm font-medium transition-colors no-underline hover:no-underline " +
+  "inline-flex items-center justify-center gap-2 rounded-lg text-sm font-bold tracking-[0.03em] transition-colors no-underline hover:no-underline " +
   "disabled:pointer-events-none disabled:opacity-50";
 
 const variants: Record<Variant, string> = {
   primary: "bg-brand text-white hover:bg-brand-dark",
-  accent: "bg-accent text-white hover:brightness-95",
+  // Terracotta lisible (AA) : le pur `accent` ne porte pas de petit texte blanc.
+  accent: "bg-accent-strong text-white hover:bg-accent-hover",
   secondary: "bg-white text-ink border border-line hover:bg-surface",
   ghost: "text-brand hover:bg-brand-tint",
   danger: "bg-error text-white hover:brightness-95",
@@ -20,8 +21,10 @@ const variants: Record<Variant, string> = {
 };
 const sizes: Record<Size, string> = {
   sm: "h-8 px-3",
-  md: "h-9 px-3.5",
-  lg: "h-10 px-4",
+  // Design system : 40 px (petit) et 48 px (standard). L'outil reste dense :
+  // `md` prend la hauteur « small » du design system, `lg` la standard.
+  md: "h-10 px-4",
+  lg: "h-12 px-6",
 };
 
 export interface ButtonStyleProps {

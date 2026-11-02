@@ -124,7 +124,7 @@ function JourneyCard({ journey: j }: { journey: Journey }) {
                   <li key={d.projectNumber}>
                     <Badge tone={d.validatedAt ? "success" : d.submitted ? "brand" : "neutral"}>
                       Projet {d.projectNumber}
-                      {d.validatedAt ? " — validé" : d.submitted ? " — déposé" : " — à venir"}
+                      {d.validatedAt ? " : validé" : d.submitted ? " : déposé" : " : à venir"}
                       {d.score != null ? ` (${d.score}/100)` : ""}
                     </Badge>
                   </li>
@@ -153,7 +153,7 @@ function JourneyCard({ journey: j }: { journey: Journey }) {
                 <div>
                   <p className="text-sm font-medium text-ink">
                     {eventLabel(e.kind)}
-                    {e.projectNumber != null ? ` — projet ${e.projectNumber}` : ""}
+                    {e.projectNumber != null ? ` · projet ${e.projectNumber}` : ""}
                   </p>
                   <p className="text-sm text-muted">{dateTimeFmt.format(new Date(e.startsAt))}</p>
                 </div>

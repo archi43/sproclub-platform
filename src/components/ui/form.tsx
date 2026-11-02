@@ -2,7 +2,7 @@ import type { InputHTMLAttributes, SelectHTMLAttributes, TextareaHTMLAttributes,
 import { cn } from "@/lib/utils";
 
 const field =
-  "w-full rounded-lg border border-line bg-white px-3 py-2 text-sm text-ink placeholder:text-muted/50 " +
+  "w-full rounded-lg border border-line bg-surface px-3 py-2.5 text-sm text-ink placeholder:text-muted " +
   "transition-colors focus-visible:border-brand disabled:opacity-50";
 
 export function Label({ className, ...props }: LabelHTMLAttributes<HTMLLabelElement>) {

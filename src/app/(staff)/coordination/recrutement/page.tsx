@@ -79,7 +79,7 @@ export default async function RecrutementPage() {
       <div className="space-y-6">
         <PageHeader
           title="Besoins de formation des entreprises"
-          description="Signal de demande exprimé par les partenaires — à exploiter pour orienter les programmes et anticiper les promotions."
+          description="Signal de demande exprimé par les partenaires, à exploiter pour orienter les programmes et anticiper les promotions."
         />
         {needs.length === 0 ? (
           <EmptyState title="Aucun besoin exprimé" description="Les besoins des entreprises partenaires apparaîtront ici." />

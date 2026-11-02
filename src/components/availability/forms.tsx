@@ -136,7 +136,7 @@ export function FeedForm({ basePath, currentUrl }: { basePath: string; currentUr
       </Field>
       <p className="text-sm text-muted">
         Ce lien donne accès à votre agenda : il n&apos;est visible que par vous, jamais par la
-        coordination. Nous n&apos;en lisons que les horaires occupés — ni les titres, ni les participants.
+        coordination. Nous n&apos;en lisons que les horaires occupés, ni les titres, ni les participants.
       </p>
       <Feedback state={state} />
       <Submit label="Enregistrer l'agenda" pendingLabel="Enregistrement…" />

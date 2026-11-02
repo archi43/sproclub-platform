@@ -1,4 +1,5 @@
 import { getOrgContext } from "@/lib/tenant";
+import { StatTile } from "@/components/ui/stat";
 import { recentNotifications, notificationsSummary, listOptOuts } from "@/lib/data/notifications";
 import { kindLabel } from "@/lib/notification-rules";
 import { OptOutManager } from "./prefs-ui";
@@ -108,12 +109,7 @@ export default async function NotificationsPage({
   );
 }
 
+/** Tuile de synthèse : la primitive `StatTile`, jamais une tuile recodée ici. */
 function Tile({ label, value, tone }: { label: string; value: number; tone?: "warning" | "danger" }) {
-  const color = tone === "danger" ? "text-error" : tone === "warning" ? "text-warning-ink" : "text-brand";
-  return (
-    <Card>
-      <div className="text-xs text-muted">{label}</div>
-      <div className={`mt-1 text-xl font-semibold tabular-nums ${color}`}>{value}</div>
-    </Card>
-  );
+  return <StatTile label={label} value={value} tone={tone === "danger" ? "critical" : tone ?? "neutral"} />;
 }

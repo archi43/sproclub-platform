@@ -1,16 +1,30 @@
 import "server-only";
 import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
 import type { DocumentContent } from "@/lib/documents/content";
+import { COLORS } from "@/lib/design-tokens";
 
 /**
  * Render a DocumentContent to a PDF (INC-9). Pure pdf-lib (no native deps, runs
- * on Vercel serverless). Standard fonts keep the bundle light; the brand colour
- * is applied to the title band. Returns the PDF bytes.
+ * on Vercel serverless). Returns the PDF bytes.
+ *
+ * Design system SproClub : bandeau en Dark Navy (règle 1), filet terracotta,
+ * corps en Dark Navy. Les polices standard de pdf-lib tiennent lieu des replis
+ * officiels : Times Bold pour Cardo (titres), Helvetica pour Syne et Inter.
+ * Embarquer les vraies polices demanderait fontkit et les fichiers statiques :
+ * à faire le jour où ces documents deviennent des supports de marque à part.
  */
 
-// Brand primary #24365E in 0..1 rgb.
-const BRAND = rgb(0x24 / 255, 0x36 / 255, 0x5e / 255);
-const INK = rgb(0.1, 0.1, 0.1);
+/** Jeton hexadécimal → couleur pdf-lib : aucune couleur n'est réécrite ici. */
+function tokenRgb(hex: string) {
+  const n = parseInt(hex.replace("#", ""), 16);
+  return rgb(((n >> 16) & 255) / 255, ((n >> 8) & 255) / 255, (n & 255) / 255);
+}
+
+const BAND = tokenRgb(COLORS.brand.deep);
+const ACCENT = tokenRgb(COLORS.accent.DEFAULT);
+const INK = tokenRgb(COLORS.ink);
+const MUTED = tokenRgb(COLORS.muted);
+const WHITE = tokenRgb("#ffffff");
 
 const A4 = { width: 595.28, height: 841.89 };
 const MARGIN = 56;
@@ -38,13 +52,14 @@ export async function renderDocumentPdf(content: DocumentContent): Promise<Uint8
   pdf.setTitle(content.title);
   const page = pdf.addPage([A4.width, A4.height]);
   const font = await pdf.embedFont(StandardFonts.Helvetica);
-  const bold = await pdf.embedFont(StandardFonts.HelveticaBold);
+  const display = await pdf.embedFont(StandardFonts.TimesRomanBold);
   const contentWidth = A4.width - 2 * MARGIN;
 
   // Title band.
-  page.drawRectangle({ x: 0, y: A4.height - 96, width: A4.width, height: 96, color: BRAND });
-  page.drawText("SproCLUB", { x: MARGIN, y: A4.height - 46, size: 18, font: bold, color: rgb(1, 1, 1) });
-  page.drawText(content.title, { x: MARGIN, y: A4.height - 74, size: 13, font, color: rgb(1, 1, 1) });
+  page.drawRectangle({ x: 0, y: A4.height - 96, width: A4.width, height: 96, color: BAND });
+  page.drawRectangle({ x: MARGIN, y: A4.height - 30, width: 19, height: 2, color: ACCENT });
+  page.drawText("SproCLUB", { x: MARGIN, y: A4.height - 52, size: 20, font: display, color: WHITE });
+  page.drawText(content.title, { x: MARGIN, y: A4.height - 76, size: 13, font, color: WHITE });
 
   let y = A4.height - 96 - 40;
   const drawParagraph = (text: string, size = 11, f = font, gap = 8) => {
@@ -59,11 +74,11 @@ export async function renderDocumentPdf(content: DocumentContent): Promise<Uint8
   for (const p of content.body) drawParagraph(p);
 
   y = Math.max(y, MARGIN + 60);
-  page.drawLine({ start: { x: MARGIN, y: MARGIN + 52 }, end: { x: A4.width - MARGIN, y: MARGIN + 52 }, thickness: 0.5, color: BRAND });
+  page.drawLine({ start: { x: MARGIN, y: MARGIN + 52 }, end: { x: A4.width - MARGIN, y: MARGIN + 52 }, thickness: 0.5, color: ACCENT });
   let fy = MARGIN + 36;
   for (const line of content.footer) {
     for (const wline of wrap(line, font, 9, contentWidth)) {
-      page.drawText(wline, { x: MARGIN, y: fy, size: 9, font, color: rgb(0.29, 0.29, 0.29) });
+      page.drawText(wline, { x: MARGIN, y: fy, size: 9, font, color: MUTED });
       fy -= 12;
     }
   }

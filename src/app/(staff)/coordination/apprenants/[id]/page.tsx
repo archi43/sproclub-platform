@@ -98,7 +98,7 @@ export default async function FicheApprenant({ params }: { params: { id: string 
       {enrollments.length === 0 && <p className="text-sm text-muted">Aucun dossier de formation.</p>}
       {enrollments.map((e, i) => (
         <div key={String(e.id ?? i)} className="space-y-3">
-          <h2 className="text-lg font-semibold text-brand">Dossier — {val(e.program)}</h2>
+          <h2 className="text-lg font-semibold text-brand">Dossier : {val(e.program)}</h2>
 
           <Section title="Inscription">
             <Field label="Programme" value={val(e.program)} />

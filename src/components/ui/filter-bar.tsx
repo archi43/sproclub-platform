@@ -19,7 +19,7 @@ export function FilterBar({ resetHref, active = false, className, children }: {
   return (
     <form
       method="get"
-      className={cn("flex flex-wrap items-end gap-3 rounded-xl border border-line bg-white p-3", className)}
+      className={cn("flex flex-wrap items-end gap-3 rounded-xl bg-white p-3 shadow-card", className)}
     >
       {children}
       <div className="flex items-center gap-2">
