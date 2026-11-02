@@ -4,10 +4,14 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 // Imports relatifs (pas d'alias @/) : ce module est chargé par les tests Node,
 // qui ne résolvent pas les paths TypeScript.
 import {
+  attemptBelongsToPath,
+  crossProjectCourseIds,
   decideDeliverableState,
   extractProjectNumber,
   latestStatPerUser,
   pickDepositCourseId,
+  shouldRepairDepositCourse,
+  unconfirmedDepositKeys,
 } from "../l360-rules.ts";
 import type { L360Client } from "./client.ts";
 
@@ -23,6 +27,8 @@ import type { L360Client } from "./client.ts";
 export interface L360SyncStats {
   paths: number;
   mappingsDiscovered: number;
+  /** Correspondances dont le cours de rendu pointait un cours transverse, corrigées. */
+  mappingsRepaired: number;
   mappingsActive: number;
   statRecords: number;
   skippedUnknownEmail: number;
@@ -32,6 +38,9 @@ export interface L360SyncStats {
   /** Appels 360L en échec (API externe instable) : parcours sautés ou signal de
    *  dépôt indisponible ce tour-ci — jamais fatal, le prochain run rattrape. */
   fetchErrors: number;
+  /** Dépôts enregistrés, non validés, que les signaux du jour ne confirment pas.
+   *  Comptés seulement : la sync n'écrit jamais de recul (voir l360-rules). */
+  unconfirmedDeposits: number;
 }
 
 const CHUNK = 500;
@@ -62,6 +71,7 @@ export async function syncL360(admin: SupabaseClient, orgId: string, l360: L360C
   const stats: L360SyncStats = {
     paths: 0,
     mappingsDiscovered: 0,
+    mappingsRepaired: 0,
     mappingsActive: 0,
     statRecords: 0,
     skippedUnknownEmail: 0,
@@ -69,11 +79,18 @@ export async function syncL360(admin: SupabaseClient, orgId: string, l360: L360C
     submitted: 0,
     validated: 0,
     fetchErrors: 0,
+    unconfirmedDeposits: 0,
   };
 
   // --- Pass 1 : auto-découverte des parcours « Projet n°X » -------------------
   const paths = await l360.listPaths();
   stats.paths = paths.length;
+  // Noms des cours (critère principal du cours de rendu) et cours transverses
+  // (repli). Voir `pickDepositCourseId` pour le constat qui impose les deux.
+  const courseNames = new Map((await l360.listCourses()).map((c) => [c.id, c.name]));
+  const crossProject = crossProjectCourseIds(paths);
+  const depositContext = { courseNames, crossProjectCourseIds: crossProject };
+  const computedDeposit = new Map(paths.map((p) => [p.id, pickDepositCourseId(p.steps, depositContext)]));
   const candidates = paths.flatMap((p) => {
     const projectNumber = extractProjectNumber(p.name);
     if (!projectNumber) return [];
@@ -82,7 +99,7 @@ export async function syncL360(admin: SupabaseClient, orgId: string, l360: L360C
         org_id: orgId,
         l360_path_id: p.id,
         project_number: projectNumber,
-        deposit_course_id: pickDepositCourseId(p.steps),
+        deposit_course_id: computedDeposit.get(p.id) ?? null,
         path_name: p.name.trim(),
       },
     ];
@@ -96,6 +113,27 @@ export async function syncL360(admin: SupabaseClient, orgId: string, l360: L360C
       .select("id");
     if (error) throw new Error(`l360 mappings upsert: ${error.message}`);
     stats.mappingsDiscovered = (data ?? []).length;
+  }
+
+  // Réparation : une correspondance qui pointe un cours transverse (la règle
+  // d'origine prenait le questionnaire de satisfaction) est corrigée. Une
+  // correspondance qui pointe un cours propre au projet est laissée telle quelle :
+  // ce peut être une correction manuelle, qui reste autoritaire.
+  const { data: existingRows, error: xe } = await admin
+    .from("l360_path_mappings")
+    .select("id, l360_path_id, deposit_course_id")
+    .eq("org_id", orgId);
+  if (xe) throw new Error(`l360 mappings read (repair): ${xe.message}`);
+  for (const row of existingRows ?? []) {
+    const computed = computedDeposit.get(row.l360_path_id as string) ?? null;
+    if (!shouldRepairDepositCourse((row.deposit_course_id as string | null) ?? null, computed, crossProject)) continue;
+    const { error: ue } = await admin
+      .from("l360_path_mappings")
+      .update({ deposit_course_id: computed })
+      .eq("org_id", orgId)
+      .eq("id", row.id as string);
+    if (ue) throw new Error(`l360 mappings repair: ${ue.message}`);
+    stats.mappingsRepaired++;
   }
 
   const { data: mappingRows, error: me } = await admin
@@ -136,6 +174,9 @@ export async function syncL360(admin: SupabaseClient, orgId: string, l360: L360C
       try {
         for (const attempt of await l360.listCourseStats(mapping.deposit_course_id)) {
           if (!attempt.completedAt) continue;
+          // Seules les tentatives faites dans CE parcours comptent : les stats
+          // 360L sont tenues par cours, partagé parfois entre plusieurs parcours.
+          if (!attemptBelongsToPath(attempt.pathId, mapping.l360_path_id)) continue;
           const current = depositByUser.get(attempt.userId);
           if (!current || attempt.completedAt < current) depositByUser.set(attempt.userId, attempt.completedAt);
         }
@@ -248,6 +289,23 @@ export async function syncL360(admin: SupabaseClient, orgId: string, l360: L360C
   }
   stats.submitted = rows.length;
   stats.validated = rows.filter((r) => r.validated_at).length;
+
+  // Écart visible, sans écriture : les dépôts que plus rien ne confirme.
+  const existing: { enrollment_id: string; project_number: number; validated_at: string | null }[] = [];
+  for (let from = 0; ; from += 1000) {
+    const { data, error } = await admin
+      .from("project_deliverables")
+      .select("enrollment_id, project_number, validated_at")
+      .eq("org_id", orgId)
+      .eq("source", "l360")
+      .eq("deliverable_submitted", true)
+      .order("id")
+      .range(from, from + 999);
+    if (error) throw new Error(`l360 deliverables read: ${error.message}`);
+    existing.push(...(data ?? []));
+    if ((data ?? []).length < 1000) break;
+  }
+  stats.unconfirmedDeposits = unconfirmedDepositKeys(existing, new Set(byKey.keys())).length;
 
   await admin.from("sync_log").insert({
     entity: "l360_projects",

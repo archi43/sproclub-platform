@@ -41,8 +41,12 @@ const EMAILS = {
 const fake: L360Client = {
   async listPaths() {
     return [
-      // Parcours projet : 2 cours, le dernier (c2) est le cours de rendu.
-      { id: "p3", name: "Projet n°3: rédiger une spécification fonctionnelle", steps: [{ id: "c1", type: "course" }, { id: "c2", type: "course" }] },
+      // Forme RÉELLE constatée le 2026-11-02 : le cours de rendu (c2, « Projet : … »)
+      // est suivi d'un questionnaire de satisfaction (survey) PARTAGÉ par tous les
+      // projets. Le dernier cours n'est donc PAS le rendu.
+      { id: "p3", name: "Projet n°3: rédiger une spécification fonctionnelle", steps: [{ id: "c1", type: "course" }, { id: "c2", type: "course" }, { id: "survey", type: "course" }] },
+      // Autre projet qui partage le questionnaire : c'est ce partage qui le rend transverse.
+      { id: "p4", name: "Projet n°4: reprendre des données", steps: [{ id: "c4", type: "course" }, { id: "survey", type: "course" }] },
       // Regroupement : ne doit PAS devenir un mapping.
       { id: "grp", name: "Devenir consultant SAP digital - FI Projets 6, 7 & 8", steps: [{ id: "px", type: "path" }] },
     ];
@@ -77,12 +81,27 @@ const fake: L360Client = {
       // Cours de rendu injoignable : le signal de validation doit suffire.
       throw new Error("360L fetch /courses/stats failed: 502 Bad Gateway");
     }
+    if (courseId === "survey") {
+      // carl a répondu au questionnaire : ce n'est PAS un dépôt. C'est exactement
+      // le faux signal qui marquait tous les projets « déposés ».
+      return [{ userId: "u-carl", courseId, pathId: "p3", completedAt: "2026-05-15T09:00:00Z" }];
+    }
     if (courseId !== "c2") return [];
     return [
-      { userId: "u-alice", courseId, completedAt: "2026-05-20T09:00:00Z" },
-      { userId: "u-bob", courseId, completedAt: "2026-06-10T08:00:00Z" },
+      { userId: "u-alice", courseId, pathId: "p3", completedAt: "2026-05-20T09:00:00Z" },
+      { userId: "u-bob", courseId, pathId: "p3", completedAt: "2026-06-10T08:00:00Z" },
       // carl a ouvert le cours sans le clôturer.
-      { userId: "u-carl", courseId, completedAt: null },
+      { userId: "u-carl", courseId, pathId: "p3", completedAt: null },
+      // carl a clôturé ce cours dans un AUTRE parcours : ne compte pas pour p3.
+      { userId: "u-carl", courseId, pathId: "p-autre", completedAt: "2026-06-11T08:00:00Z" },
+    ];
+  },
+  async listCourses() {
+    return [
+      { id: "c1", name: "Processus métier" },
+      { id: "c2", name: "Projet : Rédiger une spécification fonctionnelle" },
+      { id: "c4", name: "Projet : Reprendre des données" },
+      { id: "survey", name: "Votre avis nous intéresse" },
     ];
   },
   async listUsers() {
@@ -154,9 +173,20 @@ after(async () => {
 });
 
 test("la sync reflète dépôt et validation jury, skip-list RGPD comprise", { skip }, async () => {
+  // Correspondance héritée de l'ancienne règle : p4 pointe le questionnaire.
+  const { error: legacyErr } = await admin.from("l360_path_mappings").insert({
+    org_id: orgId, l360_path_id: "p4", project_number: 4, deposit_course_id: "survey", path_name: "Projet n°4 (ancienne règle)",
+  });
+  assert.ok(!legacyErr, `fixture mapping p4 : ${legacyErr?.message}`);
+
   const stats = await syncL360(admin, orgId, fake);
 
-  assert.equal(stats.mappingsDiscovered, 1, "seul « Projet n°3 » devient un mapping (pas le regroupement)");
+  assert.equal(stats.mappingsDiscovered, 1, "seul « Projet n°3 » devient un mapping (pas le regroupement, p4 existait)");
+  assert.equal(stats.mappingsRepaired, 1, "la correspondance qui pointait le questionnaire est corrigée");
+  const { data: maps } = await admin.from("l360_path_mappings").select("l360_path_id, deposit_course_id").eq("org_id", orgId);
+  const byPath = new Map((maps ?? []).map((m) => [m.l360_path_id, m.deposit_course_id]));
+  assert.equal(byPath.get("p3"), "c2", "le cours « Projet : … », pas le dernier cours");
+  assert.equal(byPath.get("p4"), "c4", "le questionnaire est remplacé par le vrai cours de rendu");
   assert.equal(stats.skippedErased, 1, "l'effacé RGPD est écarté et compté");
   assert.equal(stats.skippedUnknownEmail, 1, "l'inconnu est écarté et compté (pas de perte silencieuse)");
   assert.equal(stats.submitted, 2, "alice + bob écrits");
@@ -166,7 +196,7 @@ test("la sync reflète dépôt et validation jury, skip-list RGPD comprise", { s
     .from("project_deliverables")
     .select("enrollment_id, project_number, deliverable_submitted, submitted_at, validated_at, l360_score, source")
     .eq("org_id", orgId);
-  assert.equal(rows!.length, 2, "aucune ligne pour carl (rien déposé), l'effacé ni l'inconnu");
+  assert.equal(rows!.length, 2, "aucune ligne pour carl (questionnaire et dépôt dans un autre parcours ne comptent pas), l'effacé ni l'inconnu");
 
   const alice = rows!.find((r) => r.enrollment_id === enrollmentByEmail.get(EMAILS.alice))!;
   assert.equal(alice.project_number, 3);
@@ -236,7 +266,7 @@ test("tolérance aux pannes 360L : un parcours en échec est sauté, les autres 
 
   const stats = await syncL360(admin, orgId, fake);
   assert.equal(stats.fetchErrors, 2, "les deux pannes sont comptées (parcours sauté + cours de rendu)");
-  assert.equal(stats.mappingsActive, 3, "les trois mappings restent actifs");
+  assert.equal(stats.mappingsActive, 4, "les quatre mappings restent actifs (p3, p4, p-flaky, p9)");
 
   const { data: p9 } = await admin
     .from("project_deliverables")

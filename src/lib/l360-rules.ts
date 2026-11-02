@@ -51,16 +51,93 @@ export function extractProjectNumber(pathName: string): number | null {
 }
 
 /**
- * Choisit le cours de rendu d'un parcours projet : le dernier pas de type
- * `course` (progression linéaire — le rendu clôt le parcours). Null si le
- * parcours n'a aucun cours (ex. parcours d'assessment pur) : la sync retombe
- * alors sur le seul signal de validation.
+ * Choisit le cours de rendu d'un parcours projet.
+ *
+ * Constaté en réel le 2026-11-02 : le DERNIER cours d'un parcours n'est pas le
+ * rendu. 33 parcours sur 35 se terminent par « Votre avis nous intéresse », un
+ * questionnaire de satisfaction PARTAGÉ par tous les projets. Le prendre pour le
+ * rendu marquait « déposés » tous les projets d'un apprenant dès qu'il avait
+ * répondu une seule fois (2 047 livrables sur 2 058 portaient la même date).
+ *
+ * Deux critères, dans l'ordre :
+ *   1. le dernier cours nommé « Projet … » : la convention de SproCLUB pour le
+ *      cours où l'apprenant rend son travail ;
+ *   2. à défaut, le dernier cours qui n'est pas partagé entre des projets de
+ *      NUMÉROS différents. Un cours de rendu peut être partagé entre variantes
+ *      d'un même projet, ou entre deux programmes qui numérotent le même projet
+ *      différemment (« Analyser un besoin » est le n°8 ici, le n°5 là) : c'est
+ *      pourquoi le nom prime, et le partage ne sert que de repli.
+ * Null si aucun cours ne convient : la sync retombe sur le seul signal de
+ * validation, plutôt que de lire un mauvais cours.
  */
-export function pickDepositCourseId(steps: readonly L360PathStep[]): string | null {
-  for (let i = steps.length - 1; i >= 0; i--) {
-    if (steps[i].type === "course") return steps[i].id;
+const DEPOSIT_COURSE_NAME = /^\s*projet\b/i;
+
+export function pickDepositCourseId(
+  steps: readonly L360PathStep[],
+  context: {
+    courseNames?: ReadonlyMap<string, string>;
+    crossProjectCourseIds?: ReadonlySet<string>;
+  } = {}
+): string | null {
+  const courseIds = steps.filter((s) => s.type === "course").map((s) => s.id);
+  const names = context.courseNames;
+  if (names) {
+    const named = courseIds.filter((id) => DEPOSIT_COURSE_NAME.test(names.get(id) ?? ""));
+    if (named.length > 0) return named[named.length - 1];
   }
-  return null;
+  const cross = context.crossProjectCourseIds ?? new Set<string>();
+  const own = courseIds.filter((id) => !cross.has(id));
+  return own.length > 0 ? own[own.length - 1] : null;
+}
+
+/**
+ * Cours présents dans des parcours projet de numéros différents : ce sont des
+ * cours transverses (satisfaction, ressources communes), jamais un rendu sûr.
+ */
+export function crossProjectCourseIds(
+  paths: ReadonlyArray<{ name: string; steps: readonly L360PathStep[] }>
+): Set<string> {
+  const numbersByCourse = new Map<string, Set<number>>();
+  for (const path of paths) {
+    const projectNumber = extractProjectNumber(path.name);
+    if (!projectNumber) continue;
+    for (const step of path.steps) {
+      if (step.type !== "course") continue;
+      const numbers = numbersByCourse.get(step.id) ?? new Set<number>();
+      numbers.add(projectNumber);
+      numbersByCourse.set(step.id, numbers);
+    }
+  }
+  return new Set([...numbersByCourse].filter(([, n]) => n.size >= 2).map(([id]) => id));
+}
+
+/**
+ * Faut-il corriger le cours de rendu d'une correspondance existante ?
+ *   - elle n'en a pas et la règle en trouve un : oui ;
+ *   - elle pointe un cours transverse (l'erreur de la règle d'origine) : oui,
+ *     vers le cours calculé, ou vers « aucun » si le parcours n'est plus listé
+ *     (mieux vaut le seul signal de validation qu'un faux signal de dépôt) ;
+ *   - elle pointe un cours propre au projet : non, ce peut être une correction
+ *     manuelle, qui reste autoritaire.
+ */
+export function shouldRepairDepositCourse(
+  current: string | null,
+  computed: string | null,
+  crossProject: ReadonlySet<string>
+): boolean {
+  if (current === computed) return false;
+  if (current === null) return computed !== null;
+  return crossProject.has(current);
+}
+
+/**
+ * Une tentative ne compte comme dépôt que si elle a été faite dans CE parcours.
+ * Les statistiques 360L sont tenues par cours ; un cours partagé entre variantes
+ * porterait sinon le dépôt d'un parcours vers les autres. Une tentative sans
+ * parcours (cours suivi hors parcours) n'est pas retenue.
+ */
+export function attemptBelongsToPath(attemptPathId: string | null, pathId: string): boolean {
+  return attemptPathId === pathId;
 }
 
 /**
@@ -102,4 +179,21 @@ export function decideDeliverableState(input: {
     return { submitted: true, submittedAt: input.depositCompletedAt, validatedAt: null, score: null };
   }
   return { submitted: false, submittedAt: null, validatedAt: null, score: null };
+}
+
+/**
+ * Dépôts déjà enregistrés (non validés) que les signaux du jour ne confirment
+ * plus. La sync n'écrit jamais de recul : ces lignes restent « déposées » tant
+ * qu'une réparation explicite ne les traite pas. On les COMPTE à chaque passage
+ * pour que l'écart soit visible, notamment ceux hérités de l'ancienne règle du
+ * cours de rendu (questionnaire partagé).
+ */
+export function unconfirmedDepositKeys(
+  existing: ReadonlyArray<{ enrollment_id: string; project_number: number; validated_at: string | null }>,
+  confirmedKeys: ReadonlySet<string>
+): string[] {
+  return existing
+    .filter((r) => !r.validated_at)
+    .map((r) => `${r.enrollment_id}:${r.project_number}`)
+    .filter((key) => !confirmedKeys.has(key));
 }
