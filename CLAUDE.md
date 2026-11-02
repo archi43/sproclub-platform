@@ -50,9 +50,10 @@ par **incréments complets**, en suivant `PLAN_DEV_PRODUIT.md` dans l'ordre reco
   jamais un simple filtre d'affichage.
 - Tout nouvel invariant métier est prouvé par un test ; isolation et réservation restent
   vertes (non-régression).
-- Charte graphique appliquée : titres **Montserrat**, texte **Hind Madurai**, primaire
-  **#24365E**, accent **#F74335** ; responsive et accessible (contrastes, clavier, ARIA) ;
-  ne pas utiliser le rouge pour du petit texte sur blanc.
+- **Design system SproClub** appliqué (refonte de juillet 2026, skill `sproclub-design-system`) :
+  titres **Cardo**, interface et corps **Syne**, texte long **Inter** ; navy **#24365e**, Dark Navy
+  **#0f1727**, terracotta **#d85d3b** ; responsive et accessible (contrastes, clavier, ARIA) ;
+  jamais de petit texte en terracotta pur (passer par `accent-strong`).
 - Aucun secret au dépôt ni dans le chat ; hébergement UE (RGPD).
 - Commits atomiques, messages conventionnels ; mettre à jour `ETAT-ACTUEL.md`
   et le statut dans `PLAN_DEV_PRODUIT.md` à chaque incrément.
@@ -81,14 +82,18 @@ livrer un écran aux styles inline par défaut ; tout passe par les jetons et le
 - **Tailwind CSS** avec les jetons de marque dans le thème, et **shadcn/ui** (composants
   Radix, accessibles) comme base de composants. **`lucide-react`** pour l'iconographie
   (nav, actions, statuts).
-- **Montserrat** (titres) et **Hind Madurai** (texte) chargées via `next/font`, exposées
-  en variables CSS `--font-heading` / `--font-body`.
+- **Cardo** (titres, 700), **Syne** (interface et corps, 400 à 700) et **Inter** (texte long)
+  chargées via `next/font`, auto-hébergées (aucun appel à Google depuis le navigateur), exposées en
+  `--font-heading` / `--font-body` / `--font-reading` (classes `font-heading`, `font-body`,
+  `font-reading`), avec les replis du design system (Georgia ; Helvetica Neue, Arial).
+- La plateforme est un **outil fonctionnel** au sens du design system : jetons, composants et ombre
+  de card, **jamais** le décor de marque (formes filaires, halo) dans les écrans de travail.
 - Un seul jeu de **design tokens** (couleurs, typo, espacements) ; aucun style ad hoc.
 
-**Direction visuelle : « Poste de pilotage »** (INC-22, charte inchangée — seule son
-application change). Le navy cesse d'être un accent pour devenir **l'environnement** des rôles
-qui opèrent : rail sombre à gauche, plan de travail clair à droite. Le rouge redevient un
-**signal** (tuile critique, retard, item de nav actif), jamais un décor. Dans la zone de
+**Direction visuelle : « Poste de pilotage »** (INC-22), passée au design system SproClub en
+INC-31. Le **Dark Navy `#0f1727`** est **l'environnement** des rôles qui opèrent : rail sombre à
+gauche, plan de travail clair à droite. C'est le seul fond sombre admis, jamais une zone de contenu.
+Le terracotta est un **signal** (item de nav actif, filet de titre, CTA), jamais un décor. Dans la zone de
 contenu, la hiérarchie est portée par **l'échelle typographique** et non par des boîtes :
 chiffres de synthèse en grand (`text-figure`), libellés en petites capitales espacées
 (`text-label`), filets fins, surfaces plates.
@@ -102,16 +107,26 @@ chiffres de synthèse en grand (`text-figure`), libellés en petites capitales e
 **Jetons : une seule source de vérité.** `src/lib/design-tokens.ts` exporte `COLORS`, importé
 par `tailwind.config.ts` **et** audité par `tests/contrast.unit.test.mts`. Une couleur écrite
 en dur ailleurs échapperait à la preuve de contraste : ne jamais le faire.
-- Couleurs : primaire `#24365E` (`brand`), accent `#F74335` ; + `brand-dark #1A2947`,
-  `brand-mid #8FA3C8`, `brand-tint #EEF1F7`, `accent-tint #FEE7E5`, `ink #1A1A1A`,
-  `muted #5B6472`, `line #E7E8EC`, `surface #FAFAFB`.
-- Coque : `shell #1A2947`, `shell-item #24365E` (item actif), `shell-fg #B9C4DA`,
-  `shell-fg-strong #FFFFFF`, `shell-line #2C3E64`.
+- Couleurs (export Figma « Design System Recap », 2026-07-21) : `brand #24365e` (navy),
+  `brand-dark #1a2643` (survol), `brand-deep #0f1727` (Dark Navy), `brand-mid #9aa3b5`,
+  `brand-tint #e9ebef` ; `accent #d85d3b` (terracotta), `accent-strong #99422a` (texte et boutons),
+  `accent-hover #773320`, `accent-tint #fbefeb` ; `ink #0f1727`, `muted #505e7e`, `line #dddde4`,
+  `surface #f3f3fa`. Toutes viennent des échelles 50→900 officielles.
+- Coque : `shell #0f1727`, `shell-item #24365e` (item actif), `shell-fg #bbc1cd`,
+  `shell-fg-strong #ffffff`, `shell-line #1a2643`.
+- Formes : rayon **6 px** (boutons, champs, cards : `rounded-lg` / `rounded-xl`), **4 px** pour
+  les étiquettes (`rounded`), 8 px pour les grands conteneurs (`rounded-2xl`), **pas de gélule**.
+  Ombre unique `shadow-card` (`0px 4px 5px rgba(0,45,116,0.08)`) sur cards, tableaux, filtres,
+  tuiles ; les cards n'ont plus de bordure.
 - Sémantiques, avec **variante `ink` obligatoire en texte** quand la version pleine échoue à
   AA : `success #2E7D32` / `success-ink #276A2B` / `success-tint #E8F2E9` ;
   `warning #B8860B` / `warning-ink #7A5A07` / `warning-tint #FBF3E0` ;
   `error #C0392B` / `error-tint #FEE7E5`. (`grey-600`/`grey-300` conservés pour compat.)
-- Typo : titres Montserrat 600/700, texte Hind Madurai 400/500 ; fallbacks `system-ui`.
+- Typo : titres Cardo 700, interface Syne 400/500/600/700, texte long Inter 400/600. Les chiffres
+  de synthèse sont en Cardo (`text-figure`, `lining-nums`), comme le rôle « Stat » du design system.
+- **`cn()` connaît les tailles du thème** (`text-label`, `text-figure`, `text-figure-lg`) via
+  `extendTailwindMerge` : sans cela, `tailwind-merge` les prenait pour des couleurs et les
+  supprimait. Toute nouvelle taille ajoutée au thème doit y être déclarée (test `utils.unit`).
 - **Logo** `pro/club` dans `public/brand/` + favicon `src/app/icon.png`. Quatre PNG détourés
   (`{shield,lockup}` × `{white,navy}`), générés depuis le **logo source fourni par la direction** (PNG 1182 px, canal alpha propre).
   Servis par la primitive `BrandMark` (`variant` shield/lockup, `tone` onLight/onDark).
@@ -121,8 +136,14 @@ en dur ailleurs échapperait à la preuve de contraste : ne jamais le faire.
   Décoratif (`alt=""`) par défaut ; passer `label` là où il porte seul l'identité (connexion).
   L'écu est un logo **au trait fin** : sous ~32 px le filet devient ténu, d'où les tailles
   relevées dans `BrandMark`. Un SVG reste préférable si la direction en obtient un.
-- Le rouge sert aux accents, CTA et alertes, **jamais** au petit texte sur blanc — règle
-  désormais **prouvée** (`#F74335` mesure 3,6:1, sous le seuil AA de 4,5:1).
+- **Écart assumé au design system** : il pose du texte blanc sur terracotta `#d85d3b`, qui mesure
+  **3,78:1** (seuil AA : 4,5:1). Le terracotta pur reste un filet, un marqueur ou un texte agrandi ;
+  le texte courant et les boutons accent passent par `accent-strong` (6,63:1). Règle **prouvée** par
+  `tests/contrast.unit.test.mts`.
+- **Pas de tiret long dans les textes d'interface** (voix du design system) : deux-points, virgule
+  ou point médian. Le tiret seul reste admis comme marque de donnée absente dans une cellule.
+  Les valeurs écrites dans Airtable (« Coaching — plateforme SproCLUB ») ne changent pas : la base
+  les attend telles quelles.
 
 **Contraste : prouvé, pas déclaré.** `src/lib/contrast-rules.ts` (pur, sans import, WCAG 2.1)
 + `CHARTE_TEXT_PAIRS` dans `design-tokens.ts` listent **toute** combinaison texte/fond que
@@ -171,7 +192,7 @@ Chaque domaine métier suit le même triplet, sans exception :
 - `src/lib/<domaine>-rules.ts` : règles **pures**, sans base ni horloge, testées hors DB
   (`compliance-rules`, `reporting-rules`, `rgpd-rules`, `ratelimit-rules`, `notification-rules`,
   `l360-rules`, `talent-rules`, `job-rules`, `availability-rules`, `journey-rules`,
-  `search-rules`, `contrast-rules`, `list-summary-rules`, `nav-active`).
+  `search-rules`, `contrast-rules`, `list-summary-rules`, `nav-active`, `resource-rules`).
   **Ces modules n'importent rien** : `node --test` ne résout pas l'alias `@/`, donc un
   cross-import entre règles pures casserait la suite. Si deux domaines ont besoin de la même
   transformation, c'est l'appelant qui la compose (ex. `progressPercent` appliqué avant
@@ -247,6 +268,13 @@ La carte fichier par fichier est dans `STRUCTURE.md`. En cas de doute, `ls -R sr
   `access_sync_log` porte des adresses e-mail : oubliée, elle aurait survécu 12 mois à un effacement.
   Symétriquement, une synchronisation doit consulter `data_erasures` avant de recréer un compte,
   sinon elle annule un droit exercé au passage suivant.
+- **Un mot de passe de ressource ne transite jamais par Postgres** (INC-30). Il est lu à la demande
+  dans Airtable, après que `reveal_resource_assignment` a vérifié rôle, propriété et période et
+  journalisé. Ne jamais ajouter « Mot de passe » aux champs lus par une synchronisation, ni le
+  journaliser, ni le rendre dans une page serveur.
+- **Le token Airtable du projet écrit les enregistrements, pas le schéma** (vérifié dans l'interface
+  le 2026-10-08). Ce qui retient un write-back, c'est son drapeau et la décision de l'activer, pas
+  le credential ; créer un champ reste une action manuelle.
 - **Une couleur de texte ne se choisit pas à l'œil** : `#B8860B` (warning) plafonnait à 3,25:1
   sur blanc et était **déjà en production** sur quatre écrans ; `#2E7D32` (success) tombait à
   4,47:1 sur sa propre teinte. Les deux ont désormais une variante `-ink`. Tout nouveau couple
@@ -275,7 +303,7 @@ le claim JWT `app_metadata.org_id` (robuste avec le pooling PostgREST).
   tables que la migration crée ; l'ordre inverse casse la production.
 - **`npm test` est sérialisé** (`--test-concurrency=1`). Le rate-limit d'authentification
   Supabase rend la suite instable en parallèle : ne pas paralléliser pour gagner du temps.
-- **7 crons Vercel** + **deux workflows GitHub Actions** : `sync-l360-hourly` (horaire) et
+- **6 crons Vercel** (miroir Cal.eu retiré le 2026-10-08) + **deux workflows GitHub Actions** : `sync-l360-hourly` (horaire) et
   `sync-airtable-quarterly` (**toutes les 15 min**, INC-25). Le plan Vercel
   Hobby n'autorise que des crons quotidiens, l'horaire passe donc par Actions (secret
   `CRON_SECRET` à poser dans GitHub).
@@ -300,22 +328,25 @@ jamais le coach référent, évaluateurs issus du vivier du programme, cohérenc
 Domaine TS : `src/lib/data/reservations.ts` (client injecté), port `src/lib/booking/provider.ts`,
 adaptateur `src/lib/booking/calcom.ts` (instance **Cal.eu**, validé en réel). Miroir des créneaux
 `src/lib/booking/mirror.ts` + route `POST /api/admin/mirror-availabilities` (secret `CRON_SECRET`)
-→ remplit `availabilities` (préfixe ref `cal:`). Types d'événement Coaching/Soutenance créés.
+→ remplissait `availabilities` (préfixe ref `cal:`). **Miroir éteint le 2026-10-08** : il recopiait un
+hôte Cal.eu de test (1 000 créneaux fictifs proposés aux apprenants). Cron retiré, route gardée par
+`AVAILABILITY_MIRROR_ENABLED` (absent = éteint, réponse 410), créneaux `cal:` supprimés. Les créneaux
+viennent désormais des plages publiées par les coachs (INC-27). Types d'événement Coaching/Soutenance créés.
 Les actions de réservation (coaching/soutenance) passent par `src/lib/booking/service.ts`
 (`bookSlot`) : crée l'événement Cal.eu puis enregistre la réservation avec `calcom_booking_id`,
 avec compensation (annulation) si l'insert échoue ; dégradation propre si Cal.com non configuré.
-Reste : planification cron du miroir, écran d'affectation du jury, mise à jour du jury sur Cal.eu.
+Reste : écran d'affectation du jury, mise à jour du jury sur Cal.eu.
 
 ## Backlog immédiat (suite du `PLAN_DEV_PRODUIT.md`)
-**Tous les incréments INC-0 → INC-29 sont livrés** (migrations `0001→0031` appliquées). Prochaine grande étape : **Étape 7** —
+**Tous les incréments INC-0 → INC-31 sont livrés** (migrations `0001→0032` appliquées). Prochaine grande étape : **Étape 7** —
 ouverture à d'autres organismes (onboarding par paramétrage, image de marque et domaine par organisme,
 audit de sécurité externe). Le socle multi-locataire est déjà en place : c'est une extension, pas une refonte.
 Restes différés : INC-29 extension du single-select « Rôle applicatif » aux rôles Évaluateur /
 Coordination / Direction (sans quoi ces rôles restent des comptes de service) ;
-INC-3 serveurs SAP + planning S1.2 ; INC-4 remontée Airtable des CR [token write] +
+INC-3 serveurs SAP + planning S1.2 ; INC-4 remontée Airtable des CR [décision d'activation] +
 dispos multi-coach ; INC-12 exécution réelle du test de restauration en staging ; INC-26 activation du
-write-back des soutenances [token write + `AIRTABLE_WRITEBACK_ENABLED`] ; INC-27 extinction du miroir
-`cal:` quand les coachs auront publié leurs plages ; INC-7 credential
+write-back des soutenances [`AIRTABLE_WRITEBACK_ENABLED`] ; INC-27 publication des plages par les
+coachs (un seul l'a fait au 2026-10-08, le miroir étant éteint) ; INC-7 credential
 Resend (`RESEND_API_KEY`/`NOTIF_FROM`) pour l'envoi réel + échéances CPF — en attente d'extension sync / credential.
 
 ## Documents de référence

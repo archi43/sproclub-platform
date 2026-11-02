@@ -71,7 +71,7 @@ manuel pour confirmer (`curl -H "x-cron-secret: <CRON_SECRET>" .../api/admin/syn
 | Cron | Horaire (UTC) | Rôle |
 |---|---|---|
 | `/api/admin/sync-airtable` | `0 5 * * *` | Sync Airtable → Postgres (lecture seule) |
-| `/api/admin/mirror-availabilities` | `30 6 * * *` | Miroir des créneaux Cal.eu |
+| ~~`/api/admin/mirror-availabilities`~~ | retiré le 2026-10-08 | Miroir Cal.eu éteint (hôte de test) ; la route répond 410 tant que `AVAILABILITY_MIRROR_ENABLED` n'est pas `true` |
 | `/api/admin/export-bpf` | `0 7 * * 1` (lundi) | Export réglementaire (Module 5) |
 | `/api/admin/purge-retention` | `15 3 * * *` | Purge de rétention (RGPD/observabilité) |
 | `/api/admin/run-notifications` | `0 8 * * *` | Relances e-mail (INC-7) |
@@ -168,6 +168,30 @@ Déclenchement manuel : `curl -H "x-cron-secret: <CRON_SECRET>" https://<host>/a
 - **Rôles non encore déclarables dans Airtable** : le single-select « Rôle applicatif » ne
   propose qu'Apprenant et Coach. Ajouter « Évaluateur », « Coordination », « Direction » suffit
   pour qu'ils viennent aussi de l'annuaire : le code les reconnaît déjà, accentués ou non.
+
+## 7sexies. Accès aux ressources (INC-30)
+
+- **Source** : Airtable, tables « Affectation ressources » (qui, quel compte, quelle période),
+  « Ressources » (identifiant et mot de passe du compte), « Types de ressources ». Reflet dans
+  `resource_assignments` à chaque passage de la synchronisation (étape non fatale, bruyante dans
+  `ops_events` en cas d'échec). Fenêtre lue : affectations sans fin, en cours, à venir, ou
+  terminées depuis moins de 30 jours.
+- **Mot de passe** : jamais copié. Il est lu dans Airtable quand l'apprenant clique, après que
+  `reveal_resource_assignment` a vérifié rôle, propriété et période, et journalisé la demande
+  (`audit_log`, visible sur la fiche apprenant). Plafond : 20 demandes par quart d'heure et par
+  personne, refus si le limiteur est en panne.
+- **Changer un mot de passe** : le modifier dans « Ressources ». L'apprenant voit la nouvelle valeur
+  à sa demande suivante, sans attendre de synchronisation.
+- **Compte partagé dans le temps** : un compte du stock réaffecté garde son mot de passe. Pour qu'un
+  ancien apprenant ne puisse plus s'en servir, **changer le mot de passe à chaque réaffectation**
+  (côté serveur SAP et dans « Ressources »). La plateforme coupe l'affichage à la fin de la période,
+  mais ne peut pas empêcher l'usage d'un mot de passe déjà noté. Rien ne vérifie qu'un compte
+  « individuel » n'a qu'une affectation active à la fois : c'est au back office de le garantir.
+- **Garde-fou** : si Airtable ne rend aucune affectation alors que le reflet en porte, la
+  synchronisation ne retire rien et signale l'incident (filtre cassé, table renommée).
+- **Point faible connu** : les mots de passe sont en clair dans Airtable, et le lookup
+  « Mot de passe (à partir de Ressources) » les recopie dans « Affectation ressources ». Restreindre
+  l'accès à ces tables, et supprimer ce lookup, inutile au fonctionnement.
 
 ## 7. Déploiement (rappel)
 Appliquer chaque **migration avant le code** (`supabase db push`). La CI exécute la vraie

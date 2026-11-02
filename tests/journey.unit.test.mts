@@ -4,6 +4,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
+  defenseEligibleDeliverables,
   buildJourneyAlerts,
   daysUntil,
   progressPercent,
@@ -91,4 +92,18 @@ test("l'avancement accepte les deux échelles de la source", () => {
   assert.equal(progressPercent(null), null);
   assert.equal(progressPercent(140), 100, "borné");
   assert.equal(progressPercent(-5), 0);
+});
+
+test("soutenance : un projet validé par le jury n'est plus proposé", () => {
+  const d = (n: number, submitted: boolean, validated: string | null) =>
+    ({ project_number: n, deliverable_submitted: submitted, validated_at: validated });
+  const list = [
+    d(1, true, "2026-05-01T10:00:00Z"),
+    d(5, true, "2026-09-01T10:00:00Z"),
+    d(6, true, null),
+    d(7, false, null),
+    d(8, true, null),
+  ];
+  const eligible = defenseEligibleDeliverables(list, new Set([8]));
+  assert.deepEqual(eligible.map((x) => x.project_number), [6], "seul le projet déposé, non validé, sans soutenance en cours");
 });

@@ -31,3 +31,21 @@ export function decideAccountErasure(
     memberships.length > 0 && memberships.every((m) => m.org_id === orgId && m.role === "student");
   return onlyStudentHere && !referencedElsewhere ? "delete-account" : "revoke-student-membership";
 }
+
+/**
+ * Domaine des adresses de remplacement posées sur un apprenant effacé.
+ * `.invalid` est réservé par la RFC 2606 : aucune adresse réelle ne peut le
+ * porter, donc aucun apprenant actif ne peut être pris pour un effacé.
+ */
+export const ERASED_EMAIL_DOMAIN = "erased.invalid";
+
+/** Adresse de remplacement d'un apprenant effacé (identifiant conservé). */
+export function erasedTombstoneEmail(learnerId: string): string {
+  return `erased-${learnerId}@${ERASED_EMAIL_DOMAIN}`;
+}
+
+/** Vrai si l'adresse est celle d'un apprenant effacé. Sert aux synchronisations
+ *  qui partent du dossier (et non de l'e-mail source) pour ne pas le ressusciter. */
+export function isErasedEmail(email: string | null | undefined): boolean {
+  return typeof email === "string" && email.toLowerCase().endsWith(`@${ERASED_EMAIL_DOMAIN}`);
+}

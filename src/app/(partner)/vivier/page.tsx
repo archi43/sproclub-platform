@@ -50,7 +50,7 @@ export default async function VivierPage({
     <div>
       <PageHeader
         title="Vivier de talents"
-        description={`${company ? `${company.name} — ` : ""}candidats consentants, données pédagogiques en temps réel (360Learning, actualisation horaire).`}
+        description={`${company ? `${company.name} : ` : ""}candidats consentants, données pédagogiques en temps réel (360Learning, actualisation horaire).`}
       />
 
       <div className="mb-6 grid gap-4 sm:grid-cols-3">

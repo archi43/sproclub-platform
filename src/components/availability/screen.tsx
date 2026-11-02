@@ -167,8 +167,8 @@ export async function AvailabilityScreen({ basePath, audience }: { basePath: str
                 <p className="mt-1 text-xs text-muted">
                   {feed.lastSyncedAt
                     ? `Dernière synchronisation : ${dateFmt.format(new Date(feed.lastSyncedAt))}` +
-                      (feed.eventCount != null ? ` — ${feed.eventCount} occupation(s)` : "")
-                    : "Pas encore synchronisé — la prochaine exécution s'en chargera."}
+                      (feed.eventCount != null ? ` · ${feed.eventCount} occupation(s)` : "")
+                    : "Pas encore synchronisé : la prochaine exécution s'en chargera."}
                 </p>
                 {feed.lastStatus && feed.lastStatus !== "ok" && (
                   <p className="mt-1 text-xs text-error">Dernière erreur : {feed.lastStatus}</p>
@@ -196,7 +196,7 @@ export async function AvailabilityScreen({ basePath, audience }: { basePath: str
 /** N'expose que l'hôte du lien d'agenda — le reste est un secret. */
 function safeHost(url: string): string {
   try {
-    return `${new URL(url).hostname} — lien masqué`;
+    return `${new URL(url).hostname} · lien masqué`;
   } catch {
     return "lien masqué";
   }

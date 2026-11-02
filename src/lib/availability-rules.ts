@@ -236,3 +236,10 @@ export function generateSlots(input: GenerateInput): Slot[] {
     })
     .sort((a, b) => a.startsAt.localeCompare(b.startsAt));
 }
+
+/** Un créneau n'est réservable que s'il commence strictement après `now`. Une
+ *  date illisible n'est jamais réservable. */
+export function isBookableSlot(startsAt: string, now: Date): boolean {
+  const start = new Date(startsAt).getTime();
+  return Number.isFinite(start) && start > now.getTime();
+}

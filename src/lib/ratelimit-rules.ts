@@ -54,3 +54,12 @@ export function clientIdentifier(xRealIp: string | null, xForwardedFor: string |
   if (first) return first;
   return "unknown";
 }
+
+/**
+ * Révélation d'un mot de passe de ressource (INC-30), par utilisateur : 20 par
+ * 15 minutes. La propriété et la période sont vérifiées en base ; ce plafond
+ * protège le quota Airtable (5 requêtes par seconde, partagé avec le back
+ * office) et rend visible un usage anormal, sans gêner un apprenant qui
+ * affiche, masque et réaffiche son accès.
+ */
+export const RESOURCE_REVEAL_LIMIT: RateLimit = { bucket: "resource-reveal", windowSeconds: 15 * 60, max: 20 };

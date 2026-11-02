@@ -2,6 +2,7 @@ import Link from "next/link";
 import { getOrgContext } from "@/lib/tenant";
 import { createClient } from "@/lib/supabase/server";
 import { getDeliverables } from "@/lib/data/deliverables";
+import { defenseEligibleDeliverables } from "@/lib/journey-rules";
 import { getAvailabilities, getReservations } from "@/lib/data/reservations";
 import { PageHeader, EmptyState } from "@/components/ui/page-header";
 import { Card } from "@/components/ui/card";
@@ -17,7 +18,7 @@ const fmt = new Intl.DateTimeFormat("fr-FR", {
   timeZone: "Europe/Paris",
 });
 
-/** Student portal — defense booking. Eligible once the deliverable is submitted. */
+/** Student portal — defense booking. Eligible once the deliverable is submitted, until the jury validates it. */
 export default async function SoutenancePage() {
   const org = await getOrgContext();
   if (!org) return <p className="text-muted">Organisme introuvable.</p>;
@@ -34,14 +35,14 @@ export default async function SoutenancePage() {
       .filter((r) => r.kind === "defense" && (r.status === "pending" || r.status === "confirmed"))
       .map((r) => r.project_number)
   );
-  const eligible = deliverables.filter((d) => d.deliverable_submitted && !activeDefenseProjects.has(d.project_number));
+  const eligible = defenseEligibleDeliverables(deliverables, activeDefenseProjects);
   const slotOptions: SlotOption[] = slots.map((s) => ({ id: s.id, label: fmt.format(new Date(s.starts_at)) }));
   const defenses = reservations.filter((r) => r.kind === "defense");
 
   return (
     <div className="space-y-8">
       <div>
-        <PageHeader title="Réserver une soutenance" description="Un projet devient éligible une fois son livrable déposé." />
+        <PageHeader title="Réserver une soutenance" description="Un projet devient éligible une fois son livrable déposé, jusqu'à sa validation par le jury." />
         {eligible.length === 0 ? (
           <EmptyState
             title="Aucun projet éligible"

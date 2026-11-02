@@ -1,13 +1,16 @@
 import type { ReactNode } from "react";
 import { cn } from "@/lib/utils";
 
-type Tone = "neutral" | "critical";
+type Tone = "neutral" | "critical" | "warning";
 
 const tones: Record<Tone, { box: string; value: string; label: string }> = {
-  neutral: { box: "border-line bg-white", value: "text-brand", label: "text-muted" },
-  // Le rouge signale, il ne décore pas : la tuile critique change de fond ET de
-  // couleur de chiffre, l'état n'est donc jamais porté par la seule couleur.
-  critical: { box: "border-accent-tint bg-error-tint", value: "text-error", label: "text-error" },
+  neutral: { box: "bg-white", value: "text-brand", label: "text-muted" },
+  // Le rouge signale, il ne décore pas : la tuile critique change de fond, de
+  // couleur de chiffre ET porte un filet gauche (motif « highlight » du design
+  // system), l'état n'est donc jamais porté par la seule couleur.
+  critical: { box: "border-l-4 border-error bg-error-tint", value: "text-error", label: "text-error" },
+  // Même logique pour l'avertissement : fond, chiffre et filet, en variante `ink`.
+  warning: { box: "border-l-4 border-warning bg-warning-tint", value: "text-warning-ink", label: "text-warning-ink" },
 };
 
 /**
@@ -23,9 +26,9 @@ export function StatTile({ label, value, hint, tone = "neutral" }: {
 }) {
   const t = tones[tone];
   return (
-    <div className={cn("rounded-xl border p-4", t.box)}>
+    <div className={cn("rounded-xl p-4 shadow-card", t.box)}>
       <p className={cn("text-label font-medium uppercase", t.label)}>{label}</p>
-      <p className={cn("mt-2 font-heading text-figure font-bold tabular-nums", t.value)}>{value}</p>
+      <p className={cn("mt-2 font-heading text-figure font-bold lining-nums tabular-nums", t.value)}>{value}</p>
       {hint && <p className="mt-1 text-xs text-muted">{hint}</p>}
     </div>
   );

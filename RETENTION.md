@@ -27,6 +27,8 @@ rétention des données personnelles des apprenants et les mécanismes légaux i
 | Compteur de débit (`rate_limit_events`) | **2 jours** | technique (anti-abus) |
 | Journal des accès rapprochés (`access_sync_log`) | **12 mois** glissants | justifier une ouverture ou une coupure d'accès |
 | Comptes utilisateurs inactifs (memberships désactivés) | purge après **24 mois** | minimisation |
+| Affectations de ressources (`resource_assignments`, INC-30) | fin de l'accès **+ 30 jours**, puis retirées du reflet à la synchronisation suivante | exécution de la formation ; l'historique reste dans le back office |
+| Demandes de mot de passe de ressource (`audit_log`, action `resource.password_request`) | **12 mois** glissants, comme le reste du journal | traçabilité ; le détail porte l'identifiant de connexion, jamais le mot de passe |
 
 Les durées sont indicatives et à valider avec le DPO.
 
@@ -80,3 +82,11 @@ propre identité. Direction/coordinateur consultent le journal depuis la fiche a
 Toutes les tables portent `org_id` + RLS ; le stockage des documents est isolé par
 organisme et par apprenant (chemin `{org_id}/{email}/…`, INC-8). Aucune donnée n'est
 accessible hors périmètre autorisé (isolation prouvée par les tests d'intégration).
+
+## Mots de passe des ressources (INC-30)
+Les mots de passe des accès techniques (serveurs SAP, plateformes) ne sont **pas stockés** par la
+plateforme : ils sont lus dans Airtable au moment où l'apprenant les demande, et ne figurent ni
+dans Postgres, ni dans l'export RGPD, ni dans les journaux. L'effacement d'un apprenant retire ses
+affectations mais **ne change pas le mot de passe du compte** : c'est un compte du stock, réaffecté
+ensuite à d'autres apprenants (voir `RUNBOOK.md` §7sexies).
+

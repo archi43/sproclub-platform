@@ -137,7 +137,7 @@ export function RoleChip({ profileId, role, removable, tone = "neutral" }: {
     <span className="inline-flex flex-col gap-0.5">
       <form
         action={action}
-        className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium ${base}`}
+        className={`inline-flex items-center gap-1 rounded px-2.5 py-0.5 text-xs font-medium ${base}`}
       >
         <input type="hidden" name="profileId" value={profileId} />
         <input type="hidden" name="role" value={role} />
@@ -210,7 +210,7 @@ export function AddPoolForm({ programs, candidates }: { programs: string[]; cand
       <Field label="Évaluateur" htmlFor="pool-eval">
         <Select id="pool-eval" name="evaluatorId" required defaultValue={candidates[0].profileId}>
           {candidates.map((c) => (
-            <option key={c.profileId} value={c.profileId}>{c.fullName ? `${c.fullName} — ${c.email}` : c.email}</option>
+            <option key={c.profileId} value={c.profileId}>{c.fullName ? `${c.fullName} · ${c.email}` : c.email}</option>
           ))}
         </Select>
       </Field>

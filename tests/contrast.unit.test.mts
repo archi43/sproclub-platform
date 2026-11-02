@@ -57,16 +57,26 @@ test("le navy et le texte secondaire dépassent largement le seuil", () => {
   assert.ok(checkPair({ fg: COLORS.shell.fg, bg: SURFACES.shell }).ratio > 7);
 });
 
-test("le rouge de marque reste interdit en petit texte sur blanc", () => {
-  // La règle de charte « jamais de petit texte rouge sur blanc » n'est pas une
-  // préférence : #F74335 plafonne sous 4,5:1. On le prouve pour que personne ne
-  // le réintroduise en pensant bien faire.
-  const red = checkPair({ fg: COLORS.accent.DEFAULT, bg: SURFACES.white });
-  assert.ok(red.ratio < AA_NORMAL, `#F74335 mesure ${red.ratio}:1`);
-  assert.ok(red.ratio >= AA_LARGE, "il reste utilisable en texte agrandi et en aplat");
+test("le terracotta pur reste interdit en petit texte, sa variante foncée passe", () => {
+  // Le design system pose du texte blanc sur terracotta #d85d3b : 3,78:1, sous le
+  // seuil AA. On le prouve pour que personne ne le réintroduise en suivant la
+  // maquette à la lettre ; le texte courant et les boutons passent par `strong`.
+  const pure = checkPair({ fg: SURFACES.white, bg: COLORS.accent.DEFAULT });
+  assert.ok(pure.ratio < AA_NORMAL, `blanc sur #d85d3b mesure ${pure.ratio}:1`);
+  assert.ok(pure.ratio >= AA_LARGE, "il reste utilisable en texte agrandi et en aplat");
+  assert.ok(checkPair({ fg: COLORS.accent.DEFAULT, bg: SURFACES.white }).ratio < AA_NORMAL);
 
-  // Le rouge textuel de la charte, lui, passe : c'est `error`, pas `accent`.
+  assert.ok(checkPair({ fg: SURFACES.white, bg: COLORS.accent.strong }).passes, "bouton accent");
+  assert.ok(checkPair({ fg: COLORS.accent.strong, bg: SURFACES.white }).passes, "texte accent");
+
+  // Le rouge textuel de l'interface, lui, passe : c'est `error`, pas `accent`.
   assert.ok(checkPair({ fg: COLORS.error.DEFAULT, bg: SURFACES.white }).passes);
+});
+
+test("la coque est en Dark Navy et le corps de texte aussi (règle 1 du design system)", () => {
+  assert.equal(COLORS.shell.DEFAULT, COLORS.brand.deep);
+  assert.equal(COLORS.ink, COLORS.brand.deep);
+  assert.equal(COLORS.brand.deep, "#0f1727");
 });
 
 test("le vert de succès n'est admis sur son fond teinté que foncé", () => {

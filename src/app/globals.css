@@ -6,12 +6,15 @@
   html {
     -webkit-text-size-adjust: 100%;
   }
+  /* Corps en Syne, interlettrage du design system (0,25 px à l'échelle interface). */
   body {
     @apply bg-surface text-ink font-body antialiased;
+    letter-spacing: 0.016em;
   }
-  /* Titres : navy de marque, poids et interlettrage resserrés (rendu épuré). */
+  /* Titres : Cardo Bold navy, interlettrage nul (design system). */
   h1, h2, h3, h4, h5, h6 {
-    @apply font-heading text-brand tracking-tight;
+    @apply font-heading font-bold text-brand;
+    letter-spacing: 0;
   }
   a {
     @apply text-brand underline-offset-2 hover:underline;

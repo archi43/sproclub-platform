@@ -16,13 +16,18 @@ import type { Availability, BookingKind, Reservation } from "@/lib/types";
 export async function getAvailabilities(
   supabase: SupabaseClient,
   orgId: string,
-  kind: BookingKind
+  kind: BookingKind,
+  now: Date = new Date()
 ): Promise<Availability[]> {
+  // Seuls les créneaux à venir sont réservables. Sans ce filtre, l'écran listait
+  // tout l'historique du miroir Cal.eu (915 créneaux passés sur 1 000, constaté
+  // en production le 2026-10-08).
   const { data, error } = await supabase
     .from("availabilities")
     .select("id, org_id, host_id, kind, starts_at, ends_at, calcom_ref")
     .eq("org_id", orgId)
     .eq("kind", kind)
+    .gt("starts_at", now.toISOString())
     .order("starts_at", { ascending: true });
   if (error) throw new Error(`Failed to load availabilities: ${error.message}`);
   return (data ?? []) as Availability[];

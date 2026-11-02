@@ -75,7 +75,7 @@ export default async function JuryEvaluationsPage() {
                 <div>
                   <h2 className="font-heading text-lg font-semibold text-brand">
                     {d.learnerName}
-                    {d.projectNumber != null && ` — projet ${d.projectNumber}`}
+                    {d.projectNumber != null && ` · projet ${d.projectNumber}`}
                   </h2>
                   <p className="mt-1 text-sm text-muted">
                     {[d.program, d.specialty].filter(Boolean).join(" · ") || "Programme non renseigné"}

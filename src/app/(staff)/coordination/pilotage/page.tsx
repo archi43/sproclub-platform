@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { getOrgContext } from "@/lib/tenant";
+import { StatTile } from "@/components/ui/stat";
 import { directionDashboard, compliancePrograms, type Rate } from "@/lib/data/compliance";
 import { PageHeader, EmptyState } from "@/components/ui/page-header";
 import { Card, CardTitle } from "@/components/ui/card";
@@ -50,7 +51,7 @@ export default async function PilotagePage({
       {/* Alertes en tête */}
       {kpis.nonConforming > 0 && (
         <Alert tone="error">
-          {kpis.nonConforming} dossier(s) terminé(s) non conforme(s) — pièces obligatoires manquantes.
+          {kpis.nonConforming} dossier(s) terminé(s) non conforme(s) : pièces obligatoires manquantes.
         </Alert>
       )}
 
@@ -97,11 +98,7 @@ export default async function PilotagePage({
   );
 }
 
+/** Tuile de résultat : la primitive `StatTile`, jamais une tuile recodée ici. */
 function Kpi({ label, value, tone }: { label: string; value: string; tone?: "error" }) {
-  return (
-    <Card>
-      <div className="text-xs text-muted">{label}</div>
-      <div className={`mt-1 text-xl font-semibold ${tone === "error" ? "text-error" : "text-brand"}`}>{value}</div>
-    </Card>
-  );
+  return <StatTile label={label} value={value} tone={tone === "error" ? "critical" : "neutral"} />;
 }

@@ -103,7 +103,14 @@ etaient noyees ont ete remontees dans `CLAUDE.md`.
   `src/lib/sync/airtable-rest.ts` factorise la pagination et la détection de credential manquant,
   partagées avec la source des Commandes. Branché non fatal dans `sync/pipeline.ts`, **armé par `ACCESS_SYNC_ENABLED`**.
   `MANUAL_INVITE_ROLES` (`src/lib/roles.ts`) borne ce qui reste créable à la main.
-- `supabase/migrations/0001` → `0031` ; seed `supabase/seed/sproclub_bootstrap.sql`.
+- `src/lib/resource-rules.ts` (INC-30, pur, sans import : plan de reflet des affectations de
+  ressources, statut d'une affectation, règle de révélation du mot de passe) +
+  `src/lib/sync/resource-source.ts` (« Affectation ressources », « Ressources », « Types de
+  ressources » ; `fetchResourcePassword` lit le mot de passe à la demande, jamais pendant la sync) +
+  `src/lib/sync/resource-sync.ts` (miroir sous service-role) + `src/lib/data/resources.ts` (lecture
+  sous RLS, révélation par la RPC `reveal_resource_assignment`). Écran
+  `src/app/(portal)/mon-parcours/acces/` (« Mes accès »).
+- `supabase/migrations/0001` → `0032` ; seed `supabase/seed/sproclub_bootstrap.sql`.
   (`0004` invariants réservation, `0005` normalisation e-mails minuscules à l'écriture,
   `0012` gestion utilisateurs/rôles : désactivation qui coupe l'accès + policies de gestion,
   `0013` `enrollments_ro.pending_reports` pour la file d'opérations, `0014` portail coach :

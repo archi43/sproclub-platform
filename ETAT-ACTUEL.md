@@ -13,7 +13,7 @@ Migrations **0001→0030** + seed appliqués. Suite de tests **250/250** verte c
 `test:talent` 12, `test:jobs` 11, `test:availability` 32, `test:jury` 19, `test:journey` 9, `test:search` 6,
 `test:design` 17, `test:roles` 12, `test:sync` 23). Exécution **sérialisée**
 (`npm test` → `--test-concurrency=1`) pour éviter la flakiness de rate-limit auth sous concurrence.
-**7 crons Vercel** (sync 05:00, sync 360L filet quotidien 05:45, agendas 06:00, miroir 06:30,
+**6 crons Vercel** (sync 05:00, sync 360L filet quotidien 05:45, agendas 06:00, ~~miroir 06:30~~ retiré le 2026-10-08,
 export BPF lundi 07:00, purge rétention 03:15, relances 08:00) + **deux workflows GitHub Actions** :
 `sync-l360-hourly` (horaire) et `sync-airtable-quarterly` (**toutes les 15 min**) — les crons Vercel de 5 h
 et 5 h 45 restent des filets quotidiens
@@ -437,6 +437,61 @@ Incréments livrés (voir `PLAN_DEV_PRODUIT.md`) :
   jeton du projet est en lecture seule sur le schéma, c'est une action manuelle de 10 secondes).
   À l'état actuel, la synchronisation ouvrira **84 accès apprenant et 19 accès coach**, et fermera
   automatiquement les **39 habilitations** qui arrivent à échéance dans les 90 prochains jours.
+
+- ✅ **INC-30** (accès aux ressources : chaque apprenant retrouve ses accès et leur mot de passe) :
+  demande de la direction, le 2026-10-08. Les accès techniques (serveur SAP P2W/S4H, Learning Hub,
+  BTP, SuccessFactors, Odoo…) sont tenus dans Airtable : `Affectation ressources` relie une commande
+  à un ou plusieurs comptes de `Ressources`, pour une période (`Start date`/`End Date`). Une
+  soixantaine d'affectations sont en cours ou à venir.
+  **Décision de sécurité : le mot de passe n'entre pas dans Postgres.** `resource_assignments`
+  (migration `0032`) ne reflète que l'affectation : identifiant de connexion, type, catégorie,
+  période. Le secret est lu **à la demande** dans Airtable, côté serveur, par l'apprenant
+  propriétaire et pendant la période seulement. Copier les mots de passe aurait doublé la surface
+  d'exposition (sauvegardes, exports, réplicas) et créé une seconde vérité qui dérive dès qu'un mot
+  de passe change dans le back office.
+  **La base est le garde, pas l'écran** : le serveur n'obtient l'identifiant Airtable du compte que
+  par `reveal_resource_assignment` (SECURITY DEFINER, EXECUTE verrouillé comme en `0019`), qui
+  vérifie dans la même transaction le rôle apprenant, la propriété (e-mail du profil), la période
+  (date de Paris, bornes incluses) et **journalise la demande dans `audit_log`**
+  (`resource.password_request` : écrite avant la lecture Airtable, elle prouve une demande
+  autorisée, pas un affichage), visible sur la fiche apprenant de la coordination. La colonne
+  `airtable_resource_id` est retirée en lecture aux clients (droits par colonne) : seule la
+  fonction la rend. Une action serveur étant appelable hors de son écran, la
+  garde ne pouvait pas vivre dans l'action. Un compte qui cumule apprenant et coordination lit
+  toutes les lignes (policy staff) mais n'obtient le secret que des siennes.
+  Livré : `resource-rules.ts` (**pur, sans import** : plan de reflet avec motifs d'écart comptés,
+  statut d'une affectation, règle de révélation, ordre d'affichage) ; `sync/resource-source.ts`
+  (trois tables, filtre de période côté Airtable, champ « Mot de passe » **absent** de la liste
+  lue par la synchronisation) ; `sync/resource-sync.ts` (miroir complet, retrait des lignes que la
+  source ne porte plus, sûr puisque la table est produite entièrement par la sync) ; branchement
+  non fatal dans le pipeline ; `data/resources.ts` ; écran **« Mes accès »** (`/mon-parcours/acces`,
+  afficher / copier / masquer, masquage automatique après deux minutes, plafond de 20 révélations
+  par quart d'heure, refus si le limiteur est en panne) ; section « Accès aux ressources » sur la fiche apprenant (sans mot de passe).
+  **RGPD** : export sans mot de passe ; `eraseLearner` retire les affectations ; la sync écarte les
+  dossiers effacés (`isErasedEmail`, `rgpd-rules.ts`). Une affectation expirée reste visible
+  30 jours (sans mot de passe) puis sort du reflet : l'historique reste dans le back office.
+  Revue de sécurité intégrée : lectures Airtable en `cache: "no-store"` (le Data Cache de Next
+  aurait sinon pu stocker un mot de passe), corps d'erreur tronqué, garde-fou « une source vide ne
+  vide pas le reflet », focus clavier et annonces `aria-live` sur l'affichage du mot de passe.
+  **Point de vigilance hors périmètre** : les mots de passe restent en clair dans Airtable, et le
+  lookup `Mot de passe (à partir de Ressources)` les recopie dans `Affectation ressources`.
+
+- ✅ **INC-31** (passage au design system SproClub) : demande de la direction, le 2026-11-02. La
+  plateforme portait encore la charte d'avant la refonte de juillet 2026 (rouge `#F74335`,
+  Montserrat, Hind Madurai), déclarée obsolète par le design system. Elle est traitée comme un
+  **outil fonctionnel** : jetons, composants et ombre de card, sans décor de marque.
+  Livré : jetons réécrits depuis l'export Figma (`design-tokens.ts`) et coque en **Dark Navy
+  `#0f1727`** ; polices **Cardo / Syne / Inter** par `next/font` (auto-hébergées) avec les replis
+  officiels ; rayons 6 px / 4 px, plus de gélule ; ombre `shadow-card` sur cards, tableaux, filtres
+  et tuiles ; boutons en Syne Bold, 40 et 48 px ; champs sur fond `surface` ; documents PDF au
+  bandeau Dark Navy, filet terracotta, titre en Times Bold (repli de Cardo). Les trois tuiles
+  recodées dans Pilotage, Exploitation et Notifications passent par la primitive `StatTile`, qui
+  gagne un ton « avertissement » à filet gauche. 18 tirets longs retirés des textes d'interface.
+  **Écart assumé** : le texte blanc sur terracotta `#d85d3b` mesure 3,78:1, sous AA. Le texte et les
+  boutons accent passent par `accent-strong` (`#99422a`, 6,63:1), prouvé par le test de contraste.
+  **Défaut ancien corrigé au passage** : `cn()` supprimait `text-label` et `text-figure`,
+  que `tailwind-merge` prenait pour des couleurs ; les chiffres des tuiles n'avaient jamais eu
+  leur taille. Fixé par `extendTailwindMerge`, figé par `tests/utils.unit.test.mts`.
 
   **Vérifié en réel** : rendu de `coordination/apprenants` sous session staff (coque navy,
   marqueur actif, tuiles alimentées par les dossiers réels).
