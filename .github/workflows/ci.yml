@@ -31,9 +31,12 @@ jobs:
       # Real integration tests against a throwaway local Supabase (Postgres +
       # Auth + PostgREST) — protects RLS and the booking/sync invariants.
       # Local keys are the well-known public dev keys, not secrets.
+      # Version figée : la v3.0.0 (2026-11-02) refuse la section `[inbucket]` de
+      # config.toml et a cassé toutes les CI. Passer à la v3 se fera en même temps
+      # que l'outil local (renommage en `[local_smtp]`), jamais par surprise.
       - uses: supabase/setup-cli@v1
         with:
-          version: latest
+          version: 2.197.0
       - name: Start local Supabase (applies migrations)
         run: supabase start
 
