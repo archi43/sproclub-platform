@@ -36,7 +36,7 @@ jobs:
       # que l'outil local (renommage en `[local_smtp]`), jamais par surprise.
       - uses: supabase/setup-cli@v1
         with:
-          version: 2.197.0
+          version: 2.122.0
       - name: Start local Supabase (applies migrations)
         run: supabase start
 
