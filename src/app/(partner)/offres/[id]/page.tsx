@@ -51,7 +51,7 @@ export default async function OffreDetailPage({ params }: { params: { id: string
           <CardTitle>Candidats intéressés</CardTitle>
           <p className="text-sm text-muted">
             Apprenants ayant manifesté leur intérêt et rendu leur profil visible. Synthèse pédagogique
-            (progression, validations jury) — les coordonnées sont partagées après mise en relation par la coordination.
+            (progression, validations jury). Les coordonnées sont partagées après mise en relation par la coordination.
           </p>
         </div>
         {offer.status !== "published" ? (

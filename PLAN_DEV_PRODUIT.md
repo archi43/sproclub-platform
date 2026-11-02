@@ -437,6 +437,22 @@ coordination du jury. Base Supabase UE, Cal.eu branché.
   vide pas le reflet », focus clavier et annonces `aria-live` sur l'affichage du mot de passe.
   **Point de vigilance hors périmètre** : les mots de passe restent en clair dans Airtable, et le
   lookup `Mot de passe (à partir de Ressources)` les recopie dans `Affectation ressources`.
+- ✅ **INC-31** (passage au design system SproClub) : demande de la direction, le 2026-11-02. La
+  plateforme portait encore la charte d'avant la refonte de juillet 2026 (rouge `#F74335`,
+  Montserrat, Hind Madurai), déclarée obsolète par le design system. Elle est traitée comme un
+  **outil fonctionnel** : jetons, composants et ombre de card, sans décor de marque.
+  Livré : jetons réécrits depuis l'export Figma (`design-tokens.ts`) et coque en **Dark Navy
+  `#0f1727`** ; polices **Cardo / Syne / Inter** par `next/font` (auto-hébergées) avec les replis
+  officiels ; rayons 6 px / 4 px, plus de gélule ; ombre `shadow-card` sur cards, tableaux, filtres
+  et tuiles ; boutons en Syne Bold, 40 et 48 px ; champs sur fond `surface` ; documents PDF au
+  bandeau Dark Navy, filet terracotta, titre en Times Bold (repli de Cardo). Les trois tuiles
+  recodées dans Pilotage, Exploitation et Notifications passent par la primitive `StatTile`, qui
+  gagne un ton « avertissement » à filet gauche. 18 tirets longs retirés des textes d'interface.
+  **Écart assumé** : le texte blanc sur terracotta `#d85d3b` mesure 3,78:1, sous AA. Le texte et les
+  boutons accent passent par `accent-strong` (`#99422a`, 6,63:1), prouvé par le test de contraste.
+  **Défaut ancien corrigé au passage** : `cn()` supprimait `text-label` et `text-figure`,
+  que `tailwind-merge` prenait pour des couleurs ; les chiffres des tuiles n'avaient jamais eu
+  leur taille. Fixé par `extendTailwindMerge`, figé par `tests/utils.unit.test.mts`.
   **Prochaine étape : Étape 7** (ouverture à d'autres organismes).
 
 Suite `main` : **branche → PR → CI verte → merge → déploiement** (previews Vercel actifs).

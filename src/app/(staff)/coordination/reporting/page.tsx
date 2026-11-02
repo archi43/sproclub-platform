@@ -45,7 +45,7 @@ export default async function ReportingPage({
     <div className="space-y-6">
       <PageHeader
         title="Indicateurs & reporting"
-        description={`${report.total} dossier(s) — segmentés par ${DIMENSION_LABELS[dimension].toLowerCase()}.`}
+        description={`${report.total} dossier(s), segmentés par ${DIMENSION_LABELS[dimension].toLowerCase()}.`}
         actions={
           <a
             href={`/coordination/reporting/export${exportQuery ? `?${exportQuery}` : ""}`}

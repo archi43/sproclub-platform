@@ -4,7 +4,7 @@ import { cn } from "@/lib/utils";
 /** Responsive table: scrolls horizontally inside its own container. */
 export function Table({ children, className }: { children: ReactNode; className?: string }) {
   return (
-    <div className="overflow-x-auto rounded-xl border border-line bg-white">
+    <div className="overflow-x-auto rounded-xl bg-white shadow-card">
       <table className={cn("w-full text-sm", className)}>{children}</table>
     </div>
   );

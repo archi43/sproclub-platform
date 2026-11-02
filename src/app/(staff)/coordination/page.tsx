@@ -51,7 +51,7 @@ export default async function CoordinationPage() {
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <div>
                       <p className="font-heading font-semibold text-brand">
-                        {d.learnerName} — Projet {d.projectNumber}
+                        {d.learnerName} · Projet {d.projectNumber}
                       </p>
                       <p className="text-sm text-muted">
                         {d.program ?? "Programme ?"} · {fmt.format(new Date(d.startsAt))}

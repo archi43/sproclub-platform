@@ -44,7 +44,7 @@ export function computeAvailability(input: AvailabilityInput): Availability {
   if (input.staffStatus === "searching") {
     const from = input.availableFrom && input.availableFrom > input.today ? input.availableFrom : null;
     return from
-      ? { state: "soon", label: `En recherche — dès le ${formatDate(from)}`, tone: "warning", availableFrom: from }
+      ? { state: "soon", label: `En recherche, dès le ${formatDate(from)}`, tone: "warning", availableFrom: from }
       : { state: "available", label: "En recherche active", tone: "success", availableFrom: input.today };
   }
 

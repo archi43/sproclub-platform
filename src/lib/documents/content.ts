@@ -52,7 +52,7 @@ const dash = (v: string | null | undefined) => (v && v.trim() !== "" ? v : "—"
 /** Build the content (title, body, mandatory mentions) for a document kind. */
 export function buildDocument(kind: DocumentKind, d: DocumentData): DocumentContent {
   const who = `${d.learnerName} (${d.learnerEmail})`;
-  const prog = dash(d.program) + (d.specialty ? ` — ${d.specialty}` : "");
+  const prog = dash(d.program) + (d.specialty ? `, ${d.specialty}` : "");
   const period = `du ${dash(d.startDate)} au ${dash(d.endDate)}`;
 
   const common: string[] = [

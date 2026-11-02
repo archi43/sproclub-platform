@@ -70,7 +70,7 @@ const TONES: Record<ShellTone, ToneStyles> = {
     drawer: "bg-shell",
     orgName: "text-shell-fg-strong",
     subtitle: "text-shell-fg",
-    // Le marqueur rouge à gauche double la couleur de fond : l'état actif n'est
+    // Le marqueur terracotta à gauche double la couleur de fond : l'état actif n'est
     // jamais porté par la seule couleur (RGAA).
     navIdle: "border-l-[3px] border-transparent text-shell-fg hover:bg-shell-item hover:text-shell-fg-strong",
     navActive: "border-l-[3px] border-accent bg-shell-item font-medium text-shell-fg-strong",
