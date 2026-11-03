@@ -191,6 +191,7 @@ test("la sync reflète dépôt et validation jury, skip-list RGPD comprise", { s
   assert.equal(stats.skippedUnknownEmail, 1, "l'inconnu est écarté et compté (pas de perte silencieuse)");
   assert.equal(stats.submitted, 2, "alice + bob écrits");
   assert.equal(stats.validated, 1, "seule alice est validée par le jury");
+  assert.equal(stats.unconfirmedKeys.length, stats.unconfirmedDeposits, "les clés exposées sont celles comptées");
 
   const { data: rows } = await admin
     .from("project_deliverables")
