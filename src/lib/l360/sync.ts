@@ -41,6 +41,9 @@ export interface L360SyncStats {
   /** Dépôts enregistrés, non validés, que les signaux du jour ne confirment pas.
    *  Comptés seulement : la sync n'écrit jamais de recul (voir l360-rules). */
   unconfirmedDeposits: number;
+  /** Clés `dossier:projet` de ces dépôts (identifiants techniques, rien de
+   *  nominatif) : la réparation explicite s'appuie sur le jeu exact de la sync. */
+  unconfirmedKeys: string[];
 }
 
 const CHUNK = 500;
@@ -80,6 +83,7 @@ export async function syncL360(admin: SupabaseClient, orgId: string, l360: L360C
     validated: 0,
     fetchErrors: 0,
     unconfirmedDeposits: 0,
+    unconfirmedKeys: [],
   };
 
   // --- Pass 1 : auto-découverte des parcours « Projet n°X » -------------------
@@ -305,7 +309,8 @@ export async function syncL360(admin: SupabaseClient, orgId: string, l360: L360C
     existing.push(...(data ?? []));
     if ((data ?? []).length < 1000) break;
   }
-  stats.unconfirmedDeposits = unconfirmedDepositKeys(existing, new Set(byKey.keys())).length;
+  stats.unconfirmedKeys = unconfirmedDepositKeys(existing, new Set(byKey.keys()));
+  stats.unconfirmedDeposits = stats.unconfirmedKeys.length;
 
   await admin.from("sync_log").insert({
     entity: "l360_projects",
