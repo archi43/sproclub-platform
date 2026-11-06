@@ -135,12 +135,32 @@ const normalizeCertif = (v: unknown): string | undefined => {
   const s = scalar(v);
   if (typeof s === "boolean") return s ? "Oui" : "Non";
   return keyword(asSelect(v), [
+    // « checked » : une case cochée rendue en texte par un lookup Airtable
+    // (15 commandes terminées). Non reconnue, elle valait `null`.
+    [/^checked$/i, "Oui"],
     [/(obten|oui|r[ée]ussi|admis)/i, "Oui"], [/(non|[ée]chou|ajourn)/i, "Non"],
-    [/(attente|pr[ée]vu|planifi)/i, "En attente"],
+    [/(attente|pr[ée]vu|planifi|pr[ée]paration)/i, "En attente"],
   ]);
 };
+/**
+ * Résultat du jury final.
+ *
+ * La base dit « Validé » / « Non validé » (271 commandes terminées au
+ * 2026-11-06), vocabulaire qu'aucun motif ne reconnaissait : les 271 valeurs
+ * devenaient `null`, donc l'apprenant ne voyait pas son résultat dans son
+ * portail et la colonne partait vide à l'export. Même piège que
+ * `normalizeStatut` avant INC-24 : une valeur inconnue disparaît en silence.
+ *
+ * **L'ordre des motifs porte la correction** : « Non validé » contient
+ * « validé ». Tester la négation d'abord, sinon un ajourné devient un admis,
+ * ce qui est le pire sens possible pour cette erreur.
+ */
 const normalizeJury = (v: unknown): string | undefined =>
-  keyword(asSelect(v), [[/admis|r[ée]ussi/i, "Admis"], [/ajourn|[ée]chou/i, "Ajourné"], [/attente/i, "En attente"]]);
+  keyword(asSelect(v), [
+    [/\bnon\b|ajourn|[ée]chou|refus|invalid/i, "Ajourné"],
+    [/valid|admis|r[ée]ussi|favorable/i, "Admis"],
+    [/attente|cours/i, "En attente"],
+  ]);
 const normalizeSituation = (v: unknown): string | undefined =>
   keyword(asSelect(v), [[/poste|emploi|cdi|cdd/i, "En poste"], [/recherche/i, "En recherche"], [/formation/i, "En formation"]], "Autre");
 const normalizeContrat = (v: unknown): string | undefined =>
