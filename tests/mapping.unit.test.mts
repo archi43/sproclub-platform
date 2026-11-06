@@ -93,3 +93,63 @@ test("le mapping reste stable sur les champs déjà en place", () => {
   assert.equal(e.projects_required, 5);
   assert.equal(e.airtable_record_id, "recAAAAAAAAAAAAAA");
 });
+
+// -----------------------------------------------------------------------------
+// Résultat du jury et certification (2026-11-06)
+//
+// Quatrième défaut du même genre : le vocabulaire réel de la base n'était pas
+// couvert, et une valeur inconnue devient `null` en silence. 271 commandes
+// terminées portaient « Validé » ou « Non validé » et arrivaient sans résultat,
+// donc l'apprenant ne voyait rien dans son portail et l'export partait vide.
+// -----------------------------------------------------------------------------
+
+test("le vocabulaire réel du jury est reconnu", () => {
+  const cases: [string, string][] = [
+    ["Validé", "Admis"],
+    ["Non validé", "Ajourné"],
+  ];
+  for (const [source, expected] of cases) {
+    assert.equal(
+      buildEnrollment(rec({ [SRC.resultatJury]: source })).jury_result,
+      expected,
+      `« ${source} » devrait donner « ${expected} »`
+    );
+  }
+});
+
+test("« Non validé » ne devient jamais « Admis »", () => {
+  // Le piège de ce champ : la négation contient le mot positif. Si l'ordre des
+  // motifs s'inverse un jour, un apprenant ajourné serait affiché admis — dans
+  // son propre portail, et dans l'export de reporting.
+  for (const refus of ["Non validé", "non validé", "NON VALIDÉ", "Non Validé par le jury"]) {
+    assert.equal(buildEnrollment(rec({ [SRC.resultatJury]: refus })).jury_result, "Ajourné", refus);
+  }
+});
+
+test("l'ancien vocabulaire du jury reste reconnu", () => {
+  // Les deux vocabulaires doivent coexister : la base peut encore porter
+  // d'anciennes valeurs, et les reconnaître ne coûte rien.
+  assert.equal(buildEnrollment(rec({ [SRC.resultatJury]: "Admis" })).jury_result, "Admis");
+  assert.equal(buildEnrollment(rec({ [SRC.resultatJury]: "Ajourné" })).jury_result, "Ajourné");
+  assert.equal(buildEnrollment(rec({ [SRC.resultatJury]: "En attente" })).jury_result, "En attente");
+});
+
+test("un résultat de jury inconnu reste null plutôt que deviné", () => {
+  // Inventer une valeur serait pire que l'absence : on afficherait un résultat
+  // de certification qu'aucun jury n'a prononcé.
+  assert.equal(buildEnrollment(rec({ [SRC.resultatJury]: "Dossier incomplet" })).jury_result, undefined);
+});
+
+test("une case de certification cochée vaut « Oui »", () => {
+  // `checked` : case Airtable rendue en texte par un lookup (15 commandes).
+  assert.equal(buildEnrollment(rec({ [SRC.certif]: "checked" })).certification, "Oui");
+  assert.equal(buildEnrollment(rec({ [SRC.certif]: true })).certification, "Oui");
+  assert.equal(buildEnrollment(rec({ [SRC.certif]: "Certification SAP obtenue" })).certification, "Oui");
+});
+
+test("une certification en préparation n'est pas une certification obtenue", () => {
+  assert.equal(
+    buildEnrollment(rec({ [SRC.certif]: "Certification SAP en cours de préparation" })).certification,
+    "En attente"
+  );
+});

@@ -20,7 +20,8 @@ import {
 export type { Piece, Rate, DirectionKpis } from "@/lib/compliance-rules";
 
 const COLS =
-  "id, learner_id, program, financer, status, certification, global_grade, insertion_situation, " +
+  // `start_date` : décide du périmètre de la règle de complétude (2026-11-06).
+  "id, learner_id, program, financer, status, start_date, certification, global_grade, insertion_situation, " +
   "satisfaction_score, nps, attestation_entry_sent, convention_signed, pending_reports, " +
   "learner:learners_ro(first_name, last_name, email)";
 

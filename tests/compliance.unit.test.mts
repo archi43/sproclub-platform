@@ -14,11 +14,14 @@ import {
   rate,
   average,
   computeKpis,
+  isInComplianceScope,
+  COMPLIANCE_SCOPE_START,
   type ComplianceRow,
 } from "../src/lib/compliance-rules.ts";
 
 const base: ComplianceRow = {
   status: "En cours",
+  start_date: "2026-12-01",
   certification: null,
   global_grade: null,
   insertion_situation: null,
@@ -31,6 +34,7 @@ const base: ComplianceRow = {
 
 const full: ComplianceRow = {
   status: "Terminé",
+  start_date: "2026-12-01",
   certification: "Oui",
   global_grade: 3,
   insertion_situation: "En poste",
@@ -98,4 +102,62 @@ test("rates are hidden when nothing qualifies", () => {
   assert.equal(k.insertion, null, "no known insertion → hidden");
   assert.equal(k.satisfaction, null);
   assert.equal(k.nps, null);
+});
+
+// -----------------------------------------------------------------------------
+// Périmètre de la règle de complétude (décision de direction, 2026-11-06)
+//
+// Appliquée à tout le stock, la règle déclarait 405 dossiers non conformes sur
+// 405 : trois des pièces exigées ne sont presque jamais renseignées sur les
+// dossiers anciens. Une alerte qui concerne 100 % des cas n'alerte plus de rien.
+// La règle ne vaut donc que pour les entrées postérieures au seuil.
+// -----------------------------------------------------------------------------
+
+/** Un dossier terminé à qui il manque la convention. */
+const incomplet = (start: string | null): ComplianceRow => ({ ...full, start_date: start, convention_signed: null });
+
+test("un dossier entré avant le seuil n'est jamais signalé non conforme", () => {
+  // Le stock historique : il lui manque des pièces, mais il sort du périmètre.
+  assert.equal(isNonConforming(incomplet("2024-03-15")), false);
+  assert.equal(isNonConforming(incomplet("2026-10-31")), false);
+});
+
+test("un dossier entré après le seuil reste contrôlé", () => {
+  assert.equal(isNonConforming(incomplet("2026-11-02")), true);
+  assert.equal(isNonConforming(incomplet("2027-04-05")), true);
+});
+
+test("le seuil lui-même est inclus dans le périmètre", () => {
+  assert.equal(isInComplianceScope({ ...full, start_date: COMPLIANCE_SCOPE_START }), true);
+});
+
+test("un dossier sans date d'entrée reste hors périmètre", () => {
+  // On ne peut pas affirmer qu'un dossier est un nouvel entrant sans sa date :
+  // alerter sur un doute produirait du bruit, pas une information.
+  assert.equal(isInComplianceScope({ ...full, start_date: null }), false);
+  assert.equal(isNonConforming(incomplet(null)), false);
+});
+
+test("un dossier complet dans le périmètre n'est pas signalé", () => {
+  // Le périmètre ne doit pas inverser le sens de la règle : il la borne.
+  assert.equal(isNonConforming({ ...full, start_date: "2026-12-01" }), false);
+});
+
+test("un dossier encore en cours n'est pas contrôlé, même dans le périmètre", () => {
+  // La complétude se juge au terme du parcours, pas pendant.
+  assert.equal(isNonConforming({ ...incomplet("2026-12-01"), status: "En cours" }), false);
+});
+
+test("les indicateurs distinguent les dossiers contrôlés des dossiers terminés", () => {
+  // Sans `inScope`, « 0 non conforme sur 405 terminés » laisserait croire que
+  // les 405 ont été contrôlés.
+  const k = computeKpis([
+    incomplet("2024-01-10"),          // ancien, hors périmètre
+    incomplet("2024-06-20"),          // ancien, hors périmètre
+    incomplet("2026-12-01"),          // contrôlé, non conforme
+    { ...full, start_date: "2026-12-05" }, // contrôlé, conforme
+  ]);
+  assert.equal(k.finished, 4, "quatre dossiers terminés");
+  assert.equal(k.inScope, 2, "dont deux seulement dans le périmètre");
+  assert.equal(k.nonConforming, 1, "et un seul réellement non conforme");
 });
