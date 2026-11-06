@@ -2,6 +2,7 @@ import Link from "next/link";
 import { getOrgContext } from "@/lib/tenant";
 import { StatTile, StatGrid } from "@/components/ui/stat";
 import { directionDashboard, compliancePrograms, type Rate } from "@/lib/data/compliance";
+import { COMPLIANCE_SCOPE_START } from "@/lib/compliance-rules";
 import { PageHeader, EmptyState } from "@/components/ui/page-header";
 import { Card, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -46,6 +47,15 @@ export default async function PilotagePage({
     compliancePrograms(org.id),
   ]);
 
+  // Phrase construite hors du JSX : une expression en début de ligne suivie de
+  // texte perd son espace au rendu avec Turbopack.
+  const scopeDate = new Date(COMPLIANCE_SCOPE_START);
+  // « 1er », pas « 1 » : `toLocaleDateString` ne connaît pas l'ordinal français.
+  const scopeDay = scopeDate.getUTCDate() === 1 ? "1er" : String(scopeDate.getUTCDate());
+  const scopeMonth = scopeDate.toLocaleDateString("fr-FR", { month: "long", year: "numeric", timeZone: "UTC" });
+  const scopeStart = `${scopeDay} ${scopeMonth}`;
+  const scopeNote = `La complétude est contrôlée sur les dossiers dont l'entrée en formation est postérieure au ${scopeStart}. Les parcours antérieurs restent consultables dans Conformité, sans alerte.`;
+
   return (
     <div className="space-y-6">
       <PageHeader title="Pilotage" description="État de santé pédagogique : alertes, résultats et activité." />
@@ -78,7 +88,14 @@ export default async function PilotagePage({
           <Kpi
             label="Non conformes"
             value={String(kpis.nonConforming)}
-            hint={kpis.finished > 0 ? `sur ${kpis.finished} dossiers terminés` : undefined}
+            // L'effectif cité est celui des dossiers CONTRÔLÉS, pas des dossiers
+            // terminés : la règle ne couvre que les entrées depuis le seuil, et
+            // citer les 405 terminés laisserait croire qu'ils l'ont tous été.
+            hint={
+              kpis.inScope > 0
+                ? `sur ${kpis.inScope} dossier${kpis.inScope > 1 ? "s" : ""} contrôlé${kpis.inScope > 1 ? "s" : ""}`
+                : "aucun dossier encore contrôlé"
+            }
             tone={kpis.nonConforming > 0 ? "error" : undefined}
           />
         </StatGrid>
@@ -97,8 +114,16 @@ export default async function PilotagePage({
       {/* Dossiers à risque (liste cliquable) */}
       <Card>
         <CardTitle>Dossiers terminés non conformes</CardTitle>
+        <p className="mb-3 text-sm text-muted">{scopeNote}</p>
         {nonConforming.length === 0 ? (
-          <EmptyState title="Aucun dossier à risque" description="Tous les dossiers terminés réunissent leurs pièces." />
+          <EmptyState
+            title="Aucun dossier à risque"
+            description={
+              kpis.inScope > 0
+                ? "Les dossiers contrôlés réunissent toutes leurs pièces."
+                : "Aucun dossier du périmètre n'est encore arrivé à son terme : le contrôle s'exercera à mesure que ces parcours se termineront."
+            }
+          />
         ) : (
           <Table>
             <THead>
